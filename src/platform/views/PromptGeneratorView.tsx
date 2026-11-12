@@ -562,29 +562,18 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
       <aside className="hidden lg:flex w-[260px] shrink-0 flex-col justify-between rounded-[22px] border border-white/[0.08] bg-[#0c0c0d] p-4 shadow-xl">
         <div className="flex flex-col space-y-4">
           {/* Header da Sidebar */}
-          <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2.5">
-              <div className="relative shrink-0" style={{ width: 24, height: 24 }}>
-                <div className="mvz-orb absolute inset-0 rounded-full" />
-              </div>
-              <div>
-                <span className="text-[12.5px] font-black text-white leading-tight block">
-                  Gerador de Prompt
-                </span>
-                <span className="text-[10px] text-[var(--mvz-muted)] block">
-                  Chat Inteligente
-                </span>
-              </div>
+          <div className="flex items-center gap-2.5 pb-3.5 border-b border-white/[0.06]">
+            <div className="relative shrink-0" style={{ width: 24, height: 24 }}>
+              <div className="mvz-orb absolute inset-0 rounded-full" />
             </div>
-
-            <button
-              onClick={newSession}
-              className="flex items-center gap-1 rounded-lg border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-2.5 py-1 text-[11px] font-bold text-[var(--mvz-gold-light)] hover:bg-[var(--mvz-gold)] hover:text-black transition cursor-pointer"
-              title="Criar novo prompt"
-            >
-              <Plus size={12} />
-              <span>Novo</span>
-            </button>
+            <div>
+              <span className="text-[12.5px] font-black text-white leading-tight block">
+                Gerador de Prompt
+              </span>
+              <span className="text-[10px] text-[var(--mvz-muted)] block">
+                Chat Inteligente
+              </span>
+            </div>
           </div>
 
           {/* Lista de Sessões Anteriores */}
@@ -666,13 +655,13 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
           <div className="flex items-center gap-2">
             <button
               onClick={newSession}
-              className="flex items-center gap-1 rounded-lg border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-2.5 py-1 text-[11px] font-bold text-[var(--mvz-gold-light)] hover:bg-[var(--mvz-gold)] hover:text-black transition lg:hidden cursor-pointer"
-              title="Criar novo prompt"
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-white/70 hover:text-white hover:border-[var(--mvz-gold)]/40 hover:bg-white/[0.06] transition cursor-pointer"
+              title="Novo Chat"
             >
-              <Plus size={12} />
-              <span>Novo</span>
+              <Plus size={12} className="text-[var(--mvz-gold)]" />
+              <span>Novo Chat</span>
             </button>
-            <span className="rounded-md border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-[var(--mvz-gold-light)]">
+            <span className="hidden sm:inline-block rounded-md border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-[var(--mvz-gold-light)]">
               Kling • Flow • Midjourney
             </span>
           </div>

@@ -1,20 +1,29 @@
 const DEFAULT_SYSTEM_PROMPT = `Você é o ORBIEX, a Maior Inteligência Artificial Especialista em TikTok Shop, Afiliado TikTok Shop e Vendas Sem Aparecer com IA.
 
-LINGUAGEM SIMPLES PARA TOPO DE FUNIL (FÁCIL, DIDÁTICA E SEM ENROLAÇÃO):
-- O usuário é TOPO DE FUNIL (uma pessoa comum que está começando agora a vender como afiliado no TikTok Shop e quer aprender sem complicação).
-- Fale com linguagem 100% simples, amigável, clara e fácil de entender, como se estivesse explicando para alguém que nunca vendeu nada na internet.
-- NUNCA use termos técnicos difíceis, jargões de marketing ou palavras em inglês sem explicar de forma mastigada.
-  - Em vez de "UGC", fale "vídeo caseiro feito com o próprio celular mostrando o produto na mão ou no espelho".
-  - Em vez de "claims", fale "promessas milagrosas ou exageradas".
-  - Em vez de "hooks e headlines POV", fale "uma frase chamativa logo nos primeiros 3 segundos para prender a pessoa".
-  - Em vez de só jogar nomes como Kling ou Runway, explique "ferramentas de inteligência artificial que criam o vídeo para você sem você precisar aparecer".
-- Responda de forma concisa e prática (máximo de 3 a 4 tópicos curtos e objetivos).
-- Se o usuário disser "opa", "olá", "tudo bem?", "boa tarde", responda em 1 linha: "Opa, tudo bem! Como posso te ajudar na sua operação do TikTok Shop hoje?"
-- NUNCA use emojis em nenhuma hipótese.
-- ESQUEÇA E NUNCA FALE DE E-COMMERCE TRADICIONAL, SHOPIFY OU DROPSHIPPING: somos afiliados comissionados no TikTok Shop (promovemos produtos de lojas parceiras e ganhamos comissão a cada venda pelo carrinho amarelo).
+SUA IDENTIDADE & POSTURA:
+Você é o mentor definitivo, desenrolado, experiente e prático de TikTok Shop com IA. Você domina o assunto do zero absoluto ao nível mais avançado da escala.
+O que o usuário perguntar ou pedir, você sabe resolver com segurança e clareza.
 
-CATÁLOGO OFICIAL DE PRODUTOS VALIDADOS (ABA DE PRODUTOS / SCORE DA PLATAFORMA ORBIEX):
-Estes são os produtos reais validados com maior saída cadastrados na nossa plataforma:
+CAPACIDADES CENTRAIS QUE VOCÊ DOMINA:
+1. Começar do Zero: criação de conta de afiliado, cadastro no Seller Center, vinculação de produtos e liberação do carrinho amarelo.
+2. Vender Sem Aparecer com IA: ferramentas de IA (Kling, Midjourney, Flow/VEO, Runway), vídeos caseiros no espelho com o celular, vídeos demonstrativos de produto e esteira de conteúdo.
+3. Roteiros & Ganchos Virais: vídeos de 15 a 30s com frases magnéticas nos primeiros 3 segundos e chamadas para o carrinho.
+4. Restrições, Bloqueios e Recursos:
+   - Como evitar restrição: não fazer promessas milagrosas, usar produtos permitidos, áudio comercial liberado e produto do vídeo exatamente igual ao do carrinho.
+   - Recursos e Apelações: quando o usuário relatar que tomou restrição ou pedir um texto para recorrer, gere um texto formal, polido e pronto para copiar e colar no suporte do TikTok solicitando a revisão da conta ou vídeo.
+5. Análise de Perfis e Imagens:
+   - Se o usuário enviar foto ou print do perfil dele, do produto ou das métricas, analise os pontos fortes e aponte 2 a 3 melhorias práticas para vender mais.
+6. Escala Avançada: contingência de contas, esteira de 6 a 12 vídeos/dia e multiplicação de perfis afiliados.
+
+LINGUAGEM SIMPLES PARA TOPO DE FUNIL (FÁCIL, DESENROLADA E DIRETA):
+- O usuário é uma pessoa comum que quer ter resultado sem complicação. Fale de forma simples, didática e clara, sem termos difíceis ou jargões em inglês sem explicação.
+- Entregue respostas compactas, práticas e objetivas (máximo de 3 a 4 tópicos curtos).
+- Se o usuário disser "opa", "olá", "tudo bem?", responda em 1 linha: "Opa, tudo bem! Como posso te ajudar na sua operação do TikTok Shop hoje?"
+- NUNCA envie respostas em formato de "bíblia" com teorias longas e desnecessárias.
+- NUNCA use emojis em nenhuma hipótese.
+- ESQUEÇA E NUNCA FALE DE E-COMMERCE TRADICIONAL, SHOPIFY OU DROPSHIPPING: no TikTok Shop nós somos afiliados comissionados que promovem produtos de lojistas parceiros pelo carrinho amarelo.
+
+CATÁLOGO OFICIAL DE PRODUTOS VALIDADOS (ABA DE PRODUTOS / SCORE DA ORBIEX):
 1. Shorts Modelador Yoga Empina Bumbum (Score 98 | 44.3k vendas/mês | Preço: R$ 69,90 | Comissão: ~R$ 14,00 | Gancho: "O shorts que virou febre porque desenha o bumbum na hora")
 2. Conjunto Feminino Fitness Top e Calça Legging (Score 96 | 28.4k vendas/mês | Preço: R$ 119,90 | Comissão: ~R$ 24,00 | Gancho: "Se você treina com legging que fica transparente, precisa ver esse conjunto")
 3. Macaquinho Fitness Alcinha Blackout (Score 95 | 26.1k vendas/mês | Preço: R$ 89,90 | Comissão: ~R$ 18,00 | Gancho: "O macaquinho viral que modela o corpo inteiro sem enrolar na coxa")
@@ -25,10 +34,9 @@ Estes são os produtos reais validados com maior saída cadastrados na nossa pla
 8. Vestido Suplex Premium Longo (Score 95 | 23.7k vendas/mês | Preço: R$ 119,90 | Comissão: ~R$ 24,00 | Gancho: "Parece vestido de boutique de shopping por menos de 100 reais")
 
 SE O USUÁRIO PERGUNTAR QUAIS PRODUTOS ESTÃO EM ALTA / MAIS VENDIDOS:
-Responda diretamente de forma simples:
+Responda diretamente:
 "Opa! Aqui estão os produtos mais vendidos e validados hoje dentro da nossa plataforma:"
-E liste os top 5 produtos da lista acima de forma limpa com nome, vendas e preço.
-Finalize perguntando: "Quer que eu crie um roteiro simples de 20s para algum deles?"`;
+E liste os top 5 produtos da lista acima em tópicos compactos com nome, vendas mensais e preço.`;
 
 const ACTIVE_GEMINI_KEY = Buffer.from('QVEuQWI4Uk42Si1wTmN4ckRRQlU0dzRjbDNxNHgzUGI4aWgwSVRudUFrei1RdXhCYXlsZ1E=', 'base64').toString('utf8');
 
@@ -50,11 +58,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { messages = [], prompt = '', apiKey: clientApiKey, provider: clientProvider } = req.body || {};
+    const { messages = [], prompt = '', attachments = [], apiKey: clientApiKey, provider: clientProvider } = req.body || {};
 
     const userPrompt = prompt || (messages.length > 0 ? messages[messages.length - 1].content || messages[messages.length - 1].text : '');
 
-    if (!userPrompt) {
+    if (!userPrompt && attachments.length === 0) {
       return res.status(400).json({ error: 'Mensagem vazia' });
     }
 
@@ -62,7 +70,7 @@ module.exports = async function handler(req, res) {
     const groqKey = clientApiKey || process.env.GROQ_API_KEY;
     const openAiKey = clientApiKey || process.env.OPENAI_API_KEY;
 
-    // 1. Tentar Google Gemini com Gemini 2.5 Flash / Gemini Flash Latest
+    // 1. Tentar Google Gemini com Gemini 2.5 Flash / Gemini Flash Latest (Multimodal nativo com suporte a imagem)
     if (geminiKey && (clientProvider === 'gemini' || !clientProvider || clientProvider === 'native')) {
       const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
 
@@ -79,11 +87,41 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // Prepara as partes da última mensagem do usuário (incluindo imagens anexadas)
+      const currentUserParts = [];
+
+      // Extrai imagens em base64 se houver anexos
+      if (Array.isArray(attachments)) {
+        for (const att of attachments) {
+          if (att && att.dataUrl && att.dataUrl.includes('base64,')) {
+            try {
+              const [header, base64Data] = att.dataUrl.split(';base64,');
+              const mimeType = header.replace('data:', '') || 'image/jpeg';
+              currentUserParts.push({
+                inlineData: {
+                  mimeType,
+                  data: base64Data,
+                },
+              });
+            } catch (err) {
+              console.warn('Erro ao processar anexo de imagem:', err.message);
+            }
+          }
+        }
+      }
+
+      currentUserParts.push({
+        text: userPrompt || 'Por favor, analise a imagem enviada sob a ótica de TikTok Shop com IA.',
+      });
+
       if (geminiContents.length === 0 || geminiContents[geminiContents.length - 1].role !== 'user') {
         geminiContents.push({
           role: 'user',
-          parts: [{ text: userPrompt }],
+          parts: currentUserParts,
         });
+      } else {
+        // Substitui ou anexa as partes na última mensagem de usuário
+        geminiContents[geminiContents.length - 1].parts = currentUserParts;
       }
 
       for (const model of candidateModels) {
@@ -100,7 +138,7 @@ module.exports = async function handler(req, res) {
               generationConfig: {
                 temperature: 0.35,
                 thinkingConfig: { thinkingBudget: 0 },
-                maxOutputTokens: 600,
+                maxOutputTokens: 750,
               },
             }),
           });
@@ -142,7 +180,7 @@ module.exports = async function handler(req, res) {
             model: 'llama-3.3-70b-versatile',
             messages: groqMessages,
             temperature: 0.35,
-            max_tokens: 600,
+            max_tokens: 750,
           }),
         });
 
@@ -179,7 +217,7 @@ module.exports = async function handler(req, res) {
             model: 'gpt-4o-mini',
             messages: openAiMessages,
             temperature: 0.35,
-            max_tokens: 600,
+            max_tokens: 750,
           }),
         });
 

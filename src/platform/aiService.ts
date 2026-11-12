@@ -177,6 +177,7 @@ export async function generateAIReply(
       body: JSON.stringify({
         prompt,
         messages: history.map((h) => ({ role: h.role, content: h.text })),
+        attachments: attItems,
         apiKey: config.apiKey || undefined,
         provider: config.provider !== 'native' ? config.provider : undefined,
       }),

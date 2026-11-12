@@ -67,9 +67,9 @@ export const NAV_GROUPS: NavItem[][] = [
   [
     { id: 'headlines', label: 'Gerador de Headline', icon: Wand2 },
     { id: 'hooks', label: 'Hooks Virais', icon: Zap },
-    { id: 'antirestriction', label: 'Antirrestrição', icon: ShieldAlert },
     { id: 'motion', label: 'Extrator de Movimentos', icon: ScanEye },
     { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles },
+    { id: 'antirestriction', label: 'Antirrestrição', icon: ShieldAlert },
     { id: 'turbo', label: 'Turbo Seguidores', icon: Flame },
   ],
 ];

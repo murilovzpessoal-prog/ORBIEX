@@ -164,180 +164,153 @@ export async function generateAIReply(
     typeof a === 'string' ? { name: a } : a
   );
 
-  // Se for nativo ou sem chave de API, usa o cérebro cognitivo local Orbiex
-  if (config.provider === 'native' || !config.apiKey.trim()) {
-    const rawHistory = history.map((h) => h.text);
-    return nativeReply(prompt, rawHistory, attItems);
-  }
-
-  // Prepara nomes de anexos
-  const fileNames = attItems.map((a) => a.name).join(', ');
-  let enrichedPrompt = prompt;
-  if (fileNames) {
-    enrichedPrompt = `[Arquivos anexados: ${fileNames}]\n\n${prompt || 'Por favor, analise a imagem e as informações enviadas.'}`;
-  }
-
+  // 1. Tenta chamar o endpoint oficial serverless de IA no backend da Orbiex
   try {
-    if (config.provider === 'gemini') {
-      const geminiModel = config.model || (mode === 'pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash');
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${config.apiKey.trim()}`;
-
-      const contents: any[] = [
-        {
-          role: 'user',
-          parts: [{ text: `${SYSTEM_PROMPT}\n\nPor favor, responda com atenção e profundidade como o Orbiex AI.` }],
-        },
-        {
-          role: 'model',
-          parts: [{ text: 'Entendido! Sou o Orbiex AI e estou pronto para conversar, analisar imagens e resolver qualquer dúvida da sua operação.' }],
-        },
-      ];
-
-      // Histórico recente
-      for (const m of history.slice(-6)) {
-        contents.push({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }],
-        });
-      }
-
-      // Monta as partes da mensagem atual (incluindo imagens base64 reais para o Gemini!)
-      const currentParts: any[] = [];
-
-      for (const att of attItems) {
-        if (att.dataUrl && att.dataUrl.includes('base64,')) {
-          const [header, base64] = att.dataUrl.split(';base64,');
-          const mimeType = header.replace('data:', '') || 'image/jpeg';
-          currentParts.push({
-            inlineData: {
-              mimeType,
-              data: base64,
-            },
-          });
-        }
-      }
-
-      currentParts.push({ text: enrichedPrompt });
-      contents.push({ role: 'user', parts: currentParts });
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: config.temperature ?? (mode === 'pro' ? 0.6 : 0.7),
-            maxOutputTokens: 2500,
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error?.message || `Erro da API Gemini: HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!generatedText) {
-        throw new Error('Nenhum texto retornado pela API Gemini.');
-      }
-
-      const suggestions = extractSuggestionsFromText(generatedText, prompt);
-
-      return {
-        steps: [
-          'Conectando ao modelo neural multimodal Google Gemini',
-          'Processando texto e elementos visuais da imagem',
-          'Formatando resposta especializada Orbiex',
-        ],
-        text: generatedText,
-        suggestions,
-      };
-    }
-
-    // OpenAI, Groq, DeepSeek, OpenRouter
-    let endpoint = 'https://api.openai.com/v1/chat/completions';
-    if (config.provider === 'groq') endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-    if (config.provider === 'deepseek') endpoint = 'https://api.deepseek.com/chat/completions';
-    if (config.provider === 'openrouter') endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-    if (config.customEndpoint) endpoint = config.customEndpoint;
-
-    // Se houver imagens em base64 e for OpenAI / OpenRouter
-    let userContent: any = enrichedPrompt;
-    const hasImageAttachments = attItems.some((a) => a.dataUrl && a.dataUrl.startsWith('data:image/'));
-
-    if (hasImageAttachments && (config.provider === 'openai' || config.provider === 'openrouter')) {
-      userContent = [{ type: 'text', text: enrichedPrompt }];
-      for (const att of attItems) {
-        if (att.dataUrl && att.dataUrl.startsWith('data:image/')) {
-          userContent.push({
-            type: 'image_url',
-            image_url: { url: att.dataUrl },
-          });
-        }
-      }
-    }
-
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...history.slice(-6).map((m) => ({
-        role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.text,
-      })),
-      { role: 'user', content: userContent },
-    ];
-
-    const res = await fetch(endpoint, {
+    const res = await fetch('/api/ai-chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey.trim()}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: config.model,
-        messages,
-        temperature: config.temperature ?? (mode === 'pro' ? 0.5 : 0.7),
-        max_tokens: 2500,
+        prompt,
+        messages: history.map((h) => ({ role: h.role, content: h.text })),
+        apiKey: config.apiKey || undefined,
+        provider: config.provider !== 'native' ? config.provider : undefined,
       }),
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Erro da API ${config.provider.toUpperCase()}: HTTP ${res.status}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.reply) {
+        const suggestions = extractSuggestionsFromText(data.reply, prompt);
+        return {
+          steps: [
+            'Conectando ao núcleo de IA Orbiex...',
+            'Analisando contexto e gerando resposta conversacional...',
+            'Concluído.',
+          ],
+          text: data.reply,
+          suggestions,
+        };
+      }
     }
-
-    const data = await res.json();
-    const generatedText = data.choices?.[0]?.message?.content;
-
-    if (!generatedText) {
-      throw new Error(`Nenhum texto retornado por ${config.provider}.`);
-    }
-
-    const suggestions = extractSuggestionsFromText(generatedText, prompt);
-
-    return {
-      steps: [
-        `Conectando ao cluster ${config.provider.toUpperCase()}`,
-        'Processando contexto da conversa e diretrizes de e-commerce',
-        'Sintetizando resposta resolutiva Orbiex',
-      ],
-      text: generatedText,
-      suggestions,
-    };
-  } catch (error: any) {
-    console.warn('Recorrendo ao motor cognitivo nativo Orbiex:', error);
-    const fallback = nativeReply(prompt, history.map((h) => h.text), attItems);
-    return {
-      ...fallback,
-      steps: [
-        `Tentativa via ${config.provider.toUpperCase()} (${error.message?.slice(0, 30) || 'fallback'})`,
-        'Ativando Motor Cognitivo Local Orbiex',
-        ...fallback.steps,
-      ],
-    };
+  } catch (err) {
+    console.warn('Aviso: endpoint serverless de chat não respondeu:', err);
   }
+
+  // 2. Se o cliente tiver configurado uma chave direta no navegador (Gemini, OpenAI, Groq)
+  if (config.apiKey.trim() && config.provider !== 'native') {
+    // Prepara nomes de anexos
+    const fileNames = attItems.map((a) => a.name).join(', ');
+    let enrichedPrompt = prompt;
+    if (fileNames) {
+      enrichedPrompt = `[Arquivos anexados: ${fileNames}]\n\n${prompt || 'Por favor, analise a imagem e as informações enviadas.'}`;
+    }
+
+    try {
+      if (config.provider === 'gemini') {
+        const geminiModel = config.model || (mode === 'pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash');
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${config.apiKey.trim()}`;
+
+        const contents: any[] = [
+          {
+            role: 'user',
+            parts: [{ text: `${SYSTEM_PROMPT}\n\nPor favor, responda com atenção e profundidade como o Orbiex AI.` }],
+          },
+          {
+            role: 'model',
+            parts: [{ text: 'Entendido! Sou o Orbiex AI e estou pronto para conversar, analisar imagens e resolver qualquer dúvida da sua operação.' }],
+          },
+        ];
+
+        for (const m of history.slice(-6)) {
+          contents.push({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.text }],
+          });
+        }
+
+        const currentParts: any[] = [];
+        for (const att of attItems) {
+          if (att.dataUrl && att.dataUrl.includes('base64,')) {
+            const [header, base64] = att.dataUrl.split(';base64,');
+            const mimeType = header.replace('data:', '') || 'image/jpeg';
+            currentParts.push({ inlineData: { mimeType, data: base64 } });
+          }
+        }
+        currentParts.push({ text: enrichedPrompt });
+        contents.push({ role: 'user', parts: currentParts });
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              temperature: config.temperature ?? (mode === 'pro' ? 0.6 : 0.7),
+              maxOutputTokens: 2500,
+            },
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (generatedText) {
+            return {
+              steps: ['Conectado ao Google Gemini', 'Processamento concluído.'],
+              text: generatedText,
+              suggestions: extractSuggestionsFromText(generatedText, prompt),
+            };
+          }
+        }
+      }
+
+      // OpenAI / Groq / DeepSeek / OpenRouter direto
+      let endpoint = 'https://api.openai.com/v1/chat/completions';
+      if (config.provider === 'groq') endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+      if (config.provider === 'deepseek') endpoint = 'https://api.deepseek.com/chat/completions';
+      if (config.provider === 'openrouter') endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+      if (config.customEndpoint) endpoint = config.customEndpoint;
+
+      const directRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model: config.model,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...history.slice(-8).map((h) => ({
+              role: h.role === 'agent' ? 'assistant' : 'user',
+              content: h.text,
+            })),
+            { role: 'user', content: enrichedPrompt },
+          ],
+          temperature: config.temperature ?? 0.7,
+          max_tokens: 2500,
+        }),
+      });
+
+      if (directRes.ok) {
+        const data = await directRes.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) {
+          return {
+            steps: ['Conexão direta com modelo concluída.', 'Resposta gerada.'],
+            text,
+            suggestions: extractSuggestionsFromText(text, prompt),
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Erro na chamada direta de IA:', e);
+    }
+  }
+
+  // 3. Fallback cognitivo nativo se nenhuma API responder
+  const rawHistory = history.map((h) => h.text);
+  return nativeReply(prompt, rawHistory, attItems);
 }
 
 function extractSuggestionsFromText(text: string, prompt: string): string[] {

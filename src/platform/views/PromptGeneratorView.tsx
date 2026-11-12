@@ -22,6 +22,7 @@ import {
 import type { ViewId } from '../data';
 import { Rich } from './ChatParts';
 import { useUserProfile } from '../useUserProfile';
+import { getAIConfig } from '../aiService';
 
 /* ─────────────────────────── small UI ─────────────────────────── */
 
@@ -133,7 +134,29 @@ function greeting() {
 
 /* ─────────────────────────── assistente inteligente estilo ChatGPT ─────────────────────────── */
 
-function generatePromptAssistantReply(userIdea: string, history: PromptMessage[]): string {
+async function generatePromptAssistantReply(userIdea: string, history: PromptMessage[]): Promise<string> {
+  try {
+    const cfg = getAIConfig();
+    const res = await fetch('/api/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idea: userIdea,
+        apiKey: cfg.apiKey || undefined,
+        provider: cfg.provider !== 'native' ? cfg.provider : undefined,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.reply) return data.reply;
+    }
+  } catch (e) {
+    console.warn('API de geração de prompt indisponível, usando motor local:', e);
+  }
+  return generateLocalPromptReply(userIdea, history);
+}
+
+function generateLocalPromptReply(userIdea: string, history: PromptMessage[]): string {
   const idea = userIdea.trim();
   const lower = idea.toLowerCase();
 
@@ -497,9 +520,8 @@ export function PromptGeneratorView({ onUseInAgent: _onUseInAgent }: Props) {
       intervalRef.current = null;
     }
 
-    // 1. Tempo de raciocínio natural e inteligente da IA (1800ms)
-    setTimeout(() => {
-      const fullText = generatePromptAssistantReply(raw, historySnapshot);
+    // 1. Processamento e geração inteligente da IA
+    generatePromptAssistantReply(raw, historySnapshot).then((fullText) => {
       const words = fullText.split(/(\s+)/);
       let pos = 0;
       const step = 3;
@@ -559,7 +581,7 @@ export function PromptGeneratorView({ onUseInAgent: _onUseInAgent }: Props) {
       }, 26);
 
       intervalRef.current = tick;
-    }, 1800);
+    });
   };
 
   return (

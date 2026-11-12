@@ -274,12 +274,43 @@ export function AntiRestrictionView() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header limpo e sem firula */}
-      <div className="border-b border-[rgba(255,236,190,0.08)] pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-[#f6f1e4]">Antirrestrição</h1>
-        <p className="mt-1 text-sm text-[var(--mvz-dim)]">
-          Suba seu vídeo para analisar se há risco de restrição ou bloqueio no TikTok Shop e Meta Ads.
-        </p>
+      {/* Banner Principal • Scanner de Antirrestrição */}
+      <div className="relative overflow-hidden rounded-[28px] border border-[var(--mvz-line)] bg-gradient-to-br from-[#0e0c08] via-[#080705] to-[#040404] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] md:p-8">
+        <div className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-[var(--mvz-gold)]/10 blur-[80px]" />
+        <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-[#d4af37]/5 blur-[90px]" />
+
+        <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl space-y-2.5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-3.5 py-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[var(--mvz-gold)] shadow-[0_0_20px_rgba(212,175,55,0.15)]">
+              <ShieldCheck size={13} className="text-[var(--mvz-gold)]" />
+              <span>Blindagem de Criativos • Compliance TikTok Shop & Meta</span>
+            </div>
+
+            <h1 className="text-[28px] font-black tracking-tight text-white sm:text-[34px] md:text-[38px] leading-tight">
+              Scanner de{' '}
+              <span className="bg-gradient-to-r from-[#f3e2a4] via-[#d4af37] to-[#b8832a] bg-clip-text text-transparent">
+                Antirrestrição
+              </span>
+            </h1>
+
+            <p className="text-[13.5px] leading-relaxed text-white/70">
+              Analise seu criativo frame a frame com IA antes de veicular. Identifique riscos de alegações, áudio protegido ou exposição corporal e garanta aprovação imediata sem bloqueios.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 self-start rounded-2xl border border-[var(--mvz-line-strong)] bg-[#0d0c0a]/90 px-4 py-3 backdrop-blur-md lg:self-center">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+            </span>
+            <div className="leading-tight">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--mvz-gold)]">
+                Políticas 2026
+              </div>
+              <div className="text-[12px] font-bold text-white">Pronto para Escanear</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <input

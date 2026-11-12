@@ -62,7 +62,7 @@ interface PromptMessage {
   id: number;
   role: 'user' | 'agent';
   text: string;
-  status?: 'thinking' | 'done';
+  status?: 'thinking' | 'streaming' | 'done';
 }
 
 interface PromptSession {
@@ -153,16 +153,16 @@ function generatePromptAssistantReply(userIdea: string, history: PromptMessage[]
 
   if (isAdjustment && previousAssistantMsg) {
     return (
-      `Perfeito! Ajustei a estrutura do prompt incorporando a sua alteração: **"${idea}"**.\n\n` +
-      `Aqui está a versão atualizada para o **Kling AI (Vídeo Vertical 9:16)**:\n\n` +
+      `Perfeito! Analisei a sua observação e atualizei a composição do prompt incorporando: **"${idea}"**.\n\n` +
+      `Aqui está a versão revisada e calibrada para o **Kling AI (Vídeo Vertical 9:16)**:\n\n` +
       `\`\`\`kling\n` +
-      `High-end commercial vertical video 9:16, authentic mobile UGC aesthetic. Updated composition: ${idea}. Realistic body proportions, authentic textile micro-textures, natural lighting, smooth 60fps cinematic camera flow, ultra sharp focus, 8k resolution, raw photorealism. --motion 6.5 --camera_motion smooth\n` +
+      `High-end commercial vertical video 9:16, authentic mobile UGC aesthetic. Updated scene directive: ${idea}. Authentic model proportions, rich fabric texture, natural skin tones, smooth 60fps cinematic camera tracking flow, ultra sharp focus, 8k resolution, raw photorealism. --motion_amplitude 6.5 --camera_motion smooth\n` +
       `\`\`\`\n\n` +
-      `### Parâmetros Atualizados:\n` +
-      `- **Foco do Ajuste:** Modificação pontual integrada preservando a física de movimento.\n` +
-      `- **Filtro Anti-Distorção (Negative Prompt):**\n` +
+      `### Ajustes Aplicados na Cena:\n` +
+      `- **Foco do Ajuste:** Modificação solicitada integrada na física de movimento sem distorcer membros ou textura têxtil.\n` +
+      `- **Negative Prompt (Anti-Distorção):**\n` +
       `\`\`\`negative\n` +
-      `deformed anatomy, extra fingers, mutated hands, blur, jitter, artifacts, cartoonish, 3d render, plastic textures, oversaturation, distortion\n` +
+      `deformed anatomy, extra fingers, mutated hands, blur, jitter, artifacts, cartoonish, 3d render, plastic textures, oversaturation, distortion, low resolution\n` +
       `\`\`\`\n\n` +
       `Se precisar de mais algum ajuste fino no ângulo, iluminação ou tempo de cena, só me avisar.`
     );
@@ -173,12 +173,17 @@ function generatePromptAssistantReply(userIdea: string, history: PromptMessage[]
   let motionEn = 'slow organic 360-degree orbit camera movement showing 3D fit and drapery';
   let motionPt = 'Giro suave de 360 graus com estabilização de câmera destacando o caimento da peça.';
 
-  if (
+  if (lower.includes('mao na cintura') || lower.includes('mão na cintura') || (lower.includes('cintura') && !lower.includes('vestido'))) {
+    productLabel = 'peça com destaque na cintura e compressão anatômica';
+    motionEn =
+      'natural mobile UGC video in front of mirror. Model confidently places hands on waistband, subtly shifting posture and rotating 45 degrees to highlight waist sculpting, zero waistband rolling, and firm compressive hold. Clean organic motion with natural ambient illumination';
+    motionPt =
+      'Modelo posiciona as mãos na cintura em frente ao espelho com rotação sutil de 45°, evidenciando a firmeza do cós e o ajuste anatômico sem dobras.';
+  } else if (
     lower.includes('fitness') ||
     lower.includes('legging') ||
     lower.includes('top') ||
     lower.includes('agacha') ||
-    lower.includes('cós') ||
     lower.includes('compress') ||
     lower.includes('transpar') ||
     lower.includes('short') ||
@@ -338,6 +343,14 @@ export function PromptGeneratorView({ onUseInAgent: _onUseInAgent }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recRef = useRef<any>(null);
+  const intervalRef = useRef<number | null>(null);
+
+  // Limpa timer se desmontar
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   // Persistência local das sessões de prompt
   useEffect(() => {
@@ -479,9 +492,19 @@ export function PromptGeneratorView({ onUseInAgent: _onUseInAgent }: Props) {
 
     const historySnapshot = activeSession?.msgs ?? [];
 
-    setTimeout(() => {
-      const replyText = generatePromptAssistantReply(raw, historySnapshot);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
+    // 1. Tempo de raciocínio natural e inteligente da IA (1800ms)
+    setTimeout(() => {
+      const fullText = generatePromptAssistantReply(raw, historySnapshot);
+      const words = fullText.split(/(\s+)/);
+      let pos = 0;
+      const step = 3;
+
+      // Inicia digitação progressiva
       setSessions((prev) =>
         prev.map((s) =>
           s.id === targetSessionId
@@ -491,8 +514,8 @@ export function PromptGeneratorView({ onUseInAgent: _onUseInAgent }: Props) {
                   m.id === agentMsgId
                     ? {
                         ...m,
-                        status: 'done',
-                        text: replyText,
+                        status: 'streaming',
+                        text: '',
                       }
                     : m
                 ),
@@ -500,9 +523,43 @@ export function PromptGeneratorView({ onUseInAgent: _onUseInAgent }: Props) {
             : s
         )
       );
-      setBusy(false);
-      setTimeout(() => scrollToBottom(true), 80);
-    }, 1100);
+
+      const tick = window.setInterval(() => {
+        pos += step;
+        const finished = pos >= words.length;
+        const slice = words.slice(0, pos).join('');
+
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === targetSessionId
+              ? {
+                  ...s,
+                  msgs: s.msgs.map((m) =>
+                    m.id === agentMsgId
+                      ? {
+                          ...m,
+                          status: finished ? 'done' : 'streaming',
+                          text: finished ? fullText : slice,
+                        }
+                      : m
+                  ),
+                }
+              : s
+          )
+        );
+
+        scrollToBottom(false);
+
+        if (finished) {
+          clearInterval(tick);
+          intervalRef.current = null;
+          setBusy(false);
+          setTimeout(() => scrollToBottom(true), 60);
+        }
+      }, 26);
+
+      intervalRef.current = tick;
+    }, 1800);
   };
 
   return (
@@ -690,19 +747,20 @@ export function PromptGeneratorView({ onUseInAgent: _onUseInAgent }: Props) {
                   </div>
                 ) : (
                   <div key={m.id} className="mvz-msg-in flex gap-3.5">
-                    <AgentAvatar live={m.status === 'thinking'} />
+                    <AgentAvatar live={m.status === 'thinking' || m.status === 'streaming'} />
                     <div className="min-w-0 flex-1 pt-0.5">
                       <div className="mb-1.5 text-[12px] font-bold text-[var(--mvz-gold-light)]">
                         Orbiex
                       </div>
                       {m.status === 'thinking' && !m.text && (
-                        <div className="py-2 flex items-center gap-2 text-[13px] text-[var(--mvz-muted)]">
-                          <ThinkingDots /> Pensando…
+                        <div className="py-2 flex items-center gap-2.5 text-[13px] text-[var(--mvz-muted)]">
+                          <ThinkingDots />
+                          <span>Analisando conceito criativo e calculando física...</span>
                         </div>
                       )}
                       {m.text && (
                         <div className="text-[13.5px] leading-relaxed text-white/90">
-                          <Rich text={m.text} />
+                          <Rich text={m.text} streaming={m.status === 'streaming'} />
                         </div>
                       )}
                     </div>

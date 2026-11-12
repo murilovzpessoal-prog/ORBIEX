@@ -59,12 +59,14 @@ export function Topbar({
         <span className="hidden text-[13px] font-bold tracking-tight text-white/85 sm:block mr-2.5">
           {VIEW_TITLES[view]}
         </span>
-        <button
-          onClick={onNewChat}
-          className="mvz-btn-grad hidden h-9 items-center gap-1.5 px-4 text-[13px] font-bold sm:flex shadow-md"
-        >
-          <Plus size={15} strokeWidth={2.4} /> Nova conversa
-        </button>
+        {view === 'agent' && (
+          <button
+            onClick={onNewChat}
+            className="mvz-btn-grad hidden h-9 items-center gap-1.5 px-4 text-[13px] font-bold sm:flex shadow-md"
+          >
+            <Plus size={15} strokeWidth={2.4} /> Nova conversa
+          </button>
+        )}
         <button className="relative flex h-9 w-9 items-center justify-center rounded-full text-white/70 hover:bg-white/5" aria-label="Notificações">
           <Bell size={17} />
           <span className="absolute right-[9px] top-[8px] h-1.5 w-1.5 rounded-full bg-[var(--mvz-pink)] shadow-[0_0_8px_var(--mvz-pink)]" />

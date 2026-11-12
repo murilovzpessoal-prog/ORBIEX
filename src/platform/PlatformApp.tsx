@@ -164,7 +164,7 @@ export default function PlatformApp() {
             {view === 'scanner' && <ScannerView onUseInAgent={useInAgent} />}
             {view === 'prompts' && <PromptsView onUse={useInAgent} />}
             {view === 'prompt-gen' && <PromptGeneratorView onUseInAgent={useInAgent} onNavigate={navigate} />}
-            {view === 'antirestriction' && <AntiRestrictionView onUseInAgent={useInAgent} />}
+            {view === 'antirestriction' && <AntiRestrictionView />}
             {view === 'headlines' && <HeadlinesView onUse={useInAgent} />}
             {view === 'hooks' && <HooksView onUse={useInAgent} />}
             {view === 'motion' && <MotionExtractorView onUse={useInAgent} />}

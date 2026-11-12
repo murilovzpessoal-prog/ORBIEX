@@ -18,9 +18,9 @@ export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string; desc
     { id: 'pro', name: 'Orbiex 1 Pro Reasoning', desc: 'Raciocínio Profundo & Auditoria Completa' },
   ],
   gemini: [
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Ultrarrápido, suporte multimodal a imagens e gratuito no AI Studio' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Máximo raciocínio lógico e visão computacional avançada' },
-    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash (Experimental)', desc: 'Nova geração experimental do Google' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Ultrarrápido, multimodal e raciocínio de ponta integrado' },
+    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', desc: 'Versão mais recente e estável do Flash' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', desc: 'Máximo raciocínio lógico e visão computacional avançada' },
   ],
   openai: [
     { id: 'gpt-4o-mini', name: 'GPT-4o Mini', desc: 'Rápido, inteligente com suporte a visão e baixo custo' },
@@ -44,7 +44,7 @@ export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string; desc
 export const DEFAULT_AI_CONFIG: AIConfig = {
   provider: 'native',
   apiKey: '',
-  model: 'gemini-1.5-flash',
+  model: 'gemini-2.5-flash',
   temperature: 0.7,
 };
 
@@ -117,7 +117,7 @@ export async function testAIConnection(config: AIConfig): Promise<{ success: boo
 
   try {
     if (config.provider === 'gemini') {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model || 'gemini-1.5-flash'}:generateContent?key=${config.apiKey.trim()}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model || 'gemini-2.5-flash'}:generateContent?key=${config.apiKey.trim()}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -218,7 +218,7 @@ export async function generateAIReply(
 
     try {
       if (config.provider === 'gemini') {
-        const geminiModel = config.model || (mode === 'pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash');
+        const geminiModel = config.model || (mode === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash');
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${config.apiKey.trim()}`;
 
         const contents: any[] = [

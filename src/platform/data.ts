@@ -16,6 +16,7 @@ import {
   Flame,
   ScanEye,
   Compass,
+  ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ export type ViewId =
   | 'hooks'
   | 'prompts'
   | 'prompt-gen'
+  | 'antirestriction'
   | 'automations'
   | 'credits'
   | 'community'
@@ -72,6 +74,7 @@ export const NAV_GROUPS: NavItem[][] = [
 
 export const NAV_FOOTER: NavItem[] = [
   { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles },
+  { id: 'antirestriction', label: 'Antirrestrição', icon: ShieldAlert },
   { id: 'support', label: 'Suporte', icon: LifeBuoy },
   { id: 'help', label: 'Ajuda', icon: CircleHelp },
 ];
@@ -83,6 +86,7 @@ export const VIEW_TITLES: Record<ViewId, string> = {
   agent: 'Agente IA',
   prompts: 'Biblioteca de Prompts',
   'prompt-gen': 'Gerador de Prompts',
+  antirestriction: 'Antirrestrição',
   products: 'Produtos',
   product: 'Score Produto',
   store: 'Score Lojista',
@@ -121,7 +125,6 @@ export const TOOLS: ToolCard[] = [
     icon: Bot,
     tone: 'cyan',
     category: 'Automação',
-    badge: 'Principal',
   },
   {
     id: 'prompts',
@@ -140,7 +143,6 @@ export const TOOLS: ToolCard[] = [
     icon: Package,
     tone: 'amber',
     category: 'Análise',
-    badge: 'Hot',
   },
   {
     id: 'product',
@@ -150,7 +152,6 @@ export const TOOLS: ToolCard[] = [
     icon: Gauge,
     tone: 'pink',
     category: 'Análise',
-    badge: 'Novo',
   },
   {
     id: 'store',
@@ -160,7 +161,6 @@ export const TOOLS: ToolCard[] = [
     icon: Store,
     tone: 'violet',
     category: 'Análise',
-    badge: 'Novo',
   },
   {
     id: 'scanner',
@@ -179,7 +179,6 @@ export const TOOLS: ToolCard[] = [
     icon: Wand2,
     tone: 'amber',
     category: 'Criação',
-    badge: 'Novo',
   },
   {
     id: 'hooks',
@@ -198,7 +197,6 @@ export const TOOLS: ToolCard[] = [
     icon: ScanEye,
     tone: 'amber',
     category: 'Criação',
-    badge: 'Novo',
   },
   {
     id: 'turbo',
@@ -208,7 +206,15 @@ export const TOOLS: ToolCard[] = [
     icon: Flame,
     tone: 'pink',
     category: 'Criação',
-    badge: 'Viral',
+  },
+  {
+    id: 'antirestriction',
+    view: 'antirestriction',
+    title: 'Antirrestrição de Vídeo',
+    desc: 'Scanner visual e auditivo de criativos com veredito direto para evitar bloqueios no TikTok Shop e Meta.',
+    icon: ShieldAlert,
+    tone: 'amber',
+    category: 'Análise',
   },
 ];
 

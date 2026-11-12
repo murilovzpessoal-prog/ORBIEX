@@ -14,6 +14,7 @@ import { StoreScoreView } from './views/StoreScoreView';
 import { ScannerView } from './views/ScannerView';
 import { PromptsView } from './views/PromptsView';
 import { PromptGeneratorView } from './views/PromptGeneratorView';
+import { AntiRestrictionView } from './views/AntiRestrictionView';
 import { HooksView } from './views/HooksView';
 import { HeadlinesView } from './views/HeadlinesView';
 import { MotionExtractorView } from './views/MotionExtractorView';
@@ -38,6 +39,7 @@ const VALID: ViewId[] = [
   'hooks',
   'prompts',
   'prompt-gen',
+  'antirestriction',
   'automations',
   'credits',
   'community',
@@ -162,6 +164,7 @@ export default function PlatformApp() {
             {view === 'scanner' && <ScannerView onUseInAgent={useInAgent} />}
             {view === 'prompts' && <PromptsView onUse={useInAgent} />}
             {view === 'prompt-gen' && <PromptGeneratorView onUseInAgent={useInAgent} onNavigate={navigate} />}
+            {view === 'antirestriction' && <AntiRestrictionView onUseInAgent={useInAgent} />}
             {view === 'headlines' && <HeadlinesView onUse={useInAgent} />}
             {view === 'hooks' && <HooksView onUse={useInAgent} />}
             {view === 'motion' && <MotionExtractorView onUse={useInAgent} />}

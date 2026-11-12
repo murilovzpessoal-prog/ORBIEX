@@ -240,9 +240,39 @@
   animation: mvz-sweep 1.4s ease-in-out infinite;
 }
 
+/* Vertical video scanner laser */
+@keyframes mvz-scan-laser-vertical {
+  0% {
+    top: 2%;
+    opacity: 0.75;
+  }
+  50% {
+    top: 96%;
+    opacity: 1;
+  }
+  100% {
+    top: 2%;
+    opacity: 0.75;
+  }
+}
+
+.mvz-scan-laser-vert {
+  animation: mvz-scan-laser-vertical 2.2s ease-in-out infinite;
+}
+
+@keyframes mvz-radar-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.mvz-radar-spin {
+  animation: mvz-radar-spin 8s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mvz-fade-up, .mvz-msg-in, .mvz-pop, .mvz-float, .mvz-dot, .mvz-cursor, .mvz-shimmer,
-  .mvz-ring-spin, .mvz-orb-live, .mvz-listening, .mvz-think-dot, .mvz-sweep::after {
+  .mvz-ring-spin, .mvz-orb-live, .mvz-listening, .mvz-think-dot, .mvz-sweep::after,
+  .mvz-scan-laser-vert, .mvz-radar-spin {
     animation: none !important;
   }
 }

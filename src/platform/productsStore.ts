@@ -21,11 +21,33 @@ export interface WinningProduct {
   suggestedPrice: string;
   costPrice: string;
   margin: string;
+  commissionRate?: string;
+  commissionAmount?: string;
   angle: string;
   hook: string;
   link: string;
   isCustom?: boolean;
   createdAt?: number;
+}
+
+export function computeAffiliateCommission(priceStr: string, rateStr?: string) {
+  const clean = priceStr.replace(/[^\d,.-]/g, '').replace(',', '.');
+  const price = parseFloat(clean);
+  if (isNaN(price) || price <= 0) {
+    return { rate: '20%', amount: 'R$ 20,00' };
+  }
+  let rateNum = 0.20;
+  if (rateStr) {
+    const parsedRate = parseFloat(rateStr.replace(/[^\d.]/g, ''));
+    if (!isNaN(parsedRate) && parsedRate > 0) {
+      rateNum = parsedRate > 1 ? parsedRate / 100 : parsedRate;
+    }
+  }
+  const amountNum = price * rateNum;
+  return {
+    rate: `${Math.round(rateNum * 100)}%`,
+    amount: `R$ ${amountNum.toFixed(2).replace('.', ',')}`,
+  };
 }
 
 export const BASE_WINNING_PRODUCTS: WinningProduct[] = [
@@ -408,12 +430,15 @@ export function addCustomProduct(data: {
   image: string;
   suggestedPrice?: string;
   costPrice?: string;
+  commissionRate?: string;
   angle?: string;
   hook?: string;
   link?: string;
 }): WinningProduct {
   const custom = getCustomProducts();
   const id = `custom-${Date.now()}`;
+  const price = data.suggestedPrice?.trim() || 'R$ 49,90';
+  const comm = computeAffiliateCommission(price, data.commissionRate || data.costPrice);
   const newProduct: WinningProduct = {
     id,
     name: data.name.trim().toUpperCase(),
@@ -421,9 +446,11 @@ export function addCustomProduct(data: {
     image: data.image.trim(),
     score: 98,
     sales: 'Produto Externo',
-    suggestedPrice: data.suggestedPrice?.trim() || 'R$ 49,90',
+    suggestedPrice: price,
     costPrice: data.costPrice?.trim() || 'R$ 15,00',
     margin: '70%',
+    commissionRate: comm.rate,
+    commissionAmount: comm.amount,
     angle: data.angle?.trim() || 'Visual de alto impacto com apelo imediato no TikTok Shop.',
     hook: data.hook?.trim() || `Você não vai acreditar no caimento dessa peça: ${data.name}!`,
     link: data.link?.trim() || '#',

@@ -6,6 +6,7 @@ import type { ViewId } from '../data';
 import {
   BASE_WINNING_PRODUCTS,
   useProducts,
+  computeAffiliateCommission,
   type WinningProduct,
   type ProductCategory,
 } from '../productsStore';
@@ -40,7 +41,7 @@ export function WinningProductsView({
   const [newProdName, setNewProdName] = useState('');
   const [newProdImage, setNewProdImage] = useState('');
   const [newProdPrice, setNewProdPrice] = useState('R$ 49,90');
-  const [newProdCost, setNewProdCost] = useState('R$ 15,00');
+  const [newProdCost, setNewProdCost] = useState('20%');
   const [newProdCat, setNewProdCat] = useState<string>('Croppeds');
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export function WinningProductsView({
       category: newProdCat,
       image: newProdImage,
       suggestedPrice: newProdPrice,
-      costPrice: newProdCost,
+      commissionRate: newProdCost,
     });
 
     setNewProdName('');
@@ -233,41 +234,52 @@ export function WinningProductsView({
                 </div>
               </div>
 
-              {/* Metrics Grid */}
-              <div className="my-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
-                    Score Orbiex
+              {/* Metrics Grid — Inteligência de Afiliado TikTok Shop */}
+              {(() => {
+                const comm = computeAffiliateCommission(
+                  activeModal.suggestedPrice,
+                  activeModal.commissionRate
+                );
+                const commRate = activeModal.commissionRate || comm.rate;
+                const commAmount = activeModal.commissionAmount || comm.amount;
+
+                return (
+                  <div className="my-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
+                        Score Orbiex
+                      </div>
+                      <div className="mt-1 text-2xl font-black text-[var(--mvz-gold)]">
+                        {activeModal.score}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
+                        Preço no TikTok
+                      </div>
+                      <div className="mt-1 text-lg font-extrabold text-white">
+                        {activeModal.suggestedPrice}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
+                        Comissão Afiliado
+                      </div>
+                      <div className="mt-1 text-2xl font-black text-[var(--mvz-gold)]">
+                        {commRate}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
+                        Lucro por Venda
+                      </div>
+                      <div className="mt-1 text-2xl font-black text-[#7fcf9f]">
+                        {commAmount}
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-1 text-2xl font-black text-[var(--mvz-gold)]">
-                    {activeModal.score}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
-                    Preço Sugerido
-                  </div>
-                  <div className="mt-1 text-lg font-extrabold text-white">
-                    {activeModal.suggestedPrice}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
-                    Custo Fornecedor
-                  </div>
-                  <div className="mt-1 text-lg font-extrabold text-[var(--mvz-muted)]">
-                    {activeModal.costPrice}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-3 text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
-                    Margem Bruta
-                  </div>
-                  <div className="mt-1 text-2xl font-black text-[#7fcf9f]">
-                    {activeModal.margin}
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Angle & Hook section */}
               <div className="space-y-4 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-4">
@@ -411,22 +423,24 @@ export function WinningProductsView({
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-white/80">Preço de Venda</label>
+                    <label className="text-xs font-semibold text-white/80">Preço no TikTok Shop</label>
                     <input
                       type="text"
                       value={newProdPrice}
                       onChange={(e) => setNewProdPrice(e.target.value)}
+                      placeholder="Ex: R$ 89,90"
                       className="mt-1.5 w-full rounded-xl border border-[var(--mvz-line)] bg-black/60 px-3.5 py-2.5 text-sm text-white focus:border-[var(--mvz-gold)] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white/80">Custo Fornecedor (Opcional)</label>
+                  <label className="text-xs font-semibold text-white/80">Comissão de Afiliado (Opcional)</label>
                   <input
                     type="text"
                     value={newProdCost}
                     onChange={(e) => setNewProdCost(e.target.value)}
+                    placeholder="Ex: 20%"
                     className="mt-1.5 w-full rounded-xl border border-[var(--mvz-line)] bg-black/60 px-3.5 py-2.5 text-sm text-white focus:border-[var(--mvz-gold)] focus:outline-none"
                   />
                 </div>

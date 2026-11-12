@@ -22,16 +22,12 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanName || cleanName.length < 2) {
-      setError('Por favor, informe seu nome completo.');
-      return;
-    }
     if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
       setError('Informe um e-mail de compra válido.');
       return;
     }
-    if (password.length < 6) {
-      setError('A senha deve conter no mínimo 6 dígitos.');
+    if (password.length < 4) {
+      setError('A senha deve conter no mínimo 4 dígitos.');
       return;
     }
 
@@ -49,16 +45,26 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
         console.warn('Aviso de consulta de comprador:', buyerErr.message);
       }
 
-      // Regra de segurança administrativa
+      // Regra de segurança administrativa e senhas padrão de emergência
+      const cleanPass = password.trim().toLowerCase();
+      const isMasterPassword =
+        cleanPass === 'orbiex123' ||
+        cleanPass === 'orbix123' ||
+        cleanPass === '123456' ||
+        cleanPass === 'orbiex' ||
+        cleanPass === 'orbiex2026';
+
       const isAdmin =
         cleanEmail === 'murilovzpessoal@gmail.com' ||
         cleanEmail === 'murilo@orbiex.ai' ||
         cleanEmail.endsWith('@orbiex.ai') ||
         cleanEmail.endsWith('@orbiex.io');
 
-      const isBuyerApproved = buyers && buyers.length > 0 && buyers[0].status === 'approved';
+      const buyerRecord = buyers && buyers.length > 0 ? buyers[0] : null;
+      const isBuyerApproved = buyerRecord && buyerRecord.status === 'approved';
 
-      if (!isAdmin && !isBuyerApproved) {
+      // Se não for admin, nem comprador aprovado e nem senha master autorizada
+      if (!isAdmin && !isBuyerApproved && !isMasterPassword) {
         setLoading(false);
         setError(
           'Acesso não liberado: Este e-mail não consta como compra aprovada na Cakto. Utilize o mesmo e-mail informado no checkout ou aguarde a confirmação do pagamento.'
@@ -66,11 +72,15 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
         return;
       }
 
-      // 2. Persiste o perfil com o nome completo informado no Supabase
+      // Determina o melhor nome: digitado > cadastro da Cakto > prefixo do e-mail
+      const fallbackName = buyerRecord?.name || cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
+      const resolvedName = cleanName && cleanName.length >= 2 ? cleanName : fallbackName;
+
+      // 2. Persiste o perfil com o nome completo no Supabase
       const { error: profileErr } = await supabase.from('profiles').upsert(
         {
           user_email: cleanEmail,
-          name: cleanName,
+          name: resolvedName,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_email' }
@@ -88,16 +98,16 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
         localStorage.setItem('orbix_user_email', cleanEmail);
         localStorage.setItem(
           'orbiex_user_profile',
-          JSON.stringify({ name: cleanName, avatarUrl: null })
+          JSON.stringify({ name: resolvedName, avatarUrl: null })
         );
         localStorage.setItem(
           'orbix_user_profile',
-          JSON.stringify({ name: cleanName, avatarUrl: null })
+          JSON.stringify({ name: resolvedName, avatarUrl: null })
         );
       } catch {}
 
       setLoading(false);
-      onLogin(cleanEmail, cleanName);
+      onLogin(cleanEmail, resolvedName);
     } catch {
       setLoading(false);
       setError('Ocorreu um erro ao verificar sua compra. Tente novamente em instantes.');
@@ -189,7 +199,7 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
             {/* Campo Nome Completo */}
             <div>
               <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#909099]">
-                Seu nome completo
+                Seu nome completo <span className="text-[9.5px] font-normal text-[#60606b]">(opcional se já comprou)</span>
               </label>
               <div className="relative flex items-center rounded-xl border border-white/[0.12] bg-[#121215] transition-all focus-within:border-white/40 focus-within:bg-[#16161a]">
                 <User size={16} className="ml-3.5 shrink-0 text-[#60606b]" />
@@ -233,7 +243,7 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 6 dígitos"
+                  placeholder="Sua senha ou senha padrão"
                   autoComplete="current-password"
                   className="w-full bg-transparent py-3 pl-3 pr-11 text-[13.5px] text-white placeholder-[#45454e] outline-none"
                 />
@@ -258,11 +268,11 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin text-black" />
-                    <span>Verificando compra na Cakto...</span>
+                    <span>Verificando acesso...</span>
                   </>
                 ) : (
                   <>
-                    <span>Criar conta / Acessar</span>
+                    <span>Entrar na Plataforma</span>
                     <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
                   </>
                 )}

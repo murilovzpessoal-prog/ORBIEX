@@ -81,14 +81,19 @@ export default function PlatformApp() {
     document.getElementById('mvz-main')?.scrollTo({ top: 0 });
   }, []);
 
-  const handleLogin = useCallback((_email: string) => {
+  const handleLogin = useCallback((email: string, name?: string) => {
     setIsAuthenticated(true);
     try {
       localStorage.setItem('orbiex_auth', 'true');
       localStorage.setItem('orbix_auth', 'true');
+      localStorage.setItem('orbiex_user_email', email);
+      localStorage.setItem('orbix_user_email', email);
+      if (name) {
+        handleSaveProfile({ ...profile, name });
+      }
     } catch {}
     navigate('home');
-  }, [navigate]);
+  }, [navigate, handleSaveProfile, profile]);
 
   const handleLogout = useCallback(() => {
     try {

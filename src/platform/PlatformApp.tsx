@@ -25,9 +25,11 @@ import { CommunityView, CreditsView, HelpView } from './views/MiscViews';
 import { SupportChatView } from './views/SupportChatView';
 import { LoginView } from './views/LoginView';
 import { AccessInstructionsView } from './views/AccessInstructionsView';
+import { MembersView } from './views/MembersView';
 
 const VALID: ViewId[] = [
   'home',
+  'members',
   'agent',
   'journey',
   'products',
@@ -210,6 +212,7 @@ export default function PlatformApp() {
         <main id="mvz-main" className="mvz-scroll flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1280px] p-4 md:p-6">
             {view === 'home' && <HomeView go={navigate} />}
+            {view === 'members' && <MembersView />}
             {view === 'agent' && <AgentView seed={seed} onSeedUsed={clearSeed} startNew={startNew} onStarted={clearStartNew} />}
             {view === 'journey' && <JourneyView onUse={useInAgent} />}
             {view === 'products' && <WinningProductsView onUseInAgent={useInAgent} onNavigate={navigate} />}

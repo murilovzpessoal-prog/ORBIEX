@@ -1,4 +1,4 @@
-import { ArrowRight, Play, TrendingUp, Zap, Sparkles } from 'lucide-react';
+import { ArrowRight, Play, TrendingUp, Zap, Sparkles, GraduationCap } from 'lucide-react';
 import { ACTIVITY, TOOLS, TRENDING, type ViewId } from '../data';
 import { IconBox, Pill, Ring, ScoreBadge, SectionTitle, TONE } from '../ui';
 import { useUserProfile } from '../useUserProfile';
@@ -40,14 +40,17 @@ export function HomeView({ go }: { go: (v: ViewId) => void }) {
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <button onClick={() => go('agent')} className="mvz-btn-white flex h-11 items-center gap-2 px-6 text-[13px]">
-              <Play size={13} fill="currentColor" /> Começar agora
+            <button onClick={() => go('members')} className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-[#d4af37] to-[#aa7b1e] px-6 text-[13px] font-extrabold text-black transition hover:brightness-110 shadow-[0_4px_20px_rgba(212,175,55,0.3)]">
+              <GraduationCap size={15} /> Aulas & Treinamentos
+            </button>
+            <button onClick={() => go('agent')} className="mvz-btn-white flex h-11 items-center gap-2 px-5 text-[13px]">
+              <Play size={13} fill="currentColor" /> Agente IA
             </button>
             <button
               onClick={() => go('products')}
               className="flex h-11 items-center gap-2 rounded-full border border-white/15 px-5 text-[13px] font-semibold text-white/85 transition hover:bg-white/5"
             >
-              Explorar recursos <ArrowRight size={14} />
+              Explorar produtos <ArrowRight size={14} />
             </button>
           </div>
         </div>

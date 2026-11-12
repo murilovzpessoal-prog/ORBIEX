@@ -17,11 +17,13 @@ import {
   ScanEye,
   Compass,
   ShieldAlert,
+  GraduationCap,
   type LucideIcon,
 } from 'lucide-react';
 
 export type ViewId =
   | 'home'
+  | 'members'
   | 'agent'
   | 'journey'
   | 'products'
@@ -54,6 +56,7 @@ export interface NavItem {
 export const NAV_GROUPS: NavItem[][] = [
   [
     { id: 'home', label: 'Início', icon: Home },
+    { id: 'members', label: 'Área de Membros', icon: GraduationCap },
     { id: 'agent', label: 'Agente IA', icon: Bot },
     { id: 'journey', label: 'Minha Jornada', icon: Compass },
     { id: 'products', label: 'Produtos', icon: Package },
@@ -83,6 +86,7 @@ export const ALL_NAV: NavItem[] = [...NAV_GROUPS.flat(), ...NAV_FOOTER];
 
 export const VIEW_TITLES: Record<ViewId, string> = {
   home: 'Início',
+  members: 'Área de Membros',
   agent: 'Agente IA',
   prompts: 'Biblioteca de Prompts',
   'prompt-gen': 'Gerador de Prompts',

@@ -24,6 +24,7 @@ import { AutomationsView } from './views/AutomationsView';
 import { CommunityView, CreditsView, HelpView } from './views/MiscViews';
 import { SupportChatView } from './views/SupportChatView';
 import { LoginView } from './views/LoginView';
+import { AccessInstructionsView } from './views/AccessInstructionsView';
 
 const VALID: ViewId[] = [
   'home',
@@ -72,6 +73,20 @@ export default function PlatformApp() {
   const [startNew, setStartNew] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const [showingInstructions, setShowingInstructions] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const p = window.location.pathname.toLowerCase();
+    const h = window.location.hash.toLowerCase();
+    return (
+      p.includes('acesso') ||
+      p.includes('instrucoes') ||
+      p.includes('boas-vindas') ||
+      h.includes('acesso') ||
+      h.includes('instrucoes') ||
+      h.includes('boas-vindas')
+    );
+  });
+
   // User Profile state with persistence & instant event sync
   const { profile, saveProfile: handleSaveProfile } = useUserProfile();
 
@@ -106,14 +121,31 @@ export default function PlatformApp() {
 
   useEffect(() => {
     const h = () => {
-      if (window.location.hash === '#/login') {
+      const p = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (
+        p.includes('acesso') ||
+        p.includes('instrucoes') ||
+        p.includes('boas-vindas') ||
+        hash.includes('acesso') ||
+        hash.includes('instrucoes') ||
+        hash.includes('boas-vindas')
+      ) {
+        setShowingInstructions(true);
+      } else if (window.location.hash === '#/login') {
+        setShowingInstructions(false);
         setIsAuthenticated(false);
       } else {
+        setShowingInstructions(false);
         setView(fromHash());
       }
     };
     window.addEventListener('hashchange', h);
-    return () => window.removeEventListener('hashchange', h);
+    window.addEventListener('popstate', h);
+    return () => {
+      window.removeEventListener('hashchange', h);
+      window.removeEventListener('popstate', h);
+    };
   }, []);
 
   const useInAgent = useCallback(
@@ -131,6 +163,23 @@ export default function PlatformApp() {
     navigate('agent');
   };
   const clearStartNew = useCallback(() => setStartNew(false), []);
+
+  if (showingInstructions) {
+    return (
+      <AccessInstructionsView
+        onGoToLogin={() => {
+          setShowingInstructions(false);
+          setIsAuthenticated(false);
+          window.location.hash = '#/login';
+          if (window.location.pathname !== '/') {
+            try {
+              window.history.pushState({}, '', '/#/login');
+            } catch {}
+          }
+        }}
+      />
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginView onLogin={handleLogin} />;

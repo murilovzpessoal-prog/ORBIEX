@@ -34,7 +34,7 @@ interface MissionTier {
 }
 
 const BANNER_BG_PRIMARY = '/assets/banner-jornada-novo.jpeg';
-const BANNER_BG_ALT = 'https://i.imgur.com/c4bESBE.jpeg';
+const BANNER_BG_ALT = 'https://i.imgur.com/MIWLyef.jpeg';
 
 const MISSION_TIERS: MissionTier[] = [
   {

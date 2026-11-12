@@ -178,6 +178,7 @@ export async function generateAIReply(
         prompt,
         messages: history.map((h) => ({ role: h.role, content: h.text })),
         attachments: attItems,
+        mode,
         apiKey: config.apiKey || undefined,
         provider: config.provider !== 'native' ? config.provider : undefined,
       }),
@@ -187,12 +188,23 @@ export async function generateAIReply(
       const data = await res.json();
       if (data.success && data.reply) {
         const suggestions = extractSuggestionsFromText(data.reply, prompt);
+        const steps =
+          mode === 'pro'
+            ? [
+                'Ativando núcleo de raciocínio profundo Orbiex Pro...',
+                'Analisando mercado, concorrência e algoritmos do TikTok Shop...',
+                'Estruturando plano estratégico e esteira de alta conversão...',
+                'Revisando diretrizes de segurança contra restrições...',
+                'Concluído com precisão avançada.',
+              ]
+            : [
+                'Conectando ao núcleo de IA Orbiex...',
+                'Processando resposta rápida...',
+                'Concluído.',
+              ];
+
         return {
-          steps: [
-            'Conectando ao núcleo de IA Orbiex...',
-            'Analisando contexto e gerando resposta conversacional...',
-            'Concluído.',
-          ],
+          steps,
           text: data.reply,
           suggestions,
         };

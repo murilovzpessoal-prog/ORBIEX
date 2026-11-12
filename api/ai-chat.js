@@ -40,6 +40,25 @@ E liste os top 5 produtos da lista acima em tópicos compactos com nome, vendas 
 
 const ACTIVE_GEMINI_KEY = Buffer.from('QVEuQWI4Uk42Si1wTmN4ckRRQlU0dzRjbDNxNHgzUGI4aWgwSVRudUFrei1RdXhCYXlsZ1E=', 'base64').toString('utf8');
 
+const PRO_SYSTEM_ADDON = `
+
+MODO ORBIEX 1 PRO ATIVADO (ANÁLISE ESTRATÉGICA AVANÇADA & MENTORIA DE ELITE):
+- O usuário selecionou a inteligência Orbiex 1 Pro para esta análise.
+- A entrega deve ser visivelmente mais aprofundada, completa, estratégica e detalhada, atuando como um mentor executivo de TikTok Shop com IA.
+- Ao estruturar a resposta, inclua:
+  1. Resposta direta à solicitação com embasamento tático e comercial.
+  2. Passo a passo estruturado para aplicação prática imediata.
+  3. Recomendações de esteira de vídeos sem aparecer (indicação de ferramentas de IA como Kling, Flow/VEO ou Midjourney, e ritmo de postagens).
+  4. Protocolo de blindagem contra restrições ou bloqueios no TikTok Shop (o que não fazer e como manter a conta 100% segura).
+  5. Estratégia de tração ou gancho de alta conversão para o carrinho amarelo.
+- Mantenha sempre a linguagem didática e simples (sem jargões incompreensíveis), porém com densidade estratégica e sofisticação profissional.`;
+
+const FAST_SYSTEM_ADDON = `
+
+MODO ORBIEX 1 FAST ATIVADO (RESPOSTA ÁGIL, CONCISA E DIRETA):
+- O usuário está no modo rápido para o dia a dia.
+- Responda em no máximo 3 a 4 tópicos curtos e objetivos, direto ao ponto e sem enrolação.`;
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -58,7 +77,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { messages = [], prompt = '', attachments = [], apiKey: clientApiKey, provider: clientProvider } = req.body || {};
+    const {
+      messages = [],
+      prompt = '',
+      attachments = [],
+      mode = 'fast',
+      apiKey: clientApiKey,
+      provider: clientProvider,
+    } = req.body || {};
+
+    const isPro = mode === 'pro';
+    const effectiveSystemPrompt = DEFAULT_SYSTEM_PROMPT + (isPro ? PRO_SYSTEM_ADDON : FAST_SYSTEM_ADDON);
 
     const userPrompt = prompt || (messages.length > 0 ? messages[messages.length - 1].content || messages[messages.length - 1].text : '');
 
@@ -133,12 +162,12 @@ module.exports = async function handler(req, res) {
             body: JSON.stringify({
               contents: geminiContents,
               systemInstruction: {
-                parts: [{ text: DEFAULT_SYSTEM_PROMPT }],
+                parts: [{ text: effectiveSystemPrompt }],
               },
               generationConfig: {
-                temperature: 0.35,
+                temperature: isPro ? 0.45 : 0.35,
                 thinkingConfig: { thinkingBudget: 0 },
-                maxOutputTokens: 750,
+                maxOutputTokens: isPro ? 1800 : 750,
               },
             }),
           });
@@ -163,7 +192,7 @@ module.exports = async function handler(req, res) {
     if (groqKey && (clientProvider === 'groq' || !clientProvider)) {
       try {
         const groqMessages = [
-          { role: 'system', content: DEFAULT_SYSTEM_PROMPT },
+          { role: 'system', content: effectiveSystemPrompt },
           ...messages.slice(-8).map((m) => ({
             role: m.role === 'agent' ? 'assistant' : m.role,
             content: m.content || m.text,
@@ -179,8 +208,8 @@ module.exports = async function handler(req, res) {
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: groqMessages,
-            temperature: 0.35,
-            max_tokens: 750,
+            temperature: isPro ? 0.45 : 0.35,
+            max_tokens: isPro ? 1800 : 750,
           }),
         });
 
@@ -200,7 +229,7 @@ module.exports = async function handler(req, res) {
     if (openAiKey && (clientProvider === 'openai' || !clientProvider)) {
       try {
         const openAiMessages = [
-          { role: 'system', content: DEFAULT_SYSTEM_PROMPT },
+          { role: 'system', content: effectiveSystemPrompt },
           ...messages.slice(-8).map((m) => ({
             role: m.role === 'agent' ? 'assistant' : m.role,
             content: m.content || m.text,
@@ -214,10 +243,10 @@ module.exports = async function handler(req, res) {
             Authorization: `Bearer ${openAiKey}`,
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: isPro ? 'gpt-4o' : 'gpt-4o-mini',
             messages: openAiMessages,
-            temperature: 0.35,
-            max_tokens: 750,
+            temperature: isPro ? 0.45 : 0.35,
+            max_tokens: isPro ? 1800 : 750,
           }),
         });
 

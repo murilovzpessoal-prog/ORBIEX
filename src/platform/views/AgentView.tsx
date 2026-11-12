@@ -21,13 +21,11 @@ import {
   Video,
   X,
   Zap,
-  Sliders,
   type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Card, AttachmentItem } from '../agentBrain';
-import { generateAIReply, getAIConfig, type AIConfig } from '../aiService';
-import { AISettingsModal } from '../AISettingsModal';
+import { generateAIReply } from '../aiService';
 import { useUserProfile } from '../useUserProfile';
 import { ResultCard, Rich, copyText } from './ChatParts';
 
@@ -62,8 +60,8 @@ interface Chat {
 const STORAGE_KEY = 'orbiex.chats.v1';
 
 const MODELS = [
-  { id: 'fast', name: 'Orbiex 1', desc: 'Rápido para o dia a dia' },
-  { id: 'pro', name: 'Orbiex 1 Pro', desc: 'Raciocínio profundo e mais etapas' },
+  { id: 'fast', name: 'Orbiex 1', desc: 'Rápido, direto e objetivo para o dia a dia' },
+  { id: 'pro', name: 'Orbiex 1 Pro', desc: 'Raciocínio avançado, consultoria e estratégia completa' },
 ] as const;
 
 const COMMANDS: { cmd: string; label: string; template: string; icon: LucideIcon }[] = [
@@ -215,8 +213,6 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
   const [showJump, setShowJump] = useState(false);
   const [slashIdx, setSlashIdx] = useState(0);
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
-  const [aiConfig, setAiConfig] = useState<AIConfig>(getAIConfig);
 
   const handleAddFiles = useCallback((fileList: FileList | File[]) => {
     Array.from(fileList).forEach((file) => {
@@ -662,26 +658,19 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
             )}
           </div>
 
-          {/* Badge & Botão de Configuração de IA */}
-          <button
-            onClick={() => setAiSettingsOpen(true)}
-            className="flex items-center gap-2 rounded-xl border border-[var(--mvz-line)] bg-white/[0.03] px-3 py-1.5 text-[11.5px] font-bold text-white/90 hover:border-[var(--mvz-gold)] hover:bg-[rgba(212,175,55,0.08)] transition group shadow-sm"
-            title="Configurações do Motor de IA (Google Gemini, OpenAI, Groq, DeepSeek ou Nativo)"
-          >
+          {/* Indicador de Status do Motor Orbiex (Sem abrir modal de API externa) */}
+          <div className="flex items-center gap-2 rounded-xl border border-[var(--mvz-line)] bg-white/[0.03] px-3 py-1.5 text-[11.5px] font-bold text-white/90 shadow-sm select-none">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
             </span>
             <span className="hidden sm:inline">
-              {aiConfig.provider === 'native'
-                ? 'IA: Motor Orbiex (Nativo)'
-                : `IA: ${aiConfig.provider.toUpperCase()} (${aiConfig.model})`}
+              {model === 'pro' ? 'Orbiex 1 Pro • Modo Avançado' : 'Motor Orbiex Neural • Ativo'}
             </span>
             <span className="sm:hidden">
-              {aiConfig.provider === 'native' ? 'IA Nativa' : aiConfig.provider.toUpperCase()}
+              {model === 'pro' ? 'Orbiex Pro' : 'Orbiex Neural'}
             </span>
-            <Sliders size={12} className="text-[var(--mvz-gold)] group-hover:rotate-45 transition-transform" />
-          </button>
+          </div>
 
           <span className="hidden min-w-0 flex-1 truncate text-center text-[12.5px] text-[var(--mvz-dim)] sm:block">{chat?.title ?? 'Nova conversa'}</span>
 
@@ -1041,13 +1030,6 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
           </div>
         </div>
       </section>
-
-      {/* Modal de Configuração de IA */}
-      <AISettingsModal
-        open={aiSettingsOpen}
-        onClose={() => setAiSettingsOpen(false)}
-        onConfigSaved={(cfg) => setAiConfig(cfg)}
-      />
     </div>
   );
 }

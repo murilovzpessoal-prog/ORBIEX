@@ -13,13 +13,14 @@ import {
   Mic,
   Plus,
   Send,
-  Sparkles,
-  Terminal,
   Trash2,
   Zap,
   ShieldCheck,
   Camera,
   Activity,
+  Video,
+  Film,
+  Sparkles,
 } from 'lucide-react';
 import type { ViewId } from '../data';
 import { Rich, copyText } from './ChatParts';
@@ -68,21 +69,25 @@ const STORAGE_KEY = 'orbiex_prompt_architect_sessions_v1';
 
 const STARTER_SUGGESTIONS = [
   {
+    icon: Video,
     title: 'Vídeo Viral no Espelho (Moda Fitness)',
     desc: 'Conjunto legging e top mostrando caimento, cós firme e zero transparência.',
     prompt: 'Quero um vídeo vertical no espelho de uma mulher vestindo conjunto fitness vinho, mostrando o caimento, cós alto que não enrola e zero transparência no agachamento.',
   },
   {
+    icon: Camera,
     title: 'Ensaio Editorial Fotográfico de Alta Moda',
     desc: 'Vestido midi canelado em ambiente minimalista com luz natural de janela.',
     prompt: 'Quero uma foto editorial de alta moda com vestido midi elegante em cenário clean, luz natural suave entrando pela janela e textura de tecido realista.',
   },
   {
+    icon: Film,
     title: 'Comercial de Produto em Câmera Lenta',
     desc: 'Animação de câmera cinematográfica destacando acabamentos e costura.',
     prompt: 'Quero um comercial cinematográfico de produto com aproximação suave de câmera, iluminação de estúdio destacando costuras e detalhes de acabamento.',
   },
   {
+    icon: Sparkles,
     title: 'Roteiro UGC com Gancho de 3 Segundos',
     desc: 'Influenciadora provando a peça na prática para vender no TikTok Shop.',
     prompt: 'Quero um roteiro de criativo UGC com influenciadora provando a peça na prática nos primeiros 3 segundos, quebrando a objeção de transparência e chamando para o carrinho.',
@@ -460,9 +465,9 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
         <div className="flex flex-col space-y-4">
           {/* Header da Sidebar */}
           <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--mvz-gold)]/40 bg-black text-[var(--mvz-gold)] shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-                <Terminal size={15} />
+            <div className="flex items-center gap-2.5">
+              <div className="relative shrink-0" style={{ width: 24, height: 24 }}>
+                <div className="mvz-orb absolute inset-0 rounded-full" />
               </div>
               <div>
                 <span className="text-[12.5px] font-black text-white leading-tight block">
@@ -556,48 +561,50 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
           className="mvz-scroll relative flex-1 overflow-y-auto p-4 sm:p-6 space-y-6"
         >
           {empty ? (
-            <div className="my-auto flex flex-col items-center justify-center text-center py-8 sm:py-12 max-w-2xl mx-auto">
-              {/* Ícone de Prompt Studio */}
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--mvz-gold)]/40 bg-black text-[var(--mvz-gold)] shadow-[0_0_25px_rgba(212,175,55,0.25)]">
-                <Sparkles size={24} className="animate-pulse" />
+            <div className="mx-auto flex min-h-full max-w-2xl flex-col items-center justify-center py-6 text-center">
+              <div className="relative mb-7 h-24 w-24">
+                <div className="mvz-orb mvz-orb-live absolute inset-3 rounded-full" />
+                <div className="mvz-ring-spin absolute inset-0 rounded-full" />
               </div>
 
-              <h2 className="text-[22px] font-black tracking-tight text-white sm:text-[28px] leading-tight">
+              <h2 className="text-[28px] font-extrabold leading-tight tracking-tight sm:text-[32px]">
                 {greeting()}, {displayName}.
                 <br />
-                <span className="bg-gradient-to-r from-[#d4af37] via-[#f3e2a4] to-[#eab308] bg-clip-text text-transparent">
-                  Qual prompt de vídeo ou imagem vamos criar?
-                </span>
+                <span className="mvz-grad-text">Qual prompt de vídeo ou imagem vamos criar?</span>
               </h2>
 
-              <p className="mt-2 text-[13px] text-white/50 max-w-lg leading-relaxed">
-                Descreva a sua ideia em linguagem natural ou clique no microfone para falar. Eu vou analisar seu conceito e arquitetar prompts perfeitos com o movimento exato que você deseja.
+              <p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-[var(--mvz-muted)]">
+                Descreva sua visão criativa em linguagem natural ou dite por voz. Eu estruturo prompts cinematográficos com movimentos precisos de câmera para Kling AI, Google Flow, Midjourney e roteiros UGC.
               </p>
 
-              {/* Cards de Inspiração Rápida com 1 clique */}
-              <div className="mt-8 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 text-left">
-                {STARTER_SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.title}
-                    onClick={() => send(s.prompt)}
-                    className="group flex flex-col rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 transition duration-150 hover:border-[var(--mvz-gold)]/40 hover:bg-white/[0.04] cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Zap size={13} className="text-[var(--mvz-gold)] shrink-0" />
-                      <span className="text-[12.5px] font-bold text-white group-hover:text-[var(--mvz-gold-light)] transition truncate">
-                        {s.title}
+              <div className="mt-8 grid w-full gap-3 sm:grid-cols-2 text-left">
+                {STARTER_SUGGESTIONS.map((s) => {
+                  const Icon = s.icon;
+                  return (
+                    <button
+                      key={s.title}
+                      onClick={() => send(s.prompt)}
+                      className="group flex items-start gap-3.5 rounded-xl border border-[var(--mvz-line)] bg-white/[0.02] p-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--mvz-line-strong)] hover:bg-[rgba(212,175,55,0.05)] cursor-pointer"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[rgba(212,175,55,0.08)] border border-[var(--mvz-gold)]/20 text-[var(--mvz-gold)] group-hover:border-[var(--mvz-gold)]/50 group-hover:bg-[rgba(212,175,55,0.15)] transition">
+                        <Icon size={16} />
                       </span>
-                    </div>
-                    <p className="text-[11px] leading-relaxed text-white/50 line-clamp-2">
-                      {s.desc}
-                    </p>
-                  </button>
-                ))}
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-semibold text-white group-hover:text-[var(--mvz-gold-light)] transition">
+                          {s.title}
+                        </span>
+                        <span className="mt-1 block text-[12px] leading-snug text-[var(--mvz-dim)] group-hover:text-[var(--mvz-muted)] line-clamp-2">
+                          {s.desc}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="mt-6 text-[11px] text-white/30">
-                Digite sua ideia abaixo com o movimento que deseja ver no vídeo.
-              </div>
+              <p className="mt-6 text-[11.5px] text-[var(--mvz-dim)]">
+                Dica: mencione o movimento da câmera, ângulo e caimento do tecido para calibração ultra-realista
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -613,8 +620,8 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
                   </div>
                 ) : (
                   <div key={m.id} className="mvz-msg-in flex items-start gap-3.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--mvz-gold)] bg-black text-[var(--mvz-gold)] shadow-[0_0_15px_rgba(212,175,55,0.25)]">
-                      <Terminal size={16} />
+                    <div className="relative shrink-0 mt-1" style={{ width: 32, height: 32 }}>
+                      <div className="mvz-orb absolute inset-[2px] rounded-full" style={{ boxShadow: '0 0 12px rgba(212,175,55,0.45)' }} />
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-4">

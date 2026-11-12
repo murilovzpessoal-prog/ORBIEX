@@ -1,0 +1,1511 @@
+[
+  {
+    "id": "prompt-1",
+    "title": "TRANSIÇÃO-MÃO NA CÂMERA",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/CNIIL6R.mp4",
+    "description": "Transição dinâmica tapando a câmera com a mão para trocar de look de forma fluida.",
+    "prompt": "START OF ANIMATION: The subject starts standing naturally at a comfortable distance from the camera. She calmly takes two small natural steps forward toward the camera with relaxed posture, soft feminine body sway and realistic timing. While approaching: she lightly touches or adjusts a visible clothing detail naturally and casually. The movement must feel spontaneous and realistic. No exaggerated posing. No runway behavior. No robotic timing. As she gets closer to the camera: the subject softly smiles and naturally raises one hand toward the lens. The hand slowly moves closer until it softly covers the entire camera view for a smooth transition effect. IMPORTANT: – The hand movement must feel calm and natural – No aggressive motion – No fast movement – No hard impact on the lens – Smooth realistic pacing only After covering the camera briefly: the subject naturally steps backward again to a comfortable distance with relaxed body flow. As she returns backward: one hand gradually moves to the waist naturally. At the final position: the subject slightly shifts her hip, softly lifts one leg forward in a feminine relaxed pose, keeps one hand on the waist, and gives a warm natural smile. GENERAL MOTION: Natural fluid movement. Continuous body micro-adjustments. Relaxed shoulders. Gentle hip sway. Real human timing. No stiff motion. FACIAL EXPRESSION: Soft neutral expression most of the time. Subtle natural smiles. No frozen smile. No exaggerated facial tension. BODY LANGUAGE: Natural posture. Soft feminine energy. No dancing. No exaggerated influencer posing. CAMERA: Stable casual phone-style recording. Very subtle handheld micro-movement only. No zoom. No camera shake. Chest-height framing. REALISM: Preserve original identity. Natural skin texture. Natural hair movement. Natural fabric physics. No beauty filters. No smoothing. No stylization. RESTRICTIONS: No talking. No text. No UI. No effects. No exaggerated movement. No robotic motion. FINAL RESULT: A hyper-realistic casual fashion transition video where the subject naturally walks toward the camera, softly covers the lens with one hand for a transition, then steps back into a relaxed feminine final pose.",
+    "tags": [
+      "Animações",
+      "Trocas"
+    ]
+  },
+  {
+    "id": "prompt-2",
+    "title": "ANIMAÇÃO BASE NATURAL",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/4w60I4R.mp4",
+    "description": "Movimentos corporais calmos e poses naturais em plano médio para transmitir leveza.",
+    "prompt": "{  \"animation_style\": \"realistic_fashion_presentation\",  \"camera\": {    \"fixed\": true,    \"no_zoom\": true,    \"no_reframe\": true  },  \"motion\": {    \"type\": \"continuous\",    \"speed\": \"natural_slightly_fast\",    \"no_pause\": true,    \"no_freeze\": true  },  \"position\": {    \"stay_near_same_spot\": true,    \"small_natural_steps\": true,    \"no_large_movement\": true  },  \"sequence\": {    \"start\": \"facing_camera\",    \"action\": {      \"type\": \"natural_flow\",      \"description\": \"subject keeps moving naturally all the time\"    },    \"fabric\": {      \"type\": \"light_touch\",      \"area\": \"clothing\",      \"no_pull\": true    },    \"movement\": {      \"type\": \"small_side_shift\",      \"max_angle\": \"10_degrees\",      \"no_turn\": true,      \"no_spin\": true,      \"no_360\": true    }  },  \"body\": {    \"hip\": \"subtle_continuous\",    \"weight\": \"always_shifting\",    x\"no_static\": true  },  \"face\": {    \"expression\": \"natural\",    \"smile\": \"brief_subtle\",    \"no_constant\": true  },  \"rules\": {    \"no_rotation\": true,    \"no_360\": true,    \"no_freeze\": true,    \"no_exaggeration\": true  },  \"final\": \"natural continuous movement, no rotation, no freeze\"}",
+    "tags": [
+      "Animações",
+      "One Prompt"
+    ]
+  },
+  {
+    "id": "prompt-3",
+    "title": "ANIMAÇÃO ESPONTANEA",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/cUx5cQP.mp4",
+    "description": "Gestos e sorrisos espontâneos capturados de forma autêntica durante a gravação.",
+    "prompt": "Animate the influencer as a naturally happy and confident fashion model genuinely enjoying the outfit she is wearing.\nThe character must remain the EXACT same person from the original image.\nPreserve 100%:\n– face\n– body\n– hair\n– makeup\n– outfit\n– camera angle\n– lighting\n– background\n– framing\n– environment\nDO NOT modify the clothing design, colors, proportions, or fit.\nDO NOT change the original scenario or create new elements.\nANIMATION:\nThe influencer performs subtle, spontaneous, and natural movements while happily presenting the outfit.\nShe smiles naturally, showing authentic enjoyment and confidence with the clothing.\nHer movements should feel effortless and realistic, like a real influencer casually recording content for social media or a fashion brand campaign.\nInclude:\n– subtle body sway\n– relaxed posture adjustments\n– soft hand movements interacting naturally with the outfit\n– small playful movements\n– natural blinking\n– realistic breathing\n– genuine happy facial expressions\n– subtle hair movement\n– light shoulder and hip motion\nThe animation must feel:\n– spontaneous\n– elegant\n– feminine\n– confident\n– premium\n– socially natural\nAvoid exaggerated dancing, overacting, or unrealistic movements.\nAvoid dramatic posing.\nEverything should feel organic, smooth, and believable.\nMaintain realistic fabric physics and natural cloth movement during all body motion.\nUltra realistic motion, cinematic fashion commercial quality, premium influencer aesthetic, smooth natural movement, authentic happy energy, realistic human behavior.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-4",
+    "title": "DESTAQUE NOS DETALHES DA ROUPA",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/RfvN32v.mp4",
+    "description": "Close-up focado nas texturas, caimento e detalhes de costura e tecido da peça.",
+    "prompt": "Ultra-realistic fashion showcase video focused on clothing details. The woman starts standing naturally while the camera captures a full-body view of the entire outfit. She then slowly walks toward the camera with smooth, confident, and natural movement, allowing the clothing to become increasingly visible.\nAs she approaches, the camera gradually reveals detailed views of the outfit, including the fabric texture, stitching, seams, buttons, zippers, patterns, sleeves, collar, pockets, waist fit, and overall construction. The woman occasionally makes subtle movements such as lightly touching the fabric, adjusting a sleeve, smoothing the clothing with her hand, or slightly turning her body to reveal different angles of the outfit.\nThe camera behaves like a professional fashion videographer, carefully highlighting the quality, texture, fit, and craftsmanship of the clothing. The outfit remains the primary focus throughout the video. The fabric responds naturally to movement, showing realistic folds, draping, and material behavior.\nNatural human motion, realistic anatomy, authentic facial expressions, realistic skin texture, highly detailed clothing textures, luxury fashion campaign quality, cinematic camera work, soft natural lighting, shallow depth of field, professional fashion advertisement style, ultra-photorealistic, premium social media fashion content. No robotic movement, no exaggerated gestures, no fast motion.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-5",
+    "title": "SEQUÊNCIA DE POSSES",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/N2aZ4hs.mp4",
+    "description": "Cortes rápidos mostrando diferentes poses e ângulos do look de forma dinâmica.",
+    "prompt": "Ultra-realistic fashion showcase video. The woman remains standing in the same position while smoothly transitioning through a series of elegant fashion poses. She begins with a relaxed stance, then gently places one hand on her waist. After a brief pause, she subtly shifts her weight onto one leg, creating a natural and flattering silhouette. She then softly runs her hand through her hair, turns slightly to reveal her side profile, glances over her shoulder, and finally faces the camera with a confident, natural expression.\nEach pose transition is slow, fluid, and realistic, with no abrupt movements or unnatural body positions. The sequence should feel like a professional fashion photoshoot coming to life. Every pose is designed to highlight different angles of the outfit, including the front, side, and silhouette of the clothing.\nThe fabric responds naturally to every movement, showing realistic folds, draping, texture, and motion. Hair movement follows realistic physics. Maintain natural human anatomy, authentic facial expressions, and subtle body language. No robotic behavior, no exaggerated model poses, and no sudden gestures.\nThe camera remains steady in a full-body shot throughout the entire sequence, ensuring the complete outfit stays visible at all times. Professional fashion campaign quality, realistic skin texture, authentic facial details, soft natural lighting, cinematic depth of field, ultra-detailed clothing textures, luxury lifestyle aesthetic, highly photorealistic, premium social media fashion content, smooth and elegant movement.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-6",
+    "title": "APROXIMAÇÃO DA CÂMERA",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/GFf7KRA.mp4",
+    "description": "Movimento de aproximação focado na expressão facial ou detalhes superiores do visual.",
+    "prompt": "Ultra-realistic fashion showcase video. The woman stands confidently in a relaxed and natural pose while the camera begins at a distance, capturing her full body and entire outfit. A slow, smooth cinematic push-in gradually brings the camera closer, creating an elegant and premium fashion campaign effect.\nAs the camera moves forward, she performs subtle and realistic pose adjustments. She gently shifts her weight from one leg to the other, lightly places a hand on her waist, softly adjusts her hair, and makes small natural changes in posture. Every movement is refined, effortless, and realistic, designed to showcase the outfit without distracting from it.\nThe outfit remains the center of attention throughout the sequence. The fabric reacts naturally to movement, displaying realistic folds, texture, draping, and weight. Hair movement follows realistic physics. Maintain authentic facial expressions, realistic anatomy, and smooth human motion. No robotic behavior, no exaggerated gestures, and no sudden movements.\nThe camera movement is extremely smooth and professional, maintaining focus on the outfit while preserving a luxurious fashion-shoot aesthetic. Full-body framing at the beginning, gradually transitioning to a slightly closer view while keeping most of the outfit visible. Soft natural lighting, realistic skin texture, cinematic depth of field, ultra-detailed clothing textures, luxury lifestyle aesthetic, highly photorealistic, premium social media fashion content, fashion advertisement quality, natural motion blur, realistic camera operation.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-7",
+    "title": "Modelo perto da câmera, por acaso, diversificando posses e mostrando detalhes da roupa",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/VzhglCl.mp4",
+    "description": "Enquadramento fechado e casual focando nas peças de roupa e nos movimentos casuais.",
+    "prompt": "Ultra-realistic vertical smartphone selfie video recorded indoors in a bedroom or bathroom environment with indoor home lighting and a visible realistic shadow on the wall behind the person.\nThe camera is static, front camera perspective, vertical 9:16, medium close-up framing (head to waist), like a real Instagram Story or TikTok selfie video.\nThe camera does not move at any moment. Only the person moves.\nThe person starts standing a few steps away from the camera, looking at the camera with a natural and charismatic expression.\nThe person makes small natural movements such as blinking, breathing, and subtle posture adjustments.\nThen the person slowly walks towards the camera with natural steps.\nHair and clothing move naturally according to body movement.\nWhen the person gets closer to the camera, the person gently pulls one clothing strap slightly to the side using one hand.\nThe movement must be subtle and natural, showing the elasticity and movement of the fabric.\nThe fabric stretches slightly and then naturally returns to the body when released.\nAfter releasing the strap, the person smiles naturally and shifts body weight to one side and places one hand on the waist, making a confident and natural pose like a social media outfit video.\nThe person slightly tilts the head and holds the pose for a moment.\nThen the person relaxes the pose and naturally walks back to the original position, returning to the starting spot.\nThe lighting remains constant and realistic, and the shadow on the wall behind moves naturally according to the body movement.\nAll movements must be smooth, natural, casual, and realistic.\nThe movement must not look robotic, exaggerated, or artificial.\nSmartphone video look, Instagram Story style, TikTok selfie video style, natural indoor lighting, realistic shadows, realistic skin texture, realistic fabric texture, realistic fabric physics, photorealistic video, no cinematic effects, no filters, no studio lighting, must look like a real influencer selfie video recorded at home.",
+    "tags": [
+      "Animações",
+      "Influenciadoras"
+    ]
+  },
+  {
+    "id": "prompt-8",
+    "title": "MOVIMENTO SINCRONIZADO",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/T32omev.mp4",
+    "description": "Movimentos corporais compassados exatamente no ritmo e batida do áudio musical.",
+    "prompt": "{\"version\": \"3.1\",\"aspectRatio\": \"9:16\",\"durationSeconds\": 8,\"seed\": 12345,\"subjectRef\": \"usar a imagem enviada como âncora de identidade, mantendo exatamente as mesmas feições, tom de pele\"referenceStyle\": \"realismo cinematográfico natural, apresentação de moda com movimento corporal suave\",\"negativePrompt\": \"sem falas, sem áudio vocal, sem movimento labial, sem texto na tela, sem logos, sem marcas d’ág\"safety\": {\"allowMinorViolence\": false,\"allowNudity\": false},\"shots\": [{\"scene\": \"ambiente interno residencial com moldura de madeira e iluminação quente natural\",\"action\": \"ela permanece no mesmo lugar e inicia uma rotação corporal lenta e natural. Primeiro vira levemente\"camera\": \"fixa; 50mm; 24fps; sem movimento de câmera; foco contínuo; profundidade de campo leve\",\"lighting\": \"luz quente lateral suave com preenchimento frontal; iluminação constante sem variação\",\"environment\": \"fundo levemente desfocado; movimento natural do cabelo acompanhando o giro; sem distorções; se}],\"motionControl\": {\"rotation_speed\": \"slow\",\"rotation_style\": \"segmented_smooth_turn\",\"no_fast_spin\": true,\"no_instant_360\": true},\"rules\": {\"stay_in_same_position\": true,\"no_forward_movement\": true,\"no_backward_movement\": true,\"no_fast_rotation\": true,\"must_be_slow_turn\": true,\"preserve_identity\": true",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-9",
+    "title": "Giro Lento de Lado com 360 Controlado",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/ZL2p5UK.mp4",
+    "description": "Giro completo em velocidade constante para mostrar todo o caimento da peça.",
+    "prompt": "{\n\"version\": \"3.1\",\n\"aspectRatio\": \"9:16\",\n\"durationSeconds\": 8,\n\"seed\": 12345,\n\"subjectRef\": \"usar a imagem enviada como âncora de identidade, mantendo exatamente as mesmas feições, tom de pele\n\"referenceStyle\": \"realismo cinematográfico natural, apresentação de moda com movimento corporal suave\",\n\"negativePrompt\": \"sem falas, sem áudio vocal, sem movimento labial, sem texto na tela, sem logos, sem marcas d’ág\n\"safety\": {\n\"allowMinorViolence\": false,\n\"allowNudity\": false\n},\n\"shots\": [\n{\n\"scene\": \"ambiente interno residencial com moldura de madeira e iluminação quente natural\",\n\"action\": \"ela permanece no mesmo lugar e inicia uma rotação corporal lenta e natural. Primeiro vira levemente\n\"camera\": \"fixa; 50mm; 24fps; sem movimento de câmera; foco contínuo; profundidade de campo leve\",\n\"lighting\": \"luz quente lateral suave com preenchimento frontal; iluminação constante sem variação\",\n\"environment\": \"fundo levemente desfocado; movimento natural do cabelo acompanhando o giro; sem distorções; se\n}\n],\n\"motionControl\": {\n\"rotation_speed\": \"slow\",\n\"rotation_style\": \"segmented_smooth_turn\",\n\"no_fast_spin\": true,\n\"no_instant_360\": true\n},\n\"rules\": {\n\"stay_in_same_position\": true,\n\"no_forward_movement\": true,\n\"no_backward_movement\": true,\n\"no_fast_rotation\": true,\n\"must_be_slow_turn\": true,\n\"preserve_identity\": true",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-10",
+    "title": "MOVIMENTO LEVE + MÃO NA CINTURA (SEM GIRO)",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/dORzEyN.mp4",
+    "description": "Pose elegante de mãos na cintura com oscilação sutil de corpo em plano médio.",
+    "prompt": "{\n\"animation_style\": \"realistic_fashion_presentation\",\n\"camera\": {\n\"fixed\": true,\n\"no_zoom\": true,\n\"no_reframe\": true\n},\n\"motion\": {\n\"type\": \"continuous_natural_flow\",\n\"speed\": \"natural_slightly_fast\",\n\"no_pause\": true,\n\"no_freeze\": true,\n\"avoid_robotic_timing\": true,\n\"keep_body_alive\": true\n},\n\"position\": {\n\"stay_near_same_spot\": true,\n\"small_natural_steps\": true,\n\"short_forward_shift\": true,\n\"short_side_shift\": true,\n\"no_large_movement\": true\n},\n\"sequence\": {\n\"start\": \"facing_camera\",\n\"action_1\": {\n\"type\": \"active_natural_body_flow\",\n\"description\": \"subject moves naturally all the time with visible but controlled body movement, not slow, not stiff\"\n},\n\"action_2\": {\n\"type\": \"hand_to_waist\",\n\"style\": \"relaxed\",\n\"hand\": \"one_hand_on_hip\",\n\"details\": \"hand naturally goes to waist without posing too hard\"\n},\n\"action_3\": {\n\"type\": \"small_side_shift\",\n\"intensity\": \"medium_light\",\n\"details\": \"noticeable natural shift to one side without turning the body\"\n},\n\"action_4\": {\n\"type\": \"small_forward_shift\",\n\"intensity\": \"medium_light\",\n\"details\": \"small natural movement slightly forward, visible but not exaggerated\"\n},\n\"action_5\": {\n\"type\": \"hip_weight_shift\",\n\"style\": \"natural_active\",\n\"details\": \"natural hip and weight shift with more energy, not dancing, no repeated rhythm\"\n},\n\"action_6\": {\n\"type\": \"single_shoulder_lift\",\n\"style\": \"soft_natural_active\",\n\"details\": \"one shoulder lifts and relaxes naturally with slightly more energy\"\n},\n\"fabric\": {\n\"type\": \"light_touch\",\n\"area\": \"clothing\",\n\"no_pull\": true\n},\n\"movement\": {\n\"type\": \"continuous_natural_adjustments\",\n\"max_angle\": \"10_degrees\",\n\"no_turn\": true,\n\"no_spin\": true,\n\"no_360\": true\n}\n},\n\"body\": {\n\"hip\": \"active_subtle_continuous\",\n\"weight\": \"always_shifting_naturally\",\n\"posture\": \"relaxed_confident\",\n\"no_static\": true,\n\"no_dance\": true,\n\"no_stiff_pose\": true\n},\n\"face\": {\n\"expression\": \"natural\",\n\"smile\": \"brief_subtle\",\n\"no_constant\": true\n},\n\"rules\": {\n\"no_rotation\": true,\n\"no_360\": true,\n\"no_spin\": true,\n\"no_freeze\": true,\n\"no_exaggeration\": true,\n\"no_robotic_motion\": true,\n\"no_slow_motion\": true\n},\n\"final\": \"active natural movement, slightly faster body flow, visible small side and forward shifts, subtle hip and shoulder motion, no rotation, no dance, no freeze\"\n}",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-11",
+    "title": "MOVIMENTOS CONJUNTO",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/eOL0EK3.mp4",
+    "description": "Sequência de gestos de mãos encadeados criando uma coreografia simples de transição.",
+    "prompt": "Animate the subject as a REAL person presenting clothing in a POV-style video.\n⸻\n🔥 START OF ANIMATION (HOOK + HAIR + CTA FLOW):\n– The subject starts at a natural distance from the camera\n– She calmly takes two small natural steps forward toward the camera\n– While approaching, she gently touches and lightly holds a small fabric detail on the outfit\n– The gesture is delicate, subtle and realistic, like naturally showing the clothing quality\n– No emphasis\n– No exaggerated posing\n– No dramatic movement\n– After briefly touching the fabric:\n• She naturally releases it\n• Keeps her body moving subtly and continuously\n• Small natural torso adjustments\n• Gentle hip movement\n• Relaxed confident posture\n⸻\n💫 NATURAL HAIR MOVEMENT:\n– While her body continues moving naturally:\n• She raises one hand toward the hair\n• Runs her fingers softly through the hair\n• Light natural hair toss\n• Movement lasts around one second\n• Hair movement and body movement happen together continuously\n• No freezing between actions\n• No robotic timing\n• No exaggerated influencer behavior\n– After touching the hair:\n• Her hand naturally lowers again\n• She maintains subtle relaxed body movement\n⸻\n🔥 FINAL CTA ACTION:\n– At the end of the video:\n• The subject naturally walks slightly closer toward the camera\n• She gives a warm genuine smile\n• Slight natural head tilt to one side\n• She casually raises one hand\n• Makes a brief downward pointing gesture with the index finger\n• Gesture feels spontaneous and human\n• No frozen pose\n• No aggressive CTA movement\n– The smile appears strongest ONLY during the pointing moment\n– Natural cheek movement\n– Soft confident eye contact\n– After pointing:\n• The smile relaxes naturally\n⸻\nGENERAL MOTION STYLE:\n– Natural\n– Fluid\n– Relaxed\n– Real human timing\n– Slightly active body motion\n– No static posing\n– No robotic movement\n– No exaggerated dancing\n⸻\nBODY MOVEMENTS:\n– One hand naturally near the waist during idle moments\n– Gentle subtle hip sway\n– Natural posture\n– Relaxed shoulders\n– Slight weight shifting between legs\n– Small natural torso rotations to show fabric movement\n⸻\nFACIAL EXPRESSIONS:\n– Expressions change naturally during the video\n– Neutral expression during most moments\n– Brief soft smiles appearing naturally\n– No constant grin\n– No frozen smile\n– No exaggerated facial tension\n⸻\nCAMERA & POV:\n– POV smartphone perspective\n– Subtle handheld micro movement\n– Stable framing\n– No zoom\n– No sudden camera shake\n– Camera remains at chest/face height\n⸻\nREALISM RULES:\n– Preserve original facial identity\n– Preserve natural skin texture\n– Natural hair physics\n– Natural fabric physics\n– Realistic lighting and shadows\n– No beauty filters\n– No smoothing\n– No CGI look\n– No stylization\n⸻\nRESTRICTIONS:\n– No talking\n– No text\n– No UI\n– No effects\n– No exaggerated posing\n– No dance choreography\n– No influencer clichés\n⸻\nFINAL RESULT:\nA hyper-realistic POV fashion video where the subject naturally presents the outfit, softly touches the fabric, casually moves the hair while continuously moving her body, and finishes with a warm smile while pointing downward naturally — fully human, subtle and indistinguishable from a real TikTok recording.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-12",
+    "title": "ENCOMENDA-CAIXA",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/yom7LMC.mp4",
+    "description": "Unboxing visual ou exibição criativa da embalagem e chegada do produto.",
+    "prompt": "A realistic female influencer stands indoors holding a small shipping package with both hands. The entire video is completely silent. She never speaks, never opens her mouth to talk, and makes no narration. Natural neutral facial expression throughout the scene.\nThe video starts with the package very close to the camera lens. She slowly moves it away from the camera, revealing herself while keeping the package as the main focus. She carefully rotates the package, showing the front, back, sides, corners, shipping label and texture. She brings the package close to the lens multiple times to display details.\nAfter presenting the package, she begins a slow and realistic unboxing process. Natural hand movements, realistic finger interaction, authentic body language, subtle posture adjustments, relaxed breathing motion. No exaggerated reactions. No pointing at the camera. No speaking. No lip movement. No presentation gestures.\nHandheld smartphone camera aesthetic, slight camera shake, realistic autofocus adjustments, subtle motion blur, compression artifacts, light camera grain, natural lighting, soft shadows, visible skin texture, pores, loose hair strands, realistic imperfections, organic colors, documentary-style realism.\nUser-generated content (UGC), casual creator footage, authentic social media unboxing, cinematic realism, vertical 9:16 format, realistic depth of field, highly detailed, natural movement, no AI artifacts, no robotic behavior, no hyper-perfect rendering.\nThe package remains visible and receives continuous attention during the entire sequence. Focus on authentic silent unboxing behavior.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-13",
+    "title": "ENOMENDA- LOJA TIKTOK",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/NCDmyxJ.mp4",
+    "description": "Apresentação de recebido com foco na facilidade de compra pela loja integrada.",
+    "prompt": "A realistic female influencer stands indoors holding a sealed plastic shipping mailer package (polymailer) with both hands. The package looks like a typical TikTok Shop, Shopee, Temu or online shopping delivery bag. The entire video is completely silent. No speaking, no narration, no lip movement.\nThe video begins with the plastic package very close to the camera lens. She slowly pulls it back, revealing herself while keeping the package as the main focus. She naturally squeezes the package to show its texture, rotates it slowly, displays the front, back, shipping label, corners and details.\nShe carefully tears open the plastic packaging using her hands, creating realistic movements and natural anticipation. She gradually removes the product from inside the mailer while keeping it visible to the camera. The product reveal feels authentic and unforced.\nNatural hand movements, realistic finger interaction, subtle breathing motion, relaxed posture, neutral facial expression, organic body language. Handheld smartphone camera aesthetic, slight camera shake, realistic autofocus shifts, light motion blur, compression artifacts, visible skin texture, pores, loose hair strands, natural lighting, soft shadows, documentary-style realism.\nUGC content, social media creator footage, casual home environment, authentic online shopping unboxing, vertical 9:16 format, realistic depth of field, cinematic realism, highly detailed, no AI artifacts, no robotic motion, no exaggerated reactions, no hyper-perfect rendering.\nFocus on the package opening process, the texture of the plastic mailer, and the realistic product reveal. Silent unboxing only.",
+    "tags": [
+      "Animações",
+      "YouTube Create"
+    ]
+  },
+  {
+    "id": "prompt-14",
+    "title": "CTA 1",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/qgGBGs2.mp4",
+    "description": "Chamada para ação focada em engajamento de comentários ou link na bio.",
+    "prompt": "Animate the subject as a REAL person presenting clothing in a POV-style video.\n⸻\n🔥 START OF ANIMATION (UPDATED FOR THIS OUTFIT):\n– The subject starts very close to the camera\n– She makes a small, natural adjustment to the outfit:\n• A subtle touch near the waistline or skirt area\n• OR a light adjustment on the side of the top\n– The gesture is casual and realistic, like preparing before recording\n– No chest pulling\n– No emphasis\n– No posing\n– After this quick adjustment, she naturally steps back into a comfortable position\n– Smooth transition into the rest of the animation\n⸻\nGENERAL MOTION STYLE:\n– Natural, confident, fluid movements\n– Not static\n– Not exaggerated\n– Not robotic\n– Real human timing\n⸻\nBODY MOVEMENTS:\n– One hand naturally rests on the waist\n– Gentle hip movement (side-to-side, very subtle)\n– One foot slightly forward, highlighting the skirt slit\n– The other foot relaxed behind\n– Natural posture, relaxed shoulders\n⸻\nCLOTHING PRESENTATION (TOP + SKIRT):\n– Small, natural movements to highlight the outfit\n– Subtle leg positioning to show the skirt slit naturally\n– Slight torso rotation to show fit and fabric\n– No aggressive posing\n– No runway-style movement\n– Movements feel spontaneous and casual\n⸻\nFACIAL EXPRESSION (VERY IMPORTANT – CTA TIMING):\n– The subject does NOT smile continuously\n– Facial expression changes naturally throughout the video\n– During most of the presentation:\n• Neutral, relaxed expression\n• Lips softly closed\n• Calm, confident face\n• Natural eye contact\n• No smile held for long periods\n– Occasionally:\n• A very brief, subtle smile appears\n• Smile is soft and quickly fades\n• No exaggerated cheek movement\n• No frozen smile\n⸻\nFINAL NATURAL ACTION (END OF VIDEO):\n– At the very end of the video\n– The subject walks normally toward the camera\n– Movement feels casual, like approaching to stop recording\n– No rush\n– No posing\n– As she gets close to the camera:\n• She casually raises one hand\n• Makes a simple, brief downward pointing gesture with the index finger\n• The gesture is relaxed and natural\n• No holding the pose\n– EXACT SMILE TIMING:\n• The smile opens ONLY at this moment\n• A warm, genuine smile appears\n• She slightly turns her face to one side while smiling\n• Natural cheek movement\n• Smile feels spontaneous and human\n• After the gesture, the smile naturally relaxes\n⸻\nPERSONALITY:\n– Sympathetic\n– Approachable\n– Comfortable\n– Feels like a real person casually recording a video at home\n⸻\nCAMERA & POV:\n– POV perspective, as if the phone is held or placed naturally\n– Very subtle handheld micro-movements\n– No camera shake\n– No zoom\n– Camera remains at chest/face height\n⸻\nTIMING:\n– Movements are continuous\n– No freezing\n– No looping poses\n– Smooth transitions between gestures\n⸻\nREALISM RULES:\n– Preserve original facial identity\n– Preserve skin texture\n– Preserve hair movement (slight natural motion)\n– Natural fabric physics for both top and skirt\n– No beauty filters\n– No smoothing\n– No stylization\n⸻\nRESTRICTIONS:\n– No talking\n– No text\n– No UI\n– No effects\n– No exaggerated dance\n– No influencer posing clichés\n⸻\nFINAL RESULT:\nA hyper-realistic POV fashion video with natural facial expression changes, neutral moments throughout, and a genuine smile appearing only at the final moment while approaching the camera and pointing downward — subtle, human and indistinguishable from a real TikTok recording.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-15",
+    "title": "CTA 2",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/gEnjKAo.mp4",
+    "description": "Chamada para ação focada em salvamento do vídeo ou compartilhamento rápido.",
+    "prompt": "{  \"version\": \"3.1\",  \"aspectRatio\": \"9:16\",  \"durationSeconds\": 8,  \"seed\": 12345,  \"subjectRef\": \"usar a imagem enviada como âncora de identidade, mantendo exatamente as mesmas feições, tom de pele, cor de cabelo, mesma cor, mesma textura, mesmo volume e mesmo comprimento durante TODO o vídeo, sem qualquer alteração em nenhum momento\",  \"referenceStyle\": \"realismo cinematográfico natural, interação direta com a câmera estilo gravação em celular\",  \"negativePrompt\": \"sem falas, sem áudio vocal, sem movimento labial articulando palavras, sem legendas, sem texto na tela, sem logos, sem marcas d’água, sem deformações corporais, sem dedos extras, sem distorção de mãos, sem artefatos de IA, sem mudança de cor do cabelo, sem mudança de textura do cabelo, sem mudança de estilo do cabelo, sem alteração de iluminação que modifique a cor do cabelo\",  \"safety\": {     \"allowMinorViolence\": false,     \"allowNudity\": false   },  \"shots\": [    {      \"scene\": \"ambiente interno residencial com moldura de madeira e iluminação quente natural\",      \"action\": \"ela dá um passo natural para frente, inclina o tronco entre 30 e 40 graus em direção à câmera, mantém contato visual constante com um sorriso cativante e vendedor durante toda a cena. Sem falar absolutamente nada e sem articular palavras com os lábios. Ela levanta a mão direita e posiciona o dedo indicador claramente apontado para baixo (direção inferior da tela, não para a lente). O gesto é intencional e expressivo, realizando um leve movimento repetido de cima para baixo com o dedo indicador, como uma chamada visual para ação. O sorriso permanece natural, envolvente e confiante do início ao fim. O cabelo permanece visualmente idêntico durante toda a ação, sem qualquer alteração de cor, brilho, forma ou volume.\",      \"camera\": \"dolly-in sutil acompanhando o passo; 50mm; 24fps; 1/120; foco contínuo no rosto; profundidade de campo rasa mantendo o fundo levemente desfocado\",      \"lighting\": \"luz quente lateral suave com leve preenchimento frontal; iluminação estável e constante, sem variação de temperatura de cor ao longo do vídeo\",      \"environment\": \"fundo levemente desfocado; movimento natural dos cabelos ao inclinar; leve sensação de profundidade realista sem distorção de mãos; manter consistência total de aparência do cabelo do início ao fim\"    }  ]}",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-16",
+    "title": "CTA 3- BEIJO",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/LwF4iY0.mp4",
+    "description": "Finalização carismática mandando um beijo para engajamento caloroso.",
+    "prompt": "{\n\"version\": \"3.1\",\n\"aspectRatio\": \"9:16\",\n\"durationSeconds\": 8,\n\"seed\": 12345,\n\"subjectRef\": \"usar a imagem enviada como âncora de identidade, mantendo exatamente as mesmas feições, tom de pele, cor de cabelo, mesma textura, mesmo volume e mesmo comprimento durante TODO o vídeo, sem qualquer alteração em nenhum momento\",\n\"referenceStyle\": \"realismo cinematográfico natural, interação direta com a câmera estilo gravação em celular\",\n\"negativePrompt\": \"sem falas, sem áudio vocal, sem movimento labial articulando palavras, sem legendas, sem texto na tela, sem logos, sem marcas d’água, sem deformações corporais, sem dedos extras, sem distorção de mãos, sem artefatos de IA, sem mudança de cor do cabelo, sem mudança de textura do cabelo, sem mudança de estilo do cabelo, sem alteração de iluminação que modifique a cor do cabelo, sem movimentos exagerados, sem câmera lenta, sem sorriso travado, sem movimentos robóticos\",\n\"safety\": {\n\"allowMinorViolence\": false,\n\"allowNudity\": false\n},\n\"shots\": [\n\"scene\": \"ambiente interno residencial com moldura de madeira e iluminação quente natural\",\n\"action\": \"ela dá um passo natural para frente e inclina levemente o tronco entre 30 e 40 graus em direção à câmera. Mantém contato visual constante com um sorriso suave, simpático e vendedor. Sem falar absolutamente nada e sem articular palavras com os lábios. Logo após se inclinar, ela leva uma mão naturalmente até a boca e faz um gesto delicado de mandar um beijo para a câmera, soltando a mão suavemente para frente de forma feminina e natural. O gesto do beijo é rápido, elegante e casual, sem exagero e sem teatralidade. Após o beijo, ela naturalmente abaixa a mão e aponta claramente o dedo indicador para baixo, direção inferior da tela, realizando um pequeno movimento visual de chamada para ação. O sorriso permanece natural e envolvente durante toda a cena. O cabelo permanece visualmente idêntico durante toda a ação, sem qualquer alteração de cor, brilho, forma ou volume.\",\n\"camera\": \"dolly-in sutil acompanhando o passo; 50mm; 24fps; 1/120; foco contínuo no rosto; profundidade de campo rasa mantendo o fundo levemente desfocado\",\n\"lighting\": \"luz quente lateral suave com leve preenchimento frontal; iluminação estável e constante, sem variação de temperatura de cor ao longo do vídeo\",\n\"environment\": \"fundo levemente desfocado; movimento natural dos cabelos ao inclinar; leve sensação de profundidade realista; mãos anatomicamente corretas; sem distorção dos dedos; manter consistência total da aparência do cabelo do início ao fim\"\n}\n]\n}",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-17",
+    "title": "PROMPT CABELO 1",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/H0YyGIe.mp4",
+    "description": "Movimento clássico jogando o cabelo lateralmente para transmitir charme.",
+    "prompt": "Animate the subject as a REAL person presenting clothing in a POV-style video.\n⸻\n🔥 START OF ANIMATION (UPDATED):\n– The subject starts at a natural distance from the camera\n– She calmly takes two small, natural steps forward toward the camera\n– While approaching, she gently touches and lightly holds the bow/lace detail on the chest area\n– The gesture is delicate, subtle and realistic, like naturally showing a clothing detail\n– No emphasis, no posing, no exaggeration\n– The movement feels spontaneous and casual\n– After briefly touching the bow, she naturally releases it\n– She takes a small step back to her original position\n– Smooth transition into the rest of the animation\n⸻\nGENERAL MOTION STYLE:\n– Natural, confident, fluid movements\n– Not static\n– Not exaggerated\n– Not robotic\n– Real human timing\n⸻\nBODY MOVEMENTS:\n– One hand naturally rests on the waist\n– Gentle hip movement (side-to-side, very subtle)\n– One foot forward, the other relaxed behind\n– Natural posture, relaxed shoulders\n⸻\nCLOTHING PRESENTATION:\n– Small, natural movements to highlight the outfit\n– Slight torso rotation to show fit and fabric\n– No aggressive posing\n– No fashion runway exaggeration\n– Movements feel spontaneous and casual\n⸻\nADDITIONAL NATURAL GESTURE (VERY SUBTLE):\n– After the main body movement sequence:\n• The subject briefly raises one hand\n• Lightly brushes her hair backward near the side of the head\n• The gesture lasts approximately one second\n• The motion is casual and unintentional, like a natural self-adjustment\n• No emphasis, no posing\n• The hand immediately returns to a relaxed neutral position\n⸻\nFACIAL EXPRESSION (VERY IMPORTANT – REAL HUMAN TIMING):\n– The subject does NOT smile continuously\n– Facial expression alternates naturally throughout the video\n– While approaching the camera:\n• Neutral, relaxed expression\n• Lips softly closed\n• Calm, confident look\n– During the bow/lace touch:\n• A brief, subtle smile appears\n• Smile is soft and natural, not exaggerated\n• Slight cheek movement only\n– After releasing the bow:\n• Expression returns to neutral\n• Relaxed face, natural breathing\n– Later in the animation:\n• She gently turns her head slightly to one side\n• A short, warm smile appears again\n• Smile lasts briefly, then fades naturally\n– Smile behavior:\n• Appears and disappears naturally\n• No frozen smile\n• No constant grin\n• No exaggerated facial tension\n⸻\nPERSONALITY:\n– Sympathetic\n– Approachable\n– Comfortable\n– Feels like a real person casually recording a video\n⸻\nCAMERA & POV:\n– POV perspective, as if the phone is held by a person\n– Very subtle handheld micro-movements\n– No camera shake\n– No zoom\n– Camera remains at chest/face height\n⸻\nTIMING:\n– Movements are continuous\n– No freezing\n– No looping poses\n– Smooth transitions between gestures\n⸻\nREALISM RULES:\n– Preserve original facial identity\n– Preserve skin texture\n– Preserve hair movement (slight natural motion)\n– Natural fabric physics\n– No beauty filters\n– No smoothing\n– No stylization\nx⸻\nRESTRICTIONS:\n– No talking\n– No text\nxa– No UI\n– No effects\n– No exaggerated dance\n– No influencer posing clichés\n⸻\nxFINAL RESULT:\nA hyper-realistic POV fashion video where the subject feels alive and human, with natural facial expression changes, occasional soft smiles, neutral moments in between, and subtle head turns — indistinguishable from a real casual phone recording.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-18",
+    "title": "PROMPT CABELO 2",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/DE18OtP.mp4",
+    "description": "Ajuste de franja ou fios frontais olhando fixamente para atrair atenção.",
+    "prompt": "Animate the subject as a REAL person presenting clothing in a POV-style video.The subject remains in the same position and starts moving immediately.From the beginning, she moves her hair and body at the SAME TIME.She brings one hand into her hair and runs her fingers  through it quickly and naturally, then lightly tosses it.While touching her hair, her body is continuously moving:she shifts her weight between legs,moves her hips slightly side to side,keeps a natural rhythm in her torso,and makes small natural posture adjustments.Her body MUST NOT stop while touching the hair.Hair movement and body movement happen together as one continuous action.The motion should feel alive, fluid and human, never paused, never separated, never robotic.Her expression starts neutral, then a soft natural smile appears briefly during the movement and fades.After finishing the hair movement, she continues with subtle natural body motion without freezing.Movement speed is natural and slightly quick, not slow motion and not exaggerated.Camera remains stable, no zoom, no major movement.åPreserve identity, natural hair physics, natural fabric behavior, no stylization.Final result should feel like a real person casually moving her hair while naturally shifting her body, fully synchronized and lifelike",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-19",
+    "title": "PROMPT AMARRANDO CABELO",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/ozSOKjx.mp4",
+    "description": "Gesto estético e elegante de prender o cabelo na tela revelando o pescoço.",
+    "prompt": "Animate the subject as a REAL person in a soft ultra-realistic diagonal back-view fashion video.⸻MAIN ACTION (BOTH HANDS TYING HAIR):– The subject uses BOTH hands together during the entire motion– She naturally raises both hands toward the back of the head– Both hands gather the hair softly near the upper back/head area– The motion should feel like she is casually pretending to tie her hair into a ponytail– Natural feminine gesture only– Soft realistic movement– No exaggerated styling motion⸻HAIR TYING MOTION DETAILS:– Hair starts naturally loose– Both hands slide upward through the hair together– Fingers naturally collect the hair backward– Elbows lift softly and naturally– The subject gently holds the gathered hair briefly behind the head– She lightly twists or adjusts the hair as if preparing to tie it– The motion is subtle and relaxed– The hair should NOT become perfectly tied– It should feel like a casual “fixing the hair” moment– After briefly holding the hair, she softly relaxes the hands slightly⸻REALISTIC HAIR PHYSICS (CRITICAL):– Hair movement must come ONLY from both-hand contact and natural head motion– Hair must have realistic weight and gravity– No floating hair– No wind effect– No exaggerated bounce– No zero-gravity movement– Hair tension must feel realistic while being gathered– Loose strands remain natural around the neck and shoulders– Hair should naturally loosen slightly after the motion⸻IMPORTANT ANTI-BUG RULES:– Keep the subject ALWAYS in the same diagonal back-facing angle– Do NOT allow the subject to look at the camera– Do NOT rotate body toward camera– No front-facing frames– No sudden head turns– No camera shake– No zoom– No reframing– Camera remains completely fixed– Prevent hand and finger deformation– Prevent hair clipping through arms/body– Prevent arms from bending unnaturally⸻BODY MOVEMENT STYLE:– Minimal torso movement– Slight natural shoulder lift while gathering the hair– Very subtle hip balance shift– Calm feminine movement– No exaggerated posing– No dance movement– Maintain the same diagonal body angle tikthroughout the clip⸻HAND & ARM MOVEMENT:– Both arms move softly and naturally together– Elbows remain relaxed and feminine– Fingers softly compress and hold the hair realistically– No robotic synchronized motion– No stiff elbows– Natural real-time movement only⸻CAMERA:– Fixed tripod camera– No camera movement– No zoom– No perspective changes– Maintain exact original framing and crop⸻REALISM RULES:– Ultra realistic real-time motion– Natural arm weight and physics– Realistic shoulder mechanics– Realistic fabric response– Preserve skin texture– Preserve identity– Preserve realistic indoor lighting– No beauty filter– No CGI look– No smoothing– No stylization⸻TIMING:– Soft continuous pacing– Slightly slowed realistic motion– No sudden acceleration– No freezing– No looping– Smooth transitions between gestures⸻RESTRICTIONS:– No talking– No text– No UI– No effects– No influencer posing clichés– No direct eye contact– No front-facing pose– No aggressive motion– No floating hair physics⸻FINAL RESULT:A hyper-realistic diagonal back-view fashion animation where the subject softly raises BOTH hands, naturally gathers the hair behind the head as if casually tying a ponytail, briefly adjusts the hair with realistic feminine movement, and maintains stable framing, realistic weighted hair physics, and calm natural body motion throughout the entire clip.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-20",
+    "title": "PROMPT DE COSTA- MEXENDO NO CABELO",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/U9b99lN.mp4",
+    "description": "Plano traseiro com rotação parcial de cabeça e ajuste estético de fios.",
+    "prompt": "Animate the subject as a REAL person in a soft ultra-realistic diagonal back-view fashion video.⸻CRITICAL HAIR ACTION (BOTH HANDS REQUIRED):– The subject MUST use BOTH hands together during the hair motion– Both hands rise naturally from the waist area toward the hair at the same time– Hands move symmetrically and softly– Fingers gently pass through both sides of the hair simultaneously– The motion should feel like naturally fixing or adjusting the hair with both hands– NOT a single-hand hair grab– NOT a dramatic hair flip⸻HAIR MOVEMENT DIRECTION (VERY IMPORTANT):– The subject starts with the hair partially positioned forward over one shoulder– As BOTH hands pass through the hair, they softly guide the hair upward and across– The hair travels briefly across the upper back area– Then the hair naturally falls toward the FRONT over the opposite shoulder– The back clothing print/design must remain mostly visible– Hair should NOT fully cover the back⸻REALISTIC HAIR PHYSICS (CRITICAL):– Hair movement must come ONLY from both-hand contact and slight natural head movement– Hair must have realistic weight and gravity– No floating hair– No wind effect– No exaggerated bounce– No zero-gravity movement– Hair settles naturally over the front shoulder after the motion– Hair movement stays controlled and soft⸻HAND & ARM MOVEMENT:– Both elbows remain relaxed and feminine– Arms move smoothly and naturally– No stiff arm motion– No robotic synchronization– Fingers softly comb through the hair realistically– Hands briefly meet near the upper scalp/hair area before guiding the hair across⸻IMPORTANT ANTI-BUG RULES:– Keep the subject ALWAYS in the same diagonal back-facing angle– Do NOT allow the subject to look at the camera– Do NOT rotate body toward camera– No front-facing frames– No sudden head turns– No camera shake– No zoom– No reframing– Camera remains completely fixed– Prevent hand and finger deformation– Prevent hair clipping through arms/body⸻BODY MOVEMENT STYLE:– Minimal torso movement– Slight natural shoulder motion only– Very subtle hip balance shift– Calm feminine movement– No exaggerated posing– No dance movement– Maintain the same diagonal body angle throughout the entire clip⸻CAMERA:– Fixed tripod camera– No camera movement– No zoom– No perspective changes– Maintain exact original framing and crop⸻REALISM RULES:– Ultra realistic real-time motion– Natural arm weight and physics– Realistic shoulder mechanics– Realistic fabric response– Preserve skin texture– Preserve identity– Preserve realistic indoor lighting– No beauty filter– No CGI look– No smoothing– No stylization⸻TIMING:– Soft continuous pacing– Slightly slowed realistic motion– No sudden acceleration– No freezing– No looping– Smooth transitions between gestures⸻RESTRICTIONS:– No talking– No text– No UI– No effects– No influencer posing clichés– No direct eye contact– No front-facing pose– No aggressive motion– No floating hair physics– Do NOT cover the shirt design with hair⸻FINAL RESULT:A hyper-realistic diagonal back-view fashion animation where the subject softly raises BOTH hands together into the hair, naturally combs through it with realistic finger movement, gently guides the hair across the upper back, and lets it fall naturally over the opposite front shoulder — while keeping the back clothing design visible, maintaining realistic weighted hair physics, stable framing, and calm feminine motion throughout the entire clip.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-21",
+    "title": "ELASTICIDADE PARTE SUPERIOR",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/bPzzr2t.mp4",
+    "description": "Demonstração da elasticidade e flexibilidade da peça de roupa superior.",
+    "prompt": "Animate the influencer naturally while showcasing the elasticity and stretchiness of the upper clothing fabric she is wearing.\nThe character must remain the EXACT same person from the original image.\nPreserve 100%:\n– face\n– body\n– hair\n– makeup\n– outfit\n– camera angle\n– lighting\n– background\n– framing\n– environment\nDO NOT change the clothing design or fit.\nDO NOT create new movements outside the requested action.\nANIMATION:\nThe influencer uses both hands to gently grab the upper fabric area of the clothing (top, cropped, blouse, tank top, hoodie, etc.) near the chest, waist, or shoulder area.\nShe naturally stretches the fabric outward to demonstrate elasticity, then smoothly releases it back into place.\nThe movement must:\n– look realistic\n– feel soft and natural\n– show visible fabric tension and recovery\n– preserve realistic cloth physics\n– avoid exaggerated pulling\n– avoid comedic or dramatic motion\nShe repeats the stretch-and-release movement 2–3 times in a subtle and professional way, similar to a real clothing model demonstrating fabric flexibility for social media or e-commerce.\nHer body posture remains relaxed and natural during the animation.\nMaintain realistic micro movements, breathing, blinking, and subtle hand motion.\nCinematic realism, premium fashion commercial quality, smooth motion, realistic fabric simulation, natural influencer behavior.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-22",
+    "title": "ELASTICIDADE PARTE INFERIOR",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/XZwMJX7.mp4",
+    "description": "Demonstração de flexibilidade e caimento da calça/saia em movimento.",
+    "prompt": "Animate the influencer naturally while showcasing the elasticity and stretchiness of the lower clothing fabric she is wearing.\nThe character must remain the EXACT same person from the original image.\nPreserve 100%:\n– face\n– body\n– hair\n– makeup\n– outfit\n– camera angle\n– lighting\n– background\n– framing\n– environment\nDO NOT modify the clothing style, shape, or proportions.\nDO NOT change the pose drastically.\nANIMATION:\nThe influencer naturally places one or both hands on the lower clothing area (leggings, pants, shorts, jeans, activewear, etc.) around the thigh, hip, or waist area.\nShe gently stretches the fabric outward to demonstrate elasticity, then smoothly releases it back into place.\nThe stretch must:\n– feel realistic\n– show visible fabric flexibility\n– maintain natural cloth behavior\n– avoid excessive pulling\n– avoid deformation of the body\n– preserve realistic tension and rebound\nShe repeats the stretch-and-release motion 2–3 times in a subtle, elegant, and professional way, like a fashion influencer demonstrating fabric comfort and flexibility.\nInclude subtle natural body movement, breathing, blinking, and realistic hand interaction with the clothing.\nUltra realistic motion, cinematic quality, smooth fabric physics, premium commercial fashion animation, realistic influencer behavior.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-23",
+    "title": "ELASTICIDADE",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/ROQBCGE.mp4",
+    "description": "Demonstração geral de maleabilidade e recuperação rápida do tecido.",
+    "prompt": "Ultra-realistic vertical smartphone video recorded indoors in a bedroom environment with a wardrobe behind, a doorway on the side, wooden floor, neutral walls, and direct frontal indoor lighting creating a realistic visible shadow on the wall behind the person.\nThe camera is completely static and does not move at any moment.\nThe camera stays fixed in the same position the entire time.\nNo zoom, no pan, no camera movement. Only the person moves.\nThe framing is vertical 9:16, smartphone camera style, slightly low angle, like a real influencer video recorded at home.\nThe person starts standing naturally, looking at the camera with a natural, confident, and relaxed expression.\nThe person has naturally white, clean, well-aligned teeth — not yellowed and not artificially exaggerated — maintaining a realistic appearance when smiling.\nThen the person slowly walks towards the camera with natural steps.\nWhile walking, hair and clothing move naturally according to body movement and realistic fabric physics.\nAs the person gets closer to the camera, the person gently places one hand on the waist and slowly slides the other hand over the stomach, waist, and hip area, showing how the clothing fits tightly on the body.\nThen the person gently grabs a small section of the clothing fabric at the waist or hip area with the fingers and pulls the fabric slightly away from the body and releases it, showing that the clothing is tight and stretchy and sticks to the body.\nThe fabric stretches slightly and then returns naturally to the body.\nThen the person slightly turns the body to the side and gently throws one shoulder forward and then the other, like a natural model movement to show the shape and fit of the clothing on the body.\nThen the person slowly turns around and ends with the back facing the camera to show the back fit.\nWhile turning, hair and clothing move naturally with the body movement.\nThen the person slightly turns the upper body and head a little to the side in a natural pose.\nAll movements must be smooth, natural, and casual, like a real influencer recording a video at home.\nNatural facial expressions, blinking, subtle head movement, relaxed posture, not robotic movement.\nThe lighting remains constant and realistic, and the shadow on the wall behind must move naturally according to the body movement.\nThe environment does not change.\nPhotorealistic video, realistic skin texture, realistic fabric physics, realistic fabric stretch, realistic lighting, realistic shadows, realistic hair movement, realistic cloth physics, smartphone video look, natural colors, no cinematic effects, no filters, no CGI look, must look like a real video recorded on a phone.\nNatural influencer movement, casual movement, fashion try-on style movement, natural body movement, not robotic movement.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-24",
+    "title": "GANCHO 1",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/Wp7VPbi.mp4",
+    "description": "Gancho visual de início rápido para prender a atenção nos primeiros 3 segundos.",
+    "prompt": "Animate the subject as a REAL person presenting clothing in a POV-style video.\n⸻\n🔥 START OF ANIMATION (UPDATED):\n– The subject starts at a natural distance from the camera\n– She calmly takes two small, natural steps forward toward the camera\n– While approaching, she gently touches and lightly holds the bow/lace detail on the chest area\n– The gesture is delicate, subtle and realistic, like naturally showing a clothing detail\n– No emphasis, no posing, no exaggeration\n– The movement feels spontaneous and casual\n– After briefly touching the bow, she naturally releases it\n– She takes a small step back to her original position\n– Smooth transition into the rest of the animation\n⸻\nGENERAL MOTION STYLE:\n– Natural, confident, fluid movements\n– Not static\n– Not exaggerated\n– Not robotic\n– Real human timing\n⸻\nBODY MOVEMENTS:\n– One hand naturally rests on the waist\n– Gentle hip movement (side-to-side, very subtle)\n– One foot forward, the other relaxed behind\n– Natural posture, relaxed shoulders\n⸻\nCLOTHING PRESENTATION:\n– Small, natural movements to highlight the outfit\n– Slight torso rotation to show fit and fabric\n– No aggressive posing\n– No fashion runway exaggeration\n– Movements feel spontaneous and casual\n⸻\nFACIAL EXPRESSION (VERY IMPORTANT – REAL HUMAN TIMING):\n– The subject does NOT smile continuously\n– Facial expression alternates naturally throughout the video\n– While approaching the camera:\n• Neutral, relaxed expression\n• Lips softly closed\n• Calm, confident look\n– During the bow/lace touch:\n• A brief, subtle smile appears\n• Smile is soft and natural, not exaggerated\n• Slight cheek movement only\n– After releasing the bow:\n• Expression returns to neutral\n• Relaxed face, natural breathing\n– Later in the animation:\n• She gently turns her head slightly to one side\n• A short, warm smile appears again\n• Smile lasts briefly, then fades naturally\n– Smile behavior:\n• Appears and disappears naturally\n• No frozen smile\n• No constant grin\n• No exaggerated facial tension\n⸻\nPERSONALITY:\n– Sympathetic\n– Approachable\n– Comfortable\n– Feels like a real person casually recording a video\n⸻\nCAMERA & POV:\n– POV perspective, as if the phone is held by a person\n– Very subtle handheld micro-movements\n– No camera shake\n– No zoom\n– Camera remains at chest/face height\n⸻\nTIMING:\n– Movements are continuous\n– No freezing\n– No looping poses\n– Smooth transitions between gestures\n⸻\nREALISM RULES:\n– Preserve original facial identity\n– Preserve skin texture\n– Preserve hair movement (slight natural motion)\n– Natural fabric physics\nx– No beauty filters\n– No smoothing\n– No stylization\n⸻\nRESTRICTIONS:\nÅÇ No talking\n– No text\n– No UI\n– No effects\n– No exaggerated dance\n– No influencer posing clichés\n⸻\nFINAL RESULT:\nA hyper-realistic POV fashion video where the subject feels alive and human, with natural facial expression changes, occasional soft smiles, neutral moments in between, and subtle head turns — indistinguishable from a real casual phone recording.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-25",
+    "title": "GANCHO JOGAR ROUPA 1",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/hRh2ebZ.mp4",
+    "description": "Efeito de transição de corte invisível jogando a peça em direção à lente.",
+    "prompt": "Animate the subject as a REAL person presenting clothing in a POV-style fashion video.\n⸻\n🔥 START OF ANIMATION (HOOK TRANSITION VERSION):\n– The subject starts standing naturally at a comfortable distance from the camera\n– She is already holding the clothing/product naturally with both hands in front of the body\n– Neutral relaxed posture\n– Soft natural facial expression\n– She calmly takes two small natural steps forward toward the camera\n– While approaching, the clothing naturally moves together with her body\n– Arms remain relaxed and realistic\n– Natural fabric movement and gravity behavior\n🔥 MAIN HOOK ACTION (CRITICAL):\n– As she gets closer to the camera:\n• she smoothly raises the clothing/product forward toward the lens\n• the clothing gradually occupies more of the frame\n• movement feels natural and continuous\n• no aggressive motion\n• no throwing action\n– The clothing must FULLY cover the camera lens naturally\n– The transition happens by the clothing physically reaching the camera\n– The fabric fills the entire frame progressively\nIMPORTANT:\n– The subject does NOT toss the clothing\n– The subject does NOT shake the clothing aggressively\n– The movement is smooth, controlled and realistic\n– The clothing behaves with natural fabric physics while moving forward\n– During the forward movement:\n• a subtle soft smile appears briefly\n• expression remains sympathetic and natural\n• slight cheek movement only\n• no exaggerated grin\n– Once the clothing fully covers the camera:\n• hold coverage briefly for a natural transition feeling\n• smooth realistic fabric motion\n• no hard cut feeling\n⸻\nGENERAL MOTION STYLE:\n– Natural, confident, fluid movements\n– Real human timing\n– No robotic timing\n– No exaggerated posing\n– No influencer cliché behavior\n– Casual spontaneous motion\n⸻\nBODY MOVEMENTS:\n– Relaxed shoulders\n– Subtle natural hip movement\n– Slight natural body sway while walking\n– Arms move naturally with the product weight\n– Natural balance and posture\n⸻\nPRODUCT/FABRIC REALISM:\n– Realistic fabric weight\n– Natural hanging behavior\n– Subtle wrinkles and folds\n– Slight fabric compression from fingers\n– Natural gravity pull\n– No stiff fabric\n– No floating product\n– No stretched “hanger” behavior\nAs the clothing approaches the lens:\n– fabric naturally bends and shifts\n– slight perspective distortion is allowed naturally\n– realistic cloth motion near the camera\n⸻\nFACIAL EXPRESSION:\n– No frozen smile\n– Expression changes naturally\n– Mostly neutral relaxed expression\n– Brief warm smile only during the approach\n– Smile fades naturally afterward\n⸻\nCAMERA & POV:\n– POV-style camera\n– Very subtle handheld micro movement\n– No zoom\n– No camera shake\n– Camera remains fixed in position\n– Real smartphone recording feeling\n⸻\nTIMING:\n– Smooth continuous motion\n– No looping\n– No freezing\n– No sudden acceleration\n– Natural pacing\n⸻\nREALISM RULES:\n– Preserve original identity\n– Preserve facial structure\n– Preserve skin texture\n– Preserve realistic hair motion\n– Preserve clothing realism\n– No beauty filters\n– No smoothing\n– No CGI look\n– No stylization\n⸻\nRESTRICTIONS:\n– No talking\n– No text\n– No UI\n– No effects\n– No transitions added digitally\n– Transition must happen ONLY through the clothing covering the lens\n⸻\nFINAL RESULT:\nA hyper-realistic POV-style fashion video where the subject naturally walks toward the camera holding a clothing product, then smoothly brings the fabric directly into the lens until it fully covers the frame, creating a realistic organic transition identical to a real influencer clothing hook video filmed on a smartphone.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-26",
+    "title": "GANCHO JOGAR ROUPA 2",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/cRW9sRg.mp4",
+    "description": "Transição de impacto jogando a roupa para cima antes do corte.",
+    "prompt": "The subject must move naturally and calmly.\nDo NOT rush aggressively toward the camera.\nDo NOT run.\nDo NOT lunge forward.\nDo NOT create chaotic movement.\nDo NOT create exaggerated fast motion.\nThe hook should feel smooth and controlled like a real casual influencer recording.\nCORRECT MOVEMENT FLOW:\n– The subject starts already holding the clothing/product naturally\n– She takes ONE natural small step forward\n– While stepping forward, she smoothly raises the clothing toward the camera\n– The movement is fluid and continuous\n– Calm natural pacing\n– No sudden acceleration\nThe clothing should reach the camera naturally within around 1–2 seconds.\nIMPORTANT:\n– The subject body movement stays relaxed\n– Natural shoulder movement\n– Natural arm motion\n– Natural posture balance\n– No exaggerated hip movement\n– No dramatic motion\nFACIAL BEHAVIOR FIX (VERY IMPORTANT):\n– Mouth must remain naturally closed most of the time\n– Do NOT generate talking behavior\n– Do NOT simulate speech\n– Do NOT create lip-sync motion\n– No random mouth opening\n– No exaggerated facial animation\nExpression should remain:\n• soft\n• neutral\n• relaxed\n• natural\nA very subtle smile is allowed briefly, but:\n– lips mostly closed\n– no visible talking motion\n– no exaggerated grin\nMOTION QUALITY:\n– Real-time natural motion\n– No slow motion\n– No delay\n– No laggy movement\n– No robotic timing\n– No jitter\n– No frame skipping\n– No looping behavior\nCAMERA:\n– Stable POV camera\n– Very subtle handheld micro movement only\n– No zoom\n– No cinematic motion\n– No shake\nFINAL FEELING:\nThe animation should feel like a real girl casually stepping forward and softly placing the clothing in front of the phone camera for a natural TikTok-style transition.",
+    "tags": [
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-27",
+    "title": "ESPELHO- MOSTRANDO DETALHES",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/jgKiuqx.mp4",
+    "description": "Destaque e close-up nos detalhes da roupa através do reflexo de um espelho.",
+    "prompt": "Brazilian female model showcasing her outfit. She uses her hands to indicate different parts of the clothing, including the neckline, sleeves and overall fit. She maintains a natural closed-mouth smile throughout the video. Silent performance, absolutely no speech, no lip movement, no talking, no mouth opening. Realistic human motion, fashion commercial style, static camera",
+    "tags": [
+      "Animações",
+      "Mirror No Face"
+    ]
+  },
+  {
+    "id": "prompt-28",
+    "title": "ESPELHO- CTA",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/ZxFFzVq.mp4",
+    "description": "Chamada para ação criativa interagindo diretamente com o reflexo do espelho.",
+    "prompt": "Female fashion model wearing the featured clothing. She points toward the outfit, then points toward the viewer, followed by a thumbs-up gesture while smiling naturally with lips closed. Silent performance only. No speech, no lip movement, no mouth opening, no talking. Realistic fashion marketing video, static camera, professional lighting, highly realistic.",
+    "tags": [
+      "Animações",
+      "Mirror No Face"
+    ]
+  },
+  {
+    "id": "prompt-29",
+    "title": "ESPELHO- NATURAL 1",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/Z75CZ3s.mp4",
+    "description": "Movimento espontâneo ajeitando o look em frente ao espelho com leveza.",
+    "prompt": "Selfie video. The influencer holds the phone in her right hand for the entire video. Only her left hand moves. She slowly runs her left hand over the fabric once, showing the texture and quality of the clothing. Two hands only, anatomically correct. Mouth remains fully closed. No speech, no lip movement, no talking. Natural realistic movements.",
+    "tags": [
+      "Animações",
+      "Mirror No Face"
+    ]
+  },
+  {
+    "id": "prompt-30",
+    "title": "ESPELHO- NATURAL 2",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/vy5zbAh.mp4",
+    "description": "Pose e troca de olhares dinâmicos entre a câmera e o reflexo do espelho.",
+    "prompt": "{\n\"animation_style\": \"realistic_fashion_presentation\",\n\"camera\": {\n\"fixed\": true,\n\"no_zoom\": true,\n\"no_reframe\": true\n},\n\"motion\": {\n\"type\": \"continuous_natural_flow\",\n\"speed\": \"natural_slightly_fast\",\n\"no_pause\": true,\n\"no_freeze\": true,\n\"avoid_robotic_timing\": true,\n\"keep_body_alive\": true\n},\n\"position\": {\n\"stay_near_same_spot\": true,\n\"small_natural_steps\": true,\n\"short_forward_shift\": true,\n\"short_side_shift\": true,\n\"no_large_movement\": true\n},\n\"sequence\": {\n\"start\": \"facing_camera\",\n\"action_1\": {\n\"type\": \"active_natural_body_flow\",\n\"description\": \"subject moves naturally all the time with visible but controlled body movement, not slow, not stiff\"\n},\n\"action_2\": {\n\"type\": \"hand_to_waist\",\n\"style\": \"relaxed\",\n\"hand\": \"one_hand_on_hip\",\n\"details\": \"hand naturally goes to waist without posing too hard\"\n},\n\"action_3\": {\n\"type\": \"small_side_shift\",\n\"intensity\": \"medium_light\",\n\"details\": \"noticeable natural shift to one side without turning the body\"\n},\n\"action_4\": {\n\"type\": \"small_forward_shift\",\n\"intensity\": \"medium_light\",\n\"details\": \"small natural movement slightly forward, visible but not exaggerated\"\n},\n\"action_5\": {\n\"type\": \"hip_weight_shift\",\n\"style\": \"natural_active\",\n\"details\": \"natural hip and weight shift with more energy, not dancing, no repeated rhythm\"\n},\n\"action_6\": {\n\"type\": \"single_shoulder_lift\",\n\"style\": \"soft_natural_active\",\n\"details\": \"one shoulder lifts and relaxes naturally with slightly more energy\"\n},\n\"fabric\": {\n\"type\": \"light_touch\",\n\"area\": \"clothing\",\n\"no_pull\": true\n},\n\"movement\": {\n\"type\": \"continuous_natural_adjustments\",\n\"max_angle\": \"10_degrees\",\n\"no_turn\": true,\n\"no_spin\": true,\n\"no_360\": true\n}\n},\n\"body\": {\n\"hip\": \"active_subtle_continuous\",\n\"weight\": \"always_shifting_naturally\",\n\"posture\": \"relaxed_confident\",\n\"no_static\": true,\n\"no_dance\": true,\n\"no_stiff_pose\": true\n},\n\"face\": {\n\"expression\": \"natural\",\n\"smile\": \"brief_subtle\",\n\"no_constant\": true\n},\n\"rules\": {\n\"no_rotation\": true,\n\"no_360\": true,\n\"no_spin\": true,\n\"no_freeze\": true,\n\"no_exaggeration\": true,\n\"no_robotic_motion\": true,\n\"no_slow_motion\": true\n},\n\"final\": \"active natural movement, slightly faster body flow, visible small side and forward shifts, subtle hip and shoulder motion, no rotation, no dance, no freeze\"\n}",
+    "tags": [
+      "Animações",
+      "Mirror No Face"
+    ]
+  },
+  {
+    "id": "prompt-31",
+    "title": "ESPELHO- NATURAL 3",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/LsE9P2M.mp4",
+    "description": "Movimentos corporais fluidos e ajeitando o cabelo usando o espelho como guia.",
+    "prompt": "{\"version\": \"3.1\",\"aspectRatio\": \"9:16\",\"durationSeconds\": 8,\"seed\": 12345,\"subjectRef\": \"usar a imagem enviada como âncora de identidade, mantendo exatamente as mesmas feições, tom de pele\"referenceStyle\": \"realismo cinematográfico natural, apresentação de moda com movimento corporal suave\",\"negativePrompt\": \"sem falas, sem áudio vocal, sem movimento labial, sem texto na tela, sem logos, sem marcas d’ág\"safety\": {\"allowMinorViolence\": false,\"allowNudity\": false},\"shots\": [{\"scene\": \"ambiente interno residencial com moldura de madeira e iluminação quente natural\",\"action\": \"ela permanece no mesmo lugar e inicia uma rotação corporal lenta e natural. Primeiro vira levemente\"camera\": \"fixa; 50mm; 24fps; sem movimento de câmera; foco contínuo; profundidade de campo leve\",\"lighting\": \"luz quente lateral suave com preenchimento frontal; iluminação constante sem variação\",\"environment\": \"fundo levemente desfocado; movimento natural do cabelo acompanhando o giro; sem distorções; se}],\"motionControl\": {\"rotation_speed\": \"slow\",\"rotation_style\": \"segmented_smooth_turn\",\"no_fast_spin\": true,\"no_instant_360\": true},\"rules\": {\"stay_in_same_position\": true,\"no_forward_movement\": true,\"no_backward_movement\": true,\"no_fast_rotation\": true,\"must_be_slow_turn\": true,\"preserve_identity\": true\nUse a reference image as a base and preserve the woman exactly as she appears. Do not alter her face, facial structure, skin tone, eyes, eyebrows, nose, lips, chin contour, hairstyle, hair texture, expression, body shape, proportions, age, or any other physical characteristic. Keep her identity 100% identical to the original image.",
+    "tags": [
+      "Animações",
+      "Mirror No Face"
+    ]
+  },
+  {
+    "id": "prompt-32",
+    "title": "UNBOXING- SOMENTE O PRODUTO 1",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/C3oqiMX.mp4",
+    "description": "Destaque focado no desembalar e revelação do produto sem o criador em cena.",
+    "prompt": "Vídeo vertical 9:16, estilo conteúdo viral.\nUma embalagem fechada está sobre a mesa. Apenas as mãos aparecem.\nA abertura acontece rapidamente nos primeiros segundos para prender a atenção. O produto é revelado logo no início do vídeo. Depois as mãos mostram detalhes, textura, acabamento e funcionalidades através de movimentos naturais.\nCâmera parada, visual moderno, ambiente clean, iluminação natural, aparência de vídeo gravado com smartphone topo de linha, extremamente realista.\nProduto: [INSERIR PRODUTO]",
+    "tags": [
+      "Animações",
+      "Trocas",
+      "POV"
+    ]
+  },
+  {
+    "id": "prompt-33",
+    "title": "UNBOXING- SOMENTE O PRODUTO 2",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/ypamWSg.mp4",
+    "description": "Close-up detalhado do produto saindo da embalagem em plano fechado.",
+    "prompt": "Vídeo vertical 9:16, ultra realista.\nO produto já está sobre uma mesa organizada. Apenas as mãos aparecem.\nAs mãos exploram o produto com curiosidade, observando cuidadosamente cada detalhe. Elas giram o item lentamente, analisam acabamentos, texturas e pequenos elementos do design. Em alguns momentos aproximam o produto da câmera para destacar detalhes específicos.\nA câmera permanece totalmente parada. Movimentos suaves e naturais. Iluminação natural, ambiente clean e sofisticado. Sem rosto, sem textos, sem aparência de IA.\nProduto: [INSERIR PRODUTO]",
+    "tags": [
+      "Animações",
+      "Trocas",
+      "POV"
+    ]
+  },
+  {
+    "id": "prompt-34",
+    "title": "UNBOXING- SOMENTE O PRODUTO 3",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/H7S5Dsj.mp4",
+    "description": "Demonstração e teste de toque do produto com movimentos e detalhes.",
+    "prompt": "Vídeo vertical 9:16.\nUma mão cobre completamente a câmera por um segundo. Quando a mão sai, o produto já aparece perfeitamente posicionado sobre a mesa.\nAs mãos ajustam pequenos detalhes enquanto a câmera permanece parada. O foco é criar uma revelação visual impactante logo nos primeiros segundos.\nQualidade extremamente realista. Sem rosto. Sem textos.\nProduto: [INSERIR PRODUTO]",
+    "tags": [
+      "Animações",
+      "Trocas",
+      "POV"
+    ]
+  },
+  {
+    "id": "prompt-35",
+    "title": "UNBOXING- SOMENTE O PRODUTO CTA",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/z5sT9G2.mp4",
+    "description": "Chamada de ação final mostrando o produto e indicando a loja.",
+    "prompt": "Vídeo vertical 9:16.\nO produto está perfeitamente posicionado sobre uma mesa clean. Apenas as mãos aparecem.\nUma mão passa suavemente sobre o produto, destacando seus detalhes. Em seguida, a mesma mão desliza para a parte inferior do enquadramento e aponta para baixo com o dedo indicador por alguns segundos, como se estivesse mostrando exatamente onde clicar para encontrar aquele produto.\nO movimento deve ser contínuo, suave e natural, sem cortes bruscos. O produto permanece totalmente visível durante toda a CTA.\nQualidade ultra realista, iluminação natural, câmera completamente parada, estética premium de vídeo para TikTok Shop.\nProduto: [INSERIR PRODUTO]",
+    "tags": [
+      "Animações",
+      "Trocas",
+      "POV"
+    ]
+  },
+  {
+    "id": "prompt-cabide-1",
+    "title": "Puxada Suave no Tecido",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/4AaolvT.mp4",
+    "description": "Demonstração de puxada suave no tecido com cabide.",
+    "prompt": "Animate the provided reference image into an ultra-realistic POV clothing product demonstration.\nTreat the reference image as the EXACT visual source.\nPreserve the exact influencer, garment, hanger, original hand, grip, body position, background, lighting, perspective and framing.\nThe original hand continues firmly holding the hanger throughout the entire animation.\nHAND ORIGIN — CRITICAL:\nThe influencer uses HER OWN free hand to interact with the garment.\nThis hand must enter naturally ONLY from the LEFT SIDE of the frame.\nIt must anatomically and visually belong to the same influencer holding the hanger.\nDo NOT generate a hand from the right side.\nDo NOT generate a floating or disconnected hand.\nDo NOT create another person.\nMAIN ACTION:\nThe influencer's free hand naturally enters from the LEFT side and moves toward the lower-left/front section of the garment.\nUsing the thumb and fingers, she gently grips a SMALL amount of fabric.\nShe lightly pulls the fabric outward only a few centimeters.\nHold for a very brief moment.\nThen naturally release it.\nThe fabric immediately falls back into its original hanging position under gravity with one small realistic settling movement.\nAfter releasing the fabric, the same hand naturally moves back toward the LEFT side of the frame.\nThe entire action should look like the influencer herself briefly demonstrating the thickness, softness and physical quality of the garment.\nREALISTIC PHYSICS:\nOnly the small section held by the fingers should move significantly.\nThe rest of the garment remains naturally hanging from the hanger.\nNo exaggerated elasticity.\nNo large deformation.\nNo rubber-like fabric.\nSTRICT PRODUCT LOCK:\nPreserve the exact original garment color, material appearance, texture, cut, shape, neckline, sleeves, seams, stitching, print, graphics, labels, length, width and proportions.\nDo not redesign or transform the garment.\nHAND CONSISTENCY:\nExactly two hands total.\nONE hand continuously holds the hanger.\nThe influencer's OWN OTHER HAND enters from the LEFT, interacts with the fabric and returns toward the LEFT.\nNo hand entering from the right.\nNo third hand.\nNo floating hand.\nNo disconnected wrist.\nNo extra fingers.\nNo hand deformation.\nNo fingers passing through the fabric.\nCAMERA COMPLETELY FIXED.\nNo zoom.\nNo pan.\nNo tilt.\nNo cuts.\nNo scene changes.\nVISUAL ANIMATION ONLY.\nCOMPLETELY SILENT.\nNO AUDIO TRACK.\nThe final result should look like one real influencer holding the hanger with one hand while naturally reaching in from her own left side with her free hand to briefly pinch and release the garment.",
+    "tags": [
+      "Animações",
+      "Cabide"
+    ]
+  },
+  {
+    "id": "prompt-cabide-2",
+    "title": "Deslize da Mão no Tecido",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/FqbyxYA.mp4",
+    "description": "Demonstração de deslize da mão no tecido.",
+    "prompt": "Animate the provided reference image into an ultra-realistic POV clothing product demonstration.\nUse the reference image as the EXACT visual source.\nPreserve the exact same influencer, garment, hanger, hand holding the hanger, grip, body position, background, lighting, camera angle, composition and framing.\nThe garment must remain 100% visually identical to the reference image.\nHAND ORIGIN — CRITICAL:\nThe hand already holding the hanger remains holding it throughout the entire video.\nThe influencer uses HER OWN OTHER HAND to interact with the garment.\nThis other hand must enter naturally ONLY from the LEFT SIDE of the frame.\nIt must clearly appear to belong to the same influencer.\nNEVER generate a hand entering from the right side.\nNEVER create the impression that another person is interacting with the garment.\nThe second hand follows a natural anatomical trajectory from the influencer's left side toward the garment.\nMAIN ACTION:\nThe influencer's free hand enters naturally from the LEFT side of the frame.\nWith an open, relaxed palm and natural fingers, she places the hand lightly against the FRONT surface of the hanging garment.\nShe smoothly brushes her hand across the fabric from LEFT TO RIGHT.\nLEFT → ACROSS THE GARMENT → RIGHT.\nThe palm and fingertips maintain gentle physical contact with the fabric during the movement.\nThe action should feel casual and effortless, like a real influencer naturally running her hand across a garment to show its fabric and texture.\nAfter completing the left-to-right pass, the hand naturally releases contact and returns toward the LEFT side.\nREALISTIC FABRIC RESPONSE:\nThe fabric responds only slightly underneath the moving hand.\nCreate subtle temporary compression and small natural wrinkles exactly where the fingers and palm make contact.\nThe fabric immediately returns to its original hanging position after the hand passes.\nDo not pull, stretch, lift or reshape the garment.\nSTRICT PRODUCT LOCK:\nPreserve exactly the original garment color, fabric appearance, texture, cut, shape, neckline, sleeves, seams, stitching, graphics, print, logos, labels, length, width and proportions.\nNo product transformation.\nNo color changes.\nNo fabric morphing.\nHAND CONSISTENCY:\nThe hanger hand NEVER releases the hanger.\nThe free hand belongs to the SAME influencer.\nExactly two hands total: one holding the hanger and one interacting with the garment.\nThe free hand enters from the LEFT and returns toward the LEFT.\nNo hand entering from the right.\nNo third hand.\nNo floating hand.\nNo disconnected hand.\nNo extra fingers.\nNo fused fingers.\nNo hand passing through the garment.\nCAMERA COMPLETELY FIXED.\nNo zoom.\nNo pan.\nNo tilt.\nNo cuts.\nNo scene changes.\nVISUAL ANIMATION ONLY.\nCOMPLETELY SILENT VIDEO.\nNO AUDIO TRACK.\nThe final result must look like one real influencer holding the hanger with one hand while naturally using her own free hand from the LEFT side to brush across the front of the garment from left to right.",
+    "tags": [
+      "Animações",
+      "Cabide"
+    ]
+  },
+  {
+    "id": "prompt-cabide-3",
+    "title": "Chicote Vertical com Cabide",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/a89H3Q6.mp4",
+    "description": "Movimento rápido vertical de chicote com cabide vazio.",
+    "prompt": "Animate the provided reference image into an ultra-realistic short transition video.\nUse the reference image as the EXACT visual starting frame.\nThe influencer is holding an EMPTY hanger.\nCreate ONE SINGLE, FAST, CONTINUOUS whip-like vertical motion with the arm and hanger.\nTHIS IS ONE FLUID MOTION — NOT TWO SEPARATE ACTIONS.\nMOTION:\nStarting with the empty hanger around the center of the frame, the influencer rapidly swings her ENTIRE arm straight upward.\nThe arm, hand and hanger accelerate upward together.\nThe hand and hanger quickly travel beyond the TOP edge of the frame.\nThe INSTANT they reach the highest point, the direction reverses.\nTHERE IS ABSOLUTELY NO PAUSE AT THE TOP.\nThe top position is NOT a pose.\nThe top position is NOT held.\nThe arm NEVER stays raised.\nThe hanger NEVER remains overhead.\nThe highest point exists only for a fraction of a moment as the natural reversal point of the motion.\nImmediately and fluidly, the same arm snaps straight downward with the empty hanger.\nThe downward movement begins IMMEDIATELY after the upward movement, creating one continuous whip-like action.\nThink of the physical rhythm as:\nUP-DOWN.\nOne impulse.\nOne fluid action.\nOne quick whip.\nNOT:\nUP → WAIT → DOWN.\nThe upward and downward portions must feel directly connected.\nThe motion should resemble a quick flick or whip of the entire arm: fast upward acceleration followed by an immediate, energetic downward snap.\nThe downward motion should be slightly faster and sharper than the upward motion.\nThe hanger quickly re-enters from the top of the frame and travels straight downward with the hand.\nThe arm then makes ONE firm, controlled stop when the hanger reaches approximately the CENTER of the frame.\nEND IMMEDIATELY AFTER THE STOP.\nTIMING:\nThe complete UP-AND-DOWN action should happen very quickly.\nDo not stretch the action across the entire clip.\nDo not create slow motion.\nDo not create anticipation.\nDo not create a dramatic overhead pose.\nDo not hesitate at the reversal point.\nDo not hold the arm above the head.\nDo not hold the hanger at the top.\nDo not create a separate upward scene and downward scene.\nIt must visually read as ONE quick natural gesture:\nCENTER → UP → INSTANT REVERSAL → DOWN → CENTER → STOP.\nThe transition between UP and DOWN must be immediate and seamless.\nMOVEMENT PATH:\nKeep the trajectory predominantly vertical.\nNo large circular movement.\nNo sideways swing.\nNo backward swing.\nNo throwing motion away from the body.\nThe influencer NEVER releases the hanger.\nThe same hand maintains the same grip throughout the entire action.\nEMPTY HANGER LOCK:\nThe hanger remains completely EMPTY from beginning to end.\nNo clothing.\nNo fabric.\nNo product.\nNo object appearing on the hanger.\nHAND + HANGER CONSISTENCY:\nPreserve the exact same hand, fingers, arm, grip and hanger from the reference image.\nNo grip switching.\nNo second hand.\nNo extra fingers.\nNo duplicated hanger.\nNo hand deformation.\nNo arm deformation.\nNo hanger deformation.\nBODY:\nOnly allow the minimal natural shoulder and upper-body response physically required for this fast arm motion.\nKeep the rest of the influencer stable.\nCAMERA:\nCamera completely fixed.\nNo camera movement.\nNo zoom.\nNo pan.\nNo tilt.\nNo cuts.\nNo scene changes.\nFINAL FRAME:\nThe movement finishes with the influencer firmly holding the EMPTY hanger around the CENTER of the frame.\nThe hanger is visible, stable and ready for the clothing transition that will be added later in editing.\nDo NOT generate clothing.\nCRITICAL SPEED RULE:\nTHIS MUST FEEL LIKE A WHIP.\nFAST UP.\nZERO HOLD.\nINSTANT DIRECTION CHANGE.\nFAST DOWN.\nHARD STOP AT CENTER.\nUP-DOWN IS ONE CONTINUOUS GESTURE.\nNEVER PAUSE WITH THE ARM RAISED.\nGenerate VISUAL ANIMATION ONLY.\nCOMPLETELY SILENT VIDEO.\nNO AUDIO TRACK.",
+    "tags": [
+      "Animações",
+      "Cabide"
+    ]
+  },
+  {
+    "id": "prompt-cabide-4",
+    "title": "Balanço 3D",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/ZGyfWKg.mp4",
+    "description": "Movimento tridimensional suave do cabide.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic POV clothing product demonstration.\nTreat the reference frame as the absolute visual truth.\nPreserve the exact same hand, fingers, skin tone, grip, hanger, garment, background, lighting and environment.\nMAIN ACTION:\nCreate ONE smooth three-dimensional presentation movement with the hanger.\nStarting from the original centered position, the hand slowly moves the entire hanger in a small curved arc through space.\nThe hanger moves slightly toward one side AND slightly closer to the camera at the same time.\nThis creates a subtle three-dimensional product presentation without rotating the garment dramatically.\nThen smoothly guide the hanger back along the same natural arc toward its original central position.\nThe movement should resemble a real person gently bringing one side of a garment slightly forward to give the viewer a better sense of its shape and depth.\nKeep the front of the garment visible throughout the entire movement.\nDo NOT turn the garment around.\nDo NOT show the back.\nDo NOT perform a full rotation.\nREALISTIC DEPTH:\nAs the hanger physically moves slightly closer to the camera, the garment should naturally become slightly larger in frame.\nThis is NOT digital zoom.\nMaintain realistic perspective and scale.\nREALISTIC FABRIC PHYSICS:\nThe hanger controls the main trajectory.\nThe fabric follows naturally with subtle inertia.\nThe lower section responds with a very small delayed swing as the direction changes.\nThe garment remains under natural gravity at all times.\nSTRICT PRODUCT LOCK:\nThe garment must remain 100% visually identical to the reference frame.\nPreserve the exact color, material appearance, texture, cut, shape, neckline, sleeves, seams, stitching, print, graphics, logos, labels, length, width and proportions.\nNever invent hidden details.\nNever modify the garment to improve its appearance.\nHAND AND HANGER LOCK:\nPreserve the original hand, fingers, grip and hanger.\nNo second hand.\nNo extra fingers.\nNo grip change.\nNo hand touching the garment.\nCAMERA:\nThe camera remains completely stationary.\nNO digital zoom.\nNO pan.\nNO tilt.\nNO cuts.\nNO scene changes.\nThe change in perspective must come ONLY from the physical movement of the hanger through space.\nNo exaggerated swinging.\nNo spinning.\nNo clothing transformation.\nNo fabric morphing.\nNo floating.\nNo unnatural deformation.\nGenerate VISUAL ANIMATION ONLY.\nCOMPLETELY SILENT VIDEO.\nNO AUDIO TRACK.\nThe final result should look like authentic smartphone product footage where a real person moves a garment through a small three-dimensional arc to naturally highlight its shape, depth and drape",
+    "tags": [
+      "Animações",
+      "Cabide",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-cabide-5",
+    "title": "Balanço Pêndulo",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/FbzlW9d.mp4",
+    "description": "Movimento de pêndulo suave e controlado com cabide.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic POV clothing product demonstration.\nTreat the input frame as the EXACT visual source.\nPreserve the exact same hand, fingers, skin tone, grip, hanger, garment, background, lighting, camera angle, composition and framing.\nMAIN ACTION:\nThe hand keeps a firm and natural grip on the hanger.\nInstead of shaking the garment side to side, create ONE smooth pendulum-like movement.\nThe wrist gently guides the hanger slightly toward one side and allows it to naturally swing back through the center toward the opposite side.\nThe movement should feel fluid, controlled and physical, like a real garment hanging freely under gravity.\nThe hanger remains upright throughout the movement.\nThe hand stays approximately in the same area of the frame.\nREALISTIC FABRIC PHYSICS:\nThe hanger leads the movement.\nThe upper section of the garment follows the hanger closely, while the lower fabric reacts with slightly more delayed motion and inertia.\nAs the hanger changes direction, the bottom of the garment continues moving for a brief moment before naturally following.\nThis creates a subtle flowing motion that highlights the garment's natural drape, weight and fabric behavior.\nThe movement gradually slows and naturally settles near the original central position.\nDo NOT make the movement repetitive or mechanical.\nSTRICT PRODUCT LOCK:\nThe garment must remain 100% identical to the reference frame.\nPreserve exactly the same color, material appearance, texture, cut, neckline, sleeves, seams, stitching, print, graphics, logos, labels, length, width and proportions.\nDo not stretch, redesign, recolor, shorten, enlarge or transform the garment.\nHAND AND HANGER LOCK:\nKeep the exact same hand, fingers, grip and hanger.\nNo second hand.\nNo extra fingers.\nNo grip switching.\nNo hand touching the garment.\nCAMERA COMPLETELY FIXED.\nNo zoom.\nNo pan.\nNo tilt.\nNo cuts.\nNo scene changes.\nNo exaggerated swinging.\nNo spinning.\nNo clothing transformation.\nNo fabric morphing.\nNo floating garment.\nNo unnatural physics.\nGenerate VISUAL ANIMATION ONLY.\nCOMPLETELY SILENT VIDEO.\nNO AUDIO TRACK.\nThe final result should look like authentic smartphone footage of a real garment naturally swinging from a hanger, creating an elegant product-focused movement that highlights the fabric's drape and physical behavior.",
+    "tags": [
+      "Animações",
+      "Cabide",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-cabide-6",
+    "title": "Aproximação de Produto",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/VQ2wvhy.mp4",
+    "description": "Aproximação sutil do produto para a câmera.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic POV clothing product demonstration.\nTreat the input frame as the EXACT visual source.\nPreserve the exact same hand, fingers, skin tone, grip, hanger, garment, background, lighting, perspective and overall visual appearance.\nMAIN ACTION:\nThe person slowly and naturally brings the entire hanger slightly closer toward the camera.\nThe hand maintains the exact same grip.\nThe hanger and garment move forward together as one physical object.\nThis is NOT a digital camera zoom.\nThe camera remains completely stationary.\nThe physical garment simply moves moderately closer to the lens, making the EXISTING product details naturally easier to see.\nKeep the hanger approximately centered during the movement.\nAs the hanger moves forward, allow the garment to react with extremely subtle natural fabric motion.\nThe lower section may gently move backward for a moment due to inertia and then naturally settle underneath the hanger.\nAt the end of the movement, hold the garment steadily closer to the camera for a brief moment.\nSTRICT PRODUCT LOCK:\nThe closer view must reveal ONLY details that already exist in the reference image.\nDo not invent or enhance product details.\nPreserve EXACTLY the original:\ncolor,\nfabric appearance,\ntexture,\ncut,\nshape,\nneckline,\nsleeves,\nseams,\nstitching,\ngraphics,\nprint,\nlogos,\nlabels,\nlength,\nwidth,\nand proportions.\nThe garment must NEVER change shape or design as it approaches the camera.\nHAND LOCK:\nThe hand remains attached to the same part of the hanger with the exact same grip.\nNo second hand.\nNo extra fingers.\nNo finger deformation.\nNo hand touching the garment.\nNo grip switching.\nCAMERA LOCK:\nCamera completely stationary.\nNo digital zoom.\nNo pan.\nNo tilt.\nNo reframing.\nNo cuts.\nNo scene changes.\nOnly the physical hanger and garment move slightly closer to the camera.\nNo excessive swinging.\nNo clothing transformation.\nNo fabric morphing.\nNo stretching.\nNo floating.\nNo sudden movement.\nGenerate VISUAL ANIMATION ONLY.\nCOMPLETELY SILENT VIDEO.\nNO speech.\nNO music.\nNO sound effects.\nNO ambient sound.\nNO AUDIO TRACK.\nThe final result should look like authentic handheld product demonstration footage where a real person simply brings a garment on a hanger slightly closer to the camera so the viewer can inspect it more clearly.",
+    "tags": [
+      "Animações",
+      "Cabide"
+    ]
+  },
+  {
+    "id": "prompt-cabide-7",
+    "title": "Movimento — Swing",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/kWDUdxU.mp4",
+    "description": "Movimento suave estilo swing com a peça.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic POV clothing demonstration video.\nTreat the input frame as the EXACT visual source. Preserve the exact same hand, fingers, skin tone, hanger, garment, background, lighting, camera angle, composition and framing.\nThe garment and hanger MUST remain visually identical to the reference frame throughout the entire animation.\nMAIN ACTION:\nThe hand maintains a firm and natural grip on the hanger and gives it 2–3 short, gentle side-to-side shakes.\nThe wrist creates the movement with very small controlled motions. Do not move the entire arm excessively.\nThe hanger moves slightly left and right while remaining approximately in the same central position.\nThe hanging garment reacts naturally to the hanger's movement.\nUse realistic fabric physics: the hanger moves first, then the fabric follows with a subtle delayed response caused by inertia. The bottom of the garment swings slightly more than the top.\nAfter each direction change, the fabric gently overshoots and settles back naturally.\nThe movement must feel lightweight, physical and authentic, exactly like a real person gently shaking a hanger to demonstrate the fabric and drape of a garment.\nSTRICT PRODUCT LOCK:\nPreserve EXACTLY the original garment color, material appearance, shape, cut, neckline, sleeves, seams, stitching, print, graphics, logos, labels, length, width and proportions.\nDo not stretch, shorten, enlarge, tighten, redesign, recolor or transform the garment.\nThe garment remains correctly attached to the same hanger throughout the entire video.\nHAND LOCK:\nPreserve the original hand and grip.\nNo finger changes.\nNo extra fingers.\nNo missing fingers.\nNo second hand.\nNo hand touching the garment.\nNo grip switching.\nCAMERA LOCK:\nCamera completely fixed.\nNo zoom.\nNo pan.\nNo tilt.\nNo cuts.\nNo scene changes.\nOnly the hand, hanger and natural fabric response should move.\nNO artificial fabric deformation.\nNO fabric morphing.\nNO clothing transformation.\nNO floating garment.\nNO exaggerated swinging.\nNO violent shaking.\nGenerate visual animation only.\nCOMPLETELY SILENT VIDEO.\nNO speech, music, sound effects, ambient sound or audio track.\nThe final result should look like authentic smartphone footage of a person gently shaking a real garment on a hanger to show its natural movement and drape.",
+    "tags": [
+      "Animações",
+      "Cabide",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-cabide-8",
+    "title": "Balanço Lateral",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/fgRJfxC.mp4",
+    "description": "Balanço lateral suave com cabide.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic POV clothing demonstration video.\nTreat the input frame as the EXACT visual source. Preserve the exact same hand, fingers, skin tone, hanger, garment, background, lighting, camera angle, composition and framing.\nThe garment and hanger MUST remain visually identical to the reference frame throughout the entire animation.\nMAIN ACTION:\nThe hand maintains a firm and natural grip on the hanger and gives it 2–3 short, gentle side-to-side shakes.\nThe wrist creates the movement with very small controlled motions. Do not move the entire arm excessively.\nThe hanger moves slightly left and right while remaining approximately in the same central position.\nThe hanging garment reacts naturally to the hanger's movement.\nUse realistic fabric physics: the hanger moves first, then the fabric follows with a subtle delayed response caused by inertia. The bottom of the garment swings slightly more than the top.\nAfter each direction change, the fabric gently overshoots and settles back naturally.\nThe movement must feel lightweight, physical and authentic, exactly like a real person gently shaking a hanger to demonstrate the fabric and drape of a garment.\nSTRICT PRODUCT LOCK:\nPreserve EXACTLY the original garment color, material appearance, shape, cut, neckline, sleeves, seams, stitching, print, graphics, logos, labels, length, width and proportions.\nDo not stretch, shorten, enlarge, tighten, redesign, recolor or transform the garment.\nThe garment remains correctly attached to the same hanger throughout the entire video.\nHAND LOCK:\nPreserve the original hand and grip.\nNo finger changes.\nNo extra fingers.\nNo missing fingers.\nNo second hand.\nNo hand touching the garment.\nNo grip switching.\nCAMERA LOCK:\nCamera completely fixed.\nNo zoom.\nNo pan.\nNo tilt.\nNo cuts.\nNo scene changes.\nOnly the hand, hanger and natural fabric response should move.\nNO artificial fabric deformation.\nNO fabric morphing.\nNO clothing transformation.\nNO floating garment.\nNO exaggerated swinging.\nNO violent shaking.\nGenerate visual animation only.\nCOMPLETELY SILENT VIDEO.\nNO speech, music, sound effects, ambient sound or audio track.\nThe final result should look like authentic smartphone footage of a person gently shaking a real garment on a hanger to show its natural movement and drape.",
+    "tags": [
+      "Animações",
+      "Cabide",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-boomerang-5",
+    "title": "Giro de lado e mao do bolso",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/UeZms3u.mp4",
+    "description": "Giro de lado e demonstração.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic men's mirror-selfie jeans product demonstration.\nUse the provided frame as the ABSOLUTE visual source and identity reference.\nPreserve the exact same man, face, hairstyle, body proportions, gray jeans, white T-shirt, socks, smartphone, visible arm, room, mirror, lighting, perspective, composition and overall appearance.\nThis is a MEN'S JEANS PRODUCT DEMONSTRATION.\nThe JEANS are the exclusive visual focus.\nAUDIO:\nCOMPLETELY SILENT VIDEO.\nVISUAL ANIMATION ONLY.\nNO voice.\nNO dialogue.\nNO music.\nNO sound effects.\nNO ambient sound.\nNO audio track.\nSTRICT JEANS LOCK:\nThe jeans must remain the EXACT SAME physical garment throughout every frame.\nPreserve exactly the original:\ncolor,\ngray wash,\nfabric appearance,\ntexture,\ncut,\nfit,\nwaist position,\npockets,\nbelt loops,\nseams,\nstitching,\nfolds,\nthigh width,\nknee width,\nleg width,\nlength,\nand overall proportions.\nNEVER redesign the jeans.\nNEVER recolor them.\nNEVER tighten or loosen their fit.\nNEVER change the pockets.\nNEVER change the wash.\nNEVER change their silhouette.\nNEVER morph the fabric.\nSTRICT T-SHIRT LOCK:\nThe white T-shirt is NOT part of the demonstration.\nThe T-shirt must remain in its EXACT original position throughout the entire animation.\nKeep the bottom hem at the same height relative to the man's body.\nThe shirt must continue covering exactly the same portion of the jeans as in the reference frame.\nDO NOT touch the shirt.\nDO NOT lift the shirt.\nDO NOT pull the shirt.\nDO NOT tuck the shirt.\nDO NOT untuck the shirt.\nDO NOT roll the shirt.\nDO NOT expose additional waistband by moving the shirt.\nMOVEMENT SEQUENCE:\nCreate one continuous, natural and confident men's clothing presentation.\nThe movement should feel like a regular man showing the jeans he is wearing in front of a mirror — direct, practical and product-focused.\nPHASE 1 — FRONT VIEW:\nBegin from the exact original pose.\nThe man naturally straightens his stance slightly.\nHis feet remain comfortably separated.\nHis shoulders stay level.\nHis posture is upright, relaxed and neutral.\nHold the front view briefly so the jeans are clearly visible.\nPHASE 2 — FIRST ANGLE:\nHe shifts his weight naturally onto one foot.\nHe slightly repositions the opposite foot and rotates his ENTIRE BODY approximately 20–30 degrees toward one side.\nShoulders, torso, waist and legs rotate together as ONE UNIT.\nDo NOT initiate the movement from the hips.\nKeep the hips neutral.\nThis is NOT a fashion-model pose.\nThe purpose is simply to reveal the side profile, thigh fit and leg shape of the jeans while keeping most of the front visible.\nDo NOT show his back.\nPHASE 3 — RETURN TO FRONT:\nWithout pausing excessively, he naturally returns to the frontal position.\nBoth feet settle into a firm, comfortable stance.\nThe movement should remain continuous and realistic.\nPHASE 4 — OPPOSITE ANGLE:\nHe transfers his weight to the opposite foot and rotates the ENTIRE BODY approximately 20–30 degrees toward the opposite side.\nAgain, shoulders, torso and legs move together.\nKeep the movement masculine, firm, neutral and functional.\nKeep most of the FRONT of the jeans visible.\nDo NOT turn around.\nDo NOT show the back.\nPHASE 5 — RETURN TO FRONT:\nHe smoothly returns to the original frontal orientation.\nFinish with a stable, natural standing position that clearly presents the jeans from the front.\nOPTIONAL JEANS ELASTICITY ACTION — ONLY IF ANATOMICALLY POSSIBLE FROM THE REFERENCE:\nONLY if the reference image already contains a clearly visible free hand that can naturally reach the jeans without revealing or inventing another arm:\nThe visible free hand may briefly grip ONLY the SIDE EDGE of the jeans waistband.\nThe fingers gently pull the waistband outward a few centimeters.\nCreate a small, clearly visible gap demonstrating the natural flexibility of the waistband.\nHold for only a fraction of a second.\nRelease immediately.\nThe waistband returns naturally to its exact original position.\nThe hand then returns naturally to its original position.\nCRITICAL:\nThe hand must NEVER touch the T-shirt during this action.\nThe T-shirt must NEVER move.\nThe hand must NEVER lift the shirt to access the waistband.\nIf the waistband area is partially covered by the shirt, DO NOT reveal the covered portion.\nInteract ONLY with the already visible portion of the jeans.\nIf a suitable free hand is NOT already visible in the reference frame, SKIP THE ELASTICITY ACTION COMPLETELY.\nNEVER invent a new arm or hand just to demonstrate elasticity.\nMASCULINE MOVEMENT CHARACTER:\nAll body movement must be controlled, grounded and practical.\nUse natural weight transfer through the feet and legs.\nKeep the shoulders stable.\nKeep the torso controlled.\nKeep the hips neutral.\nNO hip swaying.\nNO isolated hip rotation.\nNO exaggerated knee bending.\nNO crossing legs.\nNO runway walking.\nNO fashion-model posing.\nNO exaggerated body curves.\nNO sensual movement.\nNO dancing.\nSMARTPHONE:\nThe smartphone remains naturally held throughout the entire sequence.\nKeep the phone stable relative to the upper body.\nDo not switch hands.\nDo not lower the phone to interact with the jeans.\nANATOMY LOCK:\nPreserve the exact anatomy from the reference.\nDo NOT generate an additional arm.\nDo NOT reveal a hidden arm.\nDo NOT create additional hands.\nDo NOT create additional fingers.\nDo NOT deform the legs.\nDo NOT change body proportions.\nIf a body part is hidden in the reference image, keep it hidden.\nCAMERA:\nMaintain the original mirror-selfie perspective.\nNO artificial zoom.\nNO camera pan.\nNO camera tilt.\nNO cuts.\nNO scene changes.\nUse only the natural minor camera response caused by the man's real body movement while holding the smartphone.\nREALISTIC FABRIC PHYSICS:\nThe jeans may respond naturally to the movement of the legs.\nAllow only subtle, physically accurate changes in existing folds around the thighs and knees as the stance changes.\nThe garment itself must never transform.\nFINAL RESULT:\nThe final video should look like authentic smartphone footage of a regular man confidently demonstrating the jeans he is wearing in front of a mirror.\nThe viewer should naturally understand the jeans from multiple useful angles:\nFRONT → SIDE ANGLE → FRONT → OPPOSITE SIDE ANGLE → FRONT.\nThe movement exists only to highlight the product's original fit, wash, cut, thigh shape, leg shape and overall appearance.\nThe jeans remain the hero product.\nThe T-shirt remains completely untouched.\nThe clothing remains visually faithful to the reference frame from beginning to end.\nCOMPLETELY SILENT VIDEO.\nNO AUDIO TRACK.",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-boomerang-6",
+    "title": "Flexibilidade",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/zVlDz1H.mp4",
+    "description": "Demonstração de flexibilidade do jeans.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic men's mirror-selfie JEANS ELASTICITY demonstration.\nUse the provided frame as the ABSOLUTE visual source.\nPreserve the exact same man, identity, body proportions, gray jeans, white T-shirt, smartphone, visible arm, room, mirror, lighting, perspective and framing.\nThe JEANS are the exclusive product focus.\nThe purpose of this animation is to visually demonstrate how the SAME jeans naturally flex and move while being worn.\nCOMPLETELY SILENT VIDEO.\nVISUAL ANIMATION ONLY.\nNO AUDIO TRACK.\nSTRICT PRODUCT LOCK:\nThe jeans must remain the EXACT SAME garment from the first frame to the last frame.\nPreserve exactly the original color, gray wash, texture, cut, waistband, pockets, belt loops, seams, stitching, fit, leg width, length and proportions.\nDo NOT redesign the jeans.\nDo NOT change their color.\nDo NOT change their fit.\nDo NOT make them tighter or looser.\nDo NOT artificially enlarge the garment.\nDo NOT morph the fabric.\nThe white T-shirt must remain completely untouched and in EXACTLY the same position on the body.\nThe shirt hem stays at the same height.\nDO NOT lift the shirt.\nDO NOT pull the shirt.\nDO NOT tuck the shirt.\nDO NOT touch the shirt.\nDO NOT expose additional waistband.\nMAIN ACTION — REALISTIC STRETCH TEST:\nThe man remains facing the mirror with a stable, masculine posture.\nStarting from the original stance, he slightly widens his stance by moving ONE foot outward a short distance.\nAt the same time, he performs a small, controlled knee bend.\nBoth knees flex naturally while the torso remains upright.\nThis is NOT a squat.\nThis is a short mobility test.\nThe movement should create natural tension across the jeans around the thighs, knees and upper legs.\nThe fabric should visibly respond to the movement of the body underneath it.\nThe jeans naturally flex around the thighs and knees while maintaining their original structure and appearance.\nHold the flexed position VERY briefly.\nThen he immediately straightens his legs and naturally returns to the original standing position.\nThe rhythm is:\nNORMAL STANCE → SMALL STEP OUT → SHORT KNEE FLEX → IMMEDIATE RETURN → NORMAL STANCE.\nKeep the movement short, confident and practical.\nIt should look like a real man testing whether his jeans allow comfortable movement.\nIMPORTANT FABRIC BEHAVIOR:\nThe elasticity must come from the man's BODY MOVEMENT creating natural tension in the jeans.\nDo NOT artificially stretch the entire garment.\nAs the knees bend, create subtle realistic tension lines around the thighs and knees.\nAs he straightens again, those temporary tension lines naturally relax.\nThe jeans return immediately to their original shape.\nNo permanent deformation.\nNo rubber-like stretching.\nNo exaggerated elasticity.\nOPTIONAL DIRECT FABRIC TEST — ONLY IF A SUITABLE FREE HAND IS ALREADY CLEARLY VISIBLE:\nIf the reference frame already contains a visible free hand that can naturally reach the SIDE OF THE THIGH without crossing the torso:\nThe hand briefly grips a SMALL section of jeans fabric on the outer thigh.\nUse only the thumb and fingers.\nPull the fabric directly OUTWARD from the thigh by a few centimeters.\nThe pull is short, firm and clearly visible.\nHOLD FOR A FRACTION OF A SECOND.\nRELEASE.\nThe fabric immediately returns to the leg.\nONE PULL ONLY.\nThe action should clearly communicate:\nGRIP → PULL → VISIBLE STRETCH → RELEASE → SNAP BACK NATURALLY.\nThe hand interacts ONLY with the jeans.\nNEVER touch the white T-shirt.\nNEVER move toward the shirt.\nNEVER lift the shirt.\nNEVER pull the waistband underneath the shirt.\nIf the required hand is hidden or not anatomically available in the original frame, SKIP THIS HAND ACTION COMPLETELY.\nDO NOT invent another arm or hand.\nMASCULINE BODY LANGUAGE:\nKeep the movement grounded, firm and functional.\nThe movement resembles a man checking the mobility of workwear, denim or everyday pants.\nWeight transfer comes through the legs and feet.\nShoulders remain level.\nTorso remains controlled.\nHips remain neutral.\nNO hip swaying.\nNO hip-led movement.\nNO dancing.\nNO sensual posing.\nNO runway posing.\nNO crossing the legs.\nNO exaggerated squat.\nNO exaggerated hip rotation.\nSMARTPHONE:\nThe phone remains naturally held in the same visible hand.\nDo not switch hands.\nDo not use the phone hand to touch the clothing.\nANATOMY LOCK:\nPreserve the exact anatomy of the reference frame.\nNo new arms.\nNo new hands.\nNo extra fingers.\nNo duplicated limbs.\nNo distorted legs.\nNo changing body proportions.\nAny limb hidden in the original reference must remain hidden.\nCAMERA:\nMaintain the original mirror-selfie perspective.\nNO digital zoom.\nNO artificial camera movement.\nNO cuts.\nNO scene changes.\nFINAL RESULT:\nThe final video should look like authentic smartphone footage of a man performing a quick, practical mobility test while wearing the jeans.\nThe viewer should clearly perceive that the jeans allow natural movement around the THIGHS and KNEES while maintaining their original fit and shape.\nThe jeans remain visually identical to the reference.\nThe white T-shirt remains completely untouched.\nThe movement must feel REAL, SHORT, CONTROLLED and PRODUCT-FOCUSED.\nThis is a JEANS ELASTICITY AND MOBILITY TEST — not a fashion pose.\nCOMPLETELY SILENT VIDEO.\nNO AUDIO TRACK.",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-boomerang-7",
+    "title": "virada 2 lados natural",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/GYD0aFk.mp4",
+    "description": "Virada natural para os 2 lados.",
+    "prompt": "Animate the provided reference frame into an ultra-realistic men's mirror-selfie jeans product video.\nTreat the reference frame as the ABSOLUTE visual truth.\nPreserve the exact same man, identity, face, hairstyle, body proportions, jeans, T-shirt, smartphone, visible anatomy, room, mirror, lighting, perspective and framing.\nCreate ONE continuous, spontaneous and highly realistic product presentation.\nThis should NOT feel like a sequence of poses.\nThis should NOT feel choreographed.\nIt should look like a real man casually recording himself in the mirror for a short TikTok product video, naturally moving for a few seconds while showing how the jeans look and move on his body.\nThe JEANS are the hero product.\nMOVEMENT FLOW:\nBegin directly from the exact original position.\nThe man stays facing the mirror for a brief moment.\nWithout stopping or posing, he naturally shifts his weight onto one leg and slightly slides the opposite foot outward.\nHis shoulders, torso and legs respond together naturally.\nThis creates a subtle change in the front view of the jeans and makes the fabric around the thighs and knees react naturally.\nImmediately continue the same movement by rotating the entire body slightly toward one side — only about 15–20 degrees.\nDo not create a dramatic side pose.\nIt should feel like he simply turned slightly to check the jeans from another angle.\nKeep most of the FRONT of the jeans visible.\nWithout holding this position, naturally return toward the front.\nAs he returns, slightly straighten the previously relaxed leg and transfer his weight toward the opposite foot.\nThe movement should flow continuously.\nNo stop.\nNo pose.\nNo mechanical transition.\nThen make one small natural adjustment with the opposite foot, creating a slightly different frontal stance.\nAllow the jeans to naturally respond around the thighs, knees and lower legs.\nOPTIONAL NATURAL FABRIC INTERACTION:\nONLY if ONE anatomically valid free hand is already available in the reference frame, the free hand casually reaches toward the visible OUTER SIDE of the jeans around the upper-thigh area.\nThe hand lightly takes hold of the fabric in a relaxed way.\nNo aggressive grip.\nNo pinching with two fingertips.\nNo squeezing.\nGive the fabric TWO very small, casual outward tugs:\nLIGHT HOLD → SMALL TUG → RELAX → SMALL TUG → RELEASE.\nThe movement is quick, subtle and effortless.\nThe fabric moves only a few centimeters.\nImmediately release it.\nThe free hand then naturally returns away from the jeans.\nThe hand NEVER touches the T-shirt.\nIf a valid free hand is NOT already available in the reference frame, SKIP THIS ENTIRE INTERACTION.\nNEVER invent a hand or arm.\nCONTINUE THE BODY MOVEMENT:\nAfter the fabric interaction, or immediately after the stance change if the interaction was skipped, the man makes one final subtle weight transfer.\nOne knee relaxes naturally while the other leg supports slightly more weight.\nThen he settles back into a comfortable frontal stance.\nDo not freeze into a fashion pose.\nEnd as if he simply finished showing the jeans.\nMOVEMENT PERSONALITY:\nEvery movement must be short, understated and connected to the next one.\nUse natural human imperfections.\nThe timing should NOT be perfectly symmetrical.\nThe feet should not move like choreography.\nThe body should not move on a perfectly mechanical rhythm.\nAllow tiny realistic variations in timing and momentum.\nThink:\ncasual adjustment → slight angle → natural return → small stance change → optional fabric tug → relaxed finish.\nNOT:\npose → stop → pose → stop → pose.\nMASCULINE BODY LANGUAGE:\nUse grounded, neutral men's body language.\nMovement comes primarily from natural weight transfer through the feet and legs.\nShoulders remain level and relaxed.\nTorso remains controlled.\nHips remain neutral and follow the body naturally rather than leading the movement.\nNO hip swaying.\nNO isolated hip movement.\nNO exaggerated curves.\nNO crossing legs.\nNO runway posing.\nNO dancing.\nNO sensual movement.\nNO dramatic fashion poses.\nNO exaggerated knee bending.\nNO turning around.\nNO back view.\nSTRICT T-SHIRT LOCK:\nThe T-shirt is NOT part of the demonstration.\nPreserve its exact original position throughout the entire video.\nThe bottom hem must remain at the same height relative to the body.\nIt must continue covering exactly the same portion of the jeans.\nNO touching the T-shirt.\nNO lifting the T-shirt.\nNO pulling the T-shirt.\nNO adjusting the T-shirt.\nNO tucking or untucking.\nNO rolling the hem.\nNO exposing additional waistband.\nSTRICT JEANS IDENTITY LOCK:\nThe jeans must remain the EXACT SAME product throughout every frame.\nPreserve the original:\ncolor,\nwash,\nfabric appearance,\ntexture,\ncut,\nfit,\nwaist position,\npockets,\nbelt loops,\nseams,\nstitching,\nfold structure,\nthigh width,\nknee width,\nlower-leg width,\nlength,\nand proportions.\nNatural temporary fabric response caused by real body movement is allowed.\nProduct transformation is NOT allowed.\nNO recoloring.\nNO redesign.\nNO changing pockets.\nNO changing wash.\nNO changing fit.\nNO changing leg width.\nNO artificial tightening.\nNO artificial loosening.\nNO fabric morphing.\nREALISTIC FABRIC PHYSICS:\nAs the man's legs change position, allow subtle temporary changes in the existing folds around the thighs and knees.\nThe fabric follows the body naturally.\nWhen the body settles, the fabric settles naturally.\nNever make the jeans behave like rubber, liquid or weightless fabric.\nSMARTPHONE:\nThe smartphone remains naturally held throughout the entire sequence.\nThe phone-holding hand does NOT participate in the clothing demonstration.\nDo not switch hands.\nKeep the smartphone reasonably stable relative to the man's upper body.\nAllow only extremely subtle natural movement caused by the man's body shifting.\nANATOMY LOCK:\nNever invent anatomy to complete an action.\nNo new arms.\nNo new hands.\nNo duplicated hands.\nNo additional fingers.\nNo disappearing limbs.\nNo body deformation.\nNo changing leg length.\nNo warped feet.\nAny body part hidden in the original frame should remain hidden unless its appearance is already anatomically inevitable from a tiny natural body movement.\nCAMERA:\nMaintain the authentic mirror-selfie perspective.\nNo artificial camera zoom.\nNo cinematic camera movement.\nNo pan.\nNo tilt.\nNo cuts.\nNo transitions.\nNo scene changes.\nThis is ONE continuous smartphone shot.\nCRITICAL REALISM RULE:\nDo not try to make every movement visually impressive.\nRealism is more important than exaggerated motion.\nKeep each individual action SMALL, but combine several small natural actions into one fluid sequence.\nThe result should feel spontaneous rather than generated.\nFINAL RESULT:\nCreate authentic mirror-selfie footage of a regular man naturally showing the jeans he is wearing through several connected micro-movements.\nFRONT → WEIGHT SHIFT → SMALL SIDE ANGLE → NATURAL RETURN → DIFFERENT STANCE → OPTIONAL TWO LIGHT FABRIC TUGS → RELAXED FRONT FINISH.\nNo single movement should dominate the video.\nThe variety comes from the natural sequence of subtle actions.\nThe viewer should clearly see the jeans' original fit, wash, thigh shape, knee area, leg silhouette, natural fabric behavior and optional flexibility without the man looking like he is performing choreography.\nKeep the T-shirt completely untouched.\nKeep the jeans visually faithful to the reference.\nKeep the movement natural, confident, casual and product-focused.\nVISUAL ANIMATION ONLY.\nCOMPLETELY SILENT VIDEO.\nNO SPEECH.\nNO MUSIC.\nNO SOUND EFFECTS.\nNO AMBIENT SOUND.\nNO AUDIO TRACK.",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-boomerang-1",
+    "title": "Ajuste de Perna / Mostrar o Caimento",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/baquXRP.mp4",
+    "description": "Ajuste de postura para mostrar caimento.",
+    "prompt": "Animate the provided reference image into a highly realistic men's fashion mirror-selfie video.\nUse the reference image as the exact visual source.\nPreserve the exact same man, gray jeans, white shirt, white socks, smartphone, visible arm, body proportions, room, lighting, mirror perspective and framing.\nThe jeans MUST remain completely unchanged throughout the animation. Preserve exactly the same original color, gray wash, texture, cut, fit, waistband, pockets, belt loops, seams, stitching, leg width and length.\nThe man remains facing the mirror.\nInstead of turning his body, he makes ONE small and natural stance adjustment to demonstrate how the jeans fit around the thighs, knees and lower legs.\nHe slightly straightens the leg that is bent in the reference image while naturally transferring some body weight to the other leg.\nThe movement is subtle and controlled. Both feet remain close to their original positions.\nThe purpose is simply to make the fabric move naturally around the thighs and knees so the viewer can see the fit and structure of the jeans while they are being worn.\nKeep the torso mostly still. Keep the smartphone and visible arm stable.\nCRITICAL: The hidden arm must remain hidden throughout the entire video. Never generate a second arm or hand.\nNo touching the jeans. No posing. No sensual movement. No hip swaying. No turning around. No back view. No walking. No exaggerated leg movement. No camera movement. No zoom. No cuts. No new limbs. No changing the jeans. No fabric morphing. No body deformation.\nThe result should look like a real man casually adjusting his stance for a few seconds to show the fit and details of the jeans.",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-boomerang-2",
+    "title": "Giro Masculino / Mostrar Ângulo Lateral",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/EZtfkud.mp4",
+    "description": "Giro masculino para mostrar ângulo lateral.",
+    "prompt": "Animate the provided reference image into a highly realistic men's mirror-selfie clothing video.\nUse the reference image as the exact visual source.\nPreserve the exact same man, body proportions, gray jeans, white T-shirt, white socks, smartphone, visible arm, room, lighting, mirror perspective and original framing.\nIMPORTANT: The clothing must remain visually identical to the reference image throughout the entire animation.\nThe gray jeans must preserve exactly the same color, wash, texture, cut, fit, waistband position, pockets, seams, stitching, leg width and length.\nThe white T-shirt must remain exactly in its original position and continue covering exactly the same portion of the jeans. Do not lift, move, adjust, tuck or modify the shirt.\nMOVEMENT:\nThe man makes one simple, firm and neutral stance adjustment.\nStarting from the original position, he shifts his body weight from one foot to the other while keeping a stable, upright posture.\nHe slightly repositions one foot and naturally straightens his stance, followed by a small rotation of the ENTIRE BODY to one side.\nThe shoulders, torso and legs move together as one unit.\nDo NOT lead the movement with the hips.\nKeep the hips neutral and controlled.\nThe movement should resemble a regular man standing in front of a mirror briefly changing his stance to show another angle of his jeans.\nNo fashion posing or stylized body movement.\nKeep both legs naturally separated with a stable stance. Avoid exaggerated knee bending.\nThe movement is short, direct and controlled.\nThe visible hand remains holding the smartphone throughout the entire animation.\nCRITICAL: Never generate or reveal the hidden arm or hidden hand.\nDo not touch any clothing.\nNo touching the T-shirt.\nNo touching the jeans.\nNo shirt adjustment.\nNo waistband adjustment.\nNo hand gestures.\nNo hip swaying.\nNo side-to-side hip motion.\nNo exaggerated knee bending.\nNo crossing legs.\nNo runway pose.\nNo sensual posing.\nNo exaggerated body curves.\nNo turning around.\nNo back view.\nNo walking away.\nNo camera movement.\nNo zoom.\nNo cuts.\nNo new limbs.\nNo clothing transformation.\nNo fabric morphing.\nNo body distortion.\nThe final result should look like a regular man naturally and confidently changing his standing position for a few seconds to show the jeans from a slightly different angle.",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-boomerang-3",
+    "title": "Reposicionamento de Base / Postura Frontal",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/OcYlwGd.mp4",
+    "description": "Reposicionamento de base na postura frontal.",
+    "prompt": "Animate the provided reference image into a highly realistic men's mirror-selfie clothing video.\nUse the reference image as the exact visual source.\nPreserve the exact same man, body proportions, gray jeans, white T-shirt, white socks, smartphone, visible arm, room, lighting, mirror perspective and original framing.\nAUDIO:\nGenerate this video COMPLETELY SILENT.\nNO AUDIO TRACK.\nNO SPEECH.\nNO VOICE.\nNO DIALOGUE.\nNO MUSIC.\nNO SOUND EFFECTS.\nNO AMBIENT SOUND.\nNO BACKGROUND NOISE.\nNO FOOTSTEP SOUNDS.\nDo not generate, synthesize or add any type of audio. The final video must contain visual animation only.\nLOCK THE CLOTHING.\nThe gray jeans must remain exactly identical to the reference image: same color, gray wash, texture, cut, fit, waistband, pockets, belt loops, seams, stitching, leg width and length.\nThe white T-shirt must remain exactly where it is in the reference image. The bottom of the shirt must remain at the same height and continue covering the same portion of the jeans.\nMOVEMENT:\nThe man remains facing the mirror.\nHe performs ONE simple stance adjustment using only a small repositioning of his legs and feet.\nStarting from the original pose, he naturally straightens the slightly bent leg and places his weight more evenly between both feet.\nHe slightly adjusts the position of one foot, creating a stable, relaxed, shoulder-width standing stance.\nKeep the movement firm, minimal and neutral.\nHis torso remains upright and stable.\nHis shoulders remain relaxed and level.\nHis hips remain neutral.\nThere is NO hip-led movement.\nThere is NO hip swaying.\nThere is NO exaggerated knee movement.\nThe movement should look like a regular man casually repositioning his feet while checking how his jeans fit in a mirror.\nThe visible hand remains holding the smartphone.\nThe smartphone stays naturally stable relative to the upper body.\nCRITICAL: The hidden arm must remain completely hidden. Never generate another arm or hand.\nThe man must not touch or adjust any part of his clothing.\nNo touching the shirt.\nNo lifting the shirt.\nNo touching the jeans.\nNo pulling the jeans.\nNo waistband adjustment.\nNo hand gestures.\nNo posing.\nNo hip swaying.\nNo hip rotation.\nNo crossing the legs.\nNo exaggerated knee bending.\nNo runway movement.\nNo sensual movement.\nNo turning around.\nNo back view.\nNo walking.\nNo camera movement.\nNo zoom.\nNo cuts.\nNo clothing changes.\nNo fabric morphing.\nNo body deformation.\nThe final result should look like authentic smartphone footage of a regular man making one simple, firm stance adjustment to naturally show the fit of his jeans.\nFINAL AUDIO REQUIREMENT:\nThe output MUST be completely silent. Visual animation only. Do not create an audio track under any circumstances.",
+    "tags": [
+      "Animações",
+      "Boomerang",
+      "One Prompt"
+    ]
+  },
+  {
+    "id": "prompt-boomerang-4",
+    "title": "Zoom Digital / Detalhes da Calça",
+    "filterCategory": "Animações",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/GYBYxIh.mp4",
+    "description": "Zoom digital para mostrar detalhes da calça.",
+    "prompt": "Animate the provided reference image into a highly realistic men's mirror-selfie product video.\nUse the reference image as the EXACT visual source.\nPreserve the exact same man, body proportions, gray jeans, white T-shirt, white socks, smartphone, visible arm, room, lighting, mirror and overall appearance.\nThe JEANS are the exclusive product focus.\nAUDIO:\nGenerate a completely SILENT video.\nVISUAL ANIMATION ONLY.\nNO speech.\nNO music.\nNO sound effects.\nNO ambient sound.\nNO audio track.\nSTRICT SUBJECT LOCK:\nThe man remains almost completely still in the exact original pose.\nDo not make him demonstrate the clothing with his hands.\nThe visible hand must remain holding the smartphone.\nThe hidden arm must remain completely hidden.\nNever generate or reveal another arm, hand or fingers.\nSTRICT CLOTHING LOCK:\nThe jeans must remain 100% IDENTICAL to the reference image in every frame.\nPreserve the exact original gray color, wash pattern, fabric appearance, cut, fit, waistband position, pockets, belt loops, seams, stitching, folds, thigh width, knee width, lower-leg width and length.\nDO NOT modify, enhance, redesign, recolor, tighten, loosen, stretch or reshape the jeans.\nThe white T-shirt must remain EXACTLY in its original position.\nThe bottom hem of the T-shirt stays at exactly the same height throughout the video.\nThe shirt continues covering exactly the same portion of the upper jeans.\nDO NOT lift the shirt.\nDO NOT move the shirt.\nDO NOT tuck the shirt.\nDO NOT expose the waistband.\nDO NOT reveal anything hidden underneath the shirt.\nCAMERA MOVEMENT — MAIN ACTION:\nCreate ONE smooth and realistic DIGITAL ZOOM-IN toward the jeans.\nStart with the original mirror-selfie framing.\nThen gradually zoom the smartphone camera toward the jeans, exactly like a real person using the phone's camera zoom to give the viewer a closer look at the pants.\nThe zoom should be smooth, controlled and moderately noticeable.\nThe framing gradually becomes tighter around the jeans.\nDirect the center of the zoom toward the pants, prioritizing the visible front area of the jeans.\nAs the zoom progresses, the jeans should occupy significantly more of the frame.\nThe closer framing should naturally make the EXISTING details easier to see: the original gray wash, fabric appearance, pockets, seams, stitching, thigh area, knee area, leg shape and overall fit.\nIMPORTANT:\nThis is a CAMERA ZOOM.\nThe man does NOT walk toward the mirror.\nThe man does NOT move closer.\nThe man does NOT touch his clothing.\nThe clothing does NOT move to reveal additional details.\nDo NOT invent details that are not visible in the reference image.\nThe zoom only magnifies the visual information that already exists.\nKeep the zoom centered and stable.\nNo sudden zoom.\nNo aggressive zoom.\nNo camera shake.\nNo pan away from the jeans.\nNo body rotation.\nNo walking.\nNo posing.\nNo hip movement.\nNo leg movement.\nNo hand gestures.\nNo touching the shirt.\nNo touching the jeans.\nNo clothing adjustment.\nNo new limbs.\nNo body deformation.\nNo clothing transformation.\nNo fabric morphing.\nNo cuts.\nNo scene changes.\nFINAL RESULT:\nThe video should look like authentic smartphone mirror footage where a man briefly uses the phone's digital camera zoom to highlight the jeans he is wearing.\nStart with the original full-body mirror view and smoothly transition into a closer product",
+    "tags": [
+      "Animações",
+      "Boomerang"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-recriar-1",
+    "title": "RECRIAR INFLUENCER",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/2apW4zC.png",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "IMPORTANT — CLOTHING COLOR VARIATION:\n\nAlso modify the COLOR of the influencer's clothing.\n\nKeep the exact same clothing item, design, cut, style, fabric appearance and fit from the reference image. ONLY the clothing color may change.\n\nWhen generating 3 separate variations, use different natural and aesthetically pleasing clothing colors between the outputs whenever possible.\n\nDo NOT create a different outfit.\nDo NOT change the clothing design.\nDo NOT change the clothing type.\nDo NOT add or remove clothing pieces.\n\nSAME CLOTHING — DIFFERENT COLOR.\n\nThe clothing color is now one of the allowed variation elements, together with hair, subtle body proportions and smartphone/case details.Você não pode de forma alguma adicionar várias versões da influenciadora numa mesma imagem. Por imagem só deve conter uma influenciadora e faça variações de cores de cabelo também. Você também deve alterar o modelo do iPhone em cada geração de imagem que você for fazer e também pode alterar um pouco o corpo, para que as variações fiquem realistas e diferentes uma da outra, diferentes da imagem original. Informação importante: se a imagem que eu tô te mandando não tem de celular, a influenciadora não segura celular, não crie o celular. Ponto, entendeu? Você vai alterar o celular somente se ela tiver com o celular na mão. Se não tiver com o celular na mão, não mexa. altere só o cabelo e o corpo e a cor da roupa.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face",
+      "Influenciadoras",
+      "One Prompt"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-troca-1",
+    "title": "TROCA DE ROUPA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/5V8YdrD.jpeg",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A highly detailed, photorealistic image of the female model from Image 1, keeping her exact pose, body shape, expression, and original background.\n\nThe main task is to accurately dress the model with the clothing items provided in the other images:\n\n1. Top: She is wearing the specific upper-garment from Image 2. The fabric must drape and fold realistically over her shoulders and torso, respecting her posture and body contours perfectly.\n2. Bottom: She is wearing the specific lower-garment from Image 3. It must fit naturally around her waist, hips, and legs, showing accurate fabric texture and seams.\n\nThe integration must look seamless, as if she is genuinely wearing the outfit in that exact environment. Adjust all shadows, lighting reflections, and creases on the clothes to match the original scene's lighting. No distortion, high fashion catalog quality.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face",
+      "Trocas"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-1",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/GHKw3qZ.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-2",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/c8PIK0R.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-3",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/y5YD3Yt.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-4",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/mgpkwgY.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-5",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/QcRbJnE.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-6",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/csk4BFP.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-7",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/OfpLVTo.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-8",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/Qp6cVQH.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-9",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/EJfp6OY.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-10",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/S1U5bnc.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-11",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/Q5fC2k2.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-12",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/e9jwGFu.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-13",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/MucmFKm.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-14",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/b31fD6k.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-15",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/oqQdrJs.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-16",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/OM0Q3e1.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-17",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/9dppUFN.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-mirror-noface-img-18",
+    "title": "REFERÊNCIA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/z0LsHjs.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "Mirror No Face",
+      "Imagens",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-1",
+    "title": "DESLIZE LATERAL",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/7Hyf8bm.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Keep the woman, outfit and environment identical. She starts with one knee slightly bent and one hip turned outward. Her free hand slowly moves across the front of the top, then down over the stomach and waist, continuing toward the side of the shorts. She gently shifts her hips twice while changing her weight between her legs and finishes by taking one small step closer to the mirror. Smooth, natural, realistic movement.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-2",
+    "title": "GIRO LATERAL",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/8EwrUmh.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Keep the model, body, clothing and setting completely unchanged. She begins facing the mirror, makes a gentle hip sway to the right and left, slides her free hand over the waist and hip, rotates about 45 degrees to show the side silhouette, pauses for a moment, lightly pulls the fabric near the waist and releases it, then rotates back to the front and takes one small step toward the mirror. Natural TikTok Shop fashion presentation, realistic body physics, no talking, no digital zoom.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "Boomerang",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-3",
+    "title": "AJUSTE DA BLUSA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/zHDZiUS.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Keep the same model, clothing and mirror environment. Do not show the face. Make an 8-second realistic mirror video. She begins in a natural standing pose. In the first 2 seconds, she places her free hand near the lower edge of the top. From seconds 2 to 4, she lightly pulls the hem outward once and releases it. From seconds 4 to 6, she smooths the fabric over the stomach area. From seconds 6 to 8, she shifts one hip outward and holds a soft pose. No speaking, no outfit changes.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-4",
+    "title": "MÃO DA COXA À CINTURA",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/VKBYRx6.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Preserve everything exactly as in the original image. The model keeps her body slightly angled to the mirror with one hip pushed outward. Her free hand first rests on the thigh, then slowly moves upward toward the hip and waist. After that, she lightly touches the lower edge of the top, gently pulls it outward once and releases it. She finishes by smoothing the front of the top with her hand. Natural feminine motion, no talking, no clothing alteration.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-5",
+    "title": "MEIO GIRO COM POSE",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/dLvjOZN.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Preserve the exact same body, outfit and background. Frame from the neck down so the face is hidden. Create an 8-second outfit mirror video. She starts front-facing. In the first 3 seconds, she slowly turns her body halfway to the side. From seconds 3 to 6, she lightly arches her posture to emphasize the outfit fit. From seconds 6 to 8, she turns back to the front and finishes with a subtle hip shift. Keep it natural, realistic and silent.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "Boomerang",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-6",
+    "title": "PASSO LATERAL",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/iyNvrUN.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Maintain the exact same girl and environment, neck-down framing only. Create an 8-second natural mirror fashion video. She starts with her legs close together. In the first 2 seconds, she takes one small step forward. From seconds 2 to 5, she shifts her hips gently and places one hand on the waist. From seconds 5 to 8, she takes a tiny step back and turns her body slightly sideways before returning to a front pose. Smooth and realistic motion, no talking, no camera changes.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-7",
+    "title": "PASSOS ALTERNADOS",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/kSUmlUh.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Maintain all visual details exactly. The woman performs two small rhythmic steps in place while gently alternating her hips left and right. Her upper body stays controlled and natural. The free hand moves from the thigh to the waist, briefly touches the clothing, then relaxes again. The movement should feel like a subtle TikTok fashion dance, elegant and not exaggerated. No audio or talking.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-v2-8",
+    "title": "GIRO DE COSTAS",
+    "filterCategory": "Mirror No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/TfPRMww.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "Maintain the original woman and scene perfectly. Starting from a front mirror pose, she slowly rotates her body to the side, continues until her body is almost turned backward to briefly show the rear fit of the pants, then rotates back toward the mirror. The movement is smooth and controlled, without fully turning her face away. Her free arm stays relaxed beside the body. No talking, no camera movement.",
+    "tags": [
+      "Mirror No Face",
+      "Animações",
+      "Boomerang",
+      "No Face"
+    ]
+  },
+  {
+    "id": "prompt-noface-recriar-1",
+    "title": "RECRIAR INFLUENCER",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/yZGe3DG.jpeg",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "IMPORTANT — CLOTHING COLOR VARIATION:\n\nAlso modify the COLOR of the influencer's clothing.\n\nKeep the exact same clothing item, design, cut, style, fabric appearance and fit from the reference image. ONLY the clothing color may change.\n\nWhen generating 3 separate variations, use different natural and aesthetically pleasing clothing colors between the outputs whenever possible.\n\nDo NOT create a different outfit.\nDo NOT change the clothing design.\nDo NOT change the clothing type.\nDo NOT add or remove clothing pieces.\n\nSAME CLOTHING — DIFFERENT COLOR.\n\nThe clothing color is now one of the allowed variation elements, together with hair, subtle body proportions and smartphone/case details.Você não pode de forma alguma adicionar várias versões da influenciadora numa mesma imagem. Por imagem só deve conter uma influenciadora e faça variações de cores de cabelo também. Você também deve alterar o modelo do iPhone em cada geração de imagem que você for fazer e também pode alterar um pouco o corpo, para que as variações fiquem realistas e diferentes uma da outra, diferentes da imagem original. Informação importante: se a imagem que eu tô te mandando não tem de celular, a influenciadora não segura celular, não crie o celular. Ponto, entendeu? Você vai alterar o celular somente se ela tiver com o celular na mão. Se não tiver com o celular na mão, não mexa. altere só o cabelo e o corpo e a cor da roupa.",
+    "tags": [
+      "No Face",
+      "Imagens",
+      "Influenciadoras",
+      "One Prompt"
+    ]
+  },
+  {
+    "id": "prompt-noface-troca-1",
+    "title": "TROCA DE ROUPA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/elcUYnA.jpeg",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A highly detailed, photorealistic image of the female model from Image 1, keeping her exact pose, body shape, expression, and original background.\n\nThe main task is to accurately dress the model with the clothing items provided in the other images:\n\n1. Top: She is wearing the specific upper-garment from Image 2. The fabric must drape and fold realistically over her shoulders and torso, respecting her posture and body contours perfectly.\n2. Bottom: She is wearing the specific lower-garment from Image 3. It must fit naturally around her waist, hips, and legs, showing accurate fabric texture and seams.\n\nThe integration must look seamless, as if she is genuinely wearing the outfit in that exact environment. Adjust all shadows, lighting reflections, and creases on the clothes to match the original scene's lighting. No distortion, high fashion catalog quality.",
+    "tags": [
+      "No Face",
+      "Imagens",
+      "Trocas"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-8",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/nOkRuRb.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-15",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/5YG6fek.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-2",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/d3TmJ0T.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-5",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/XoCL38L.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-1",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/EK2noQB.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-6",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/tlvAKZu.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-11",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/u4YSlcV.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-10",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/jdwKQp6.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-3",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/Ib4xvXb.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-4",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/OCUY0DF.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-14",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/rokXPy0.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-12",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/zKLLpnI.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-7",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/N0cwhZZ.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-17",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/owtJrGW.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-13",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/cGs0pE8.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-16",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/vmjO2qK.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-img-9",
+    "title": "REFERÊNCIA",
+    "filterCategory": "No Face",
+    "mediaType": "image",
+    "mediaUrl": "https://i.imgur.com/dEpgZAo.jpeg",
+    "description": "Imagem de referência. Clique no botão abaixo para baixar a imagem.",
+    "prompt": "Imagem de referência de alta qualidade para download e modelagem visual.",
+    "tags": [
+      "No Face",
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-noface-v3-1",
+    "title": "MOVIMENTO E POSE",
+    "filterCategory": "No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/gOD6l4k.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A modelo inicia imediatamente com quatro passos pequenos e rápidos alternando os pés no mesmo lugar, enquanto movimenta suavemente o quadril. De repente interrompe o movimento, estende uma perna para o lado e segura a pose por um instante. Em seguida faz mais dois passos ritmados, desliza as mãos rapidamente pelas laterais da roupa e termina completamente parada de frente. Criar contraste forte entre movimento rápido e poses estáticas. Estilo vídeo viral de moda para TikTok Shop. Preservar 100% da referência. Corpo inteiro do pescoço para baixo, câmera fixa, sem zoom, fala ou áudio.",
+    "tags": [
+      "No Face",
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-noface-v3-2",
+    "title": "PASSO CRUZADO",
+    "filterCategory": "No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/YXuwXVs.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A modelo começa andando lateralmente com dois passos curtos e espontâneos. No terceiro movimento, cruza uma perna rapidamente na frente da outra como se tivesse feito um pequeno passo errado de propósito, recupera imediatamente o equilíbrio de maneira divertida e continua o movimento naturalmente. Depois dá uma pequena sacudida na roupa com as mãos e termina em uma pose confiante. Deve parecer espontâneo e humano, como um momento casual capturado em vídeo, nunca uma queda real. Manter integralmente roupa, corpo, pele e cenário. Câmera fixa, corpo inteiro do pescoço para baixo, sem áudio.",
+    "tags": [
+      "No Face",
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-noface-v3-3",
+    "title": "FRENTE E LATERAL",
+    "filterCategory": "No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/npF5B9Q.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A modelo começa em pé de frente para a câmera, com postura natural. Ela coloca suavemente as mãos nos bolsos do short, dá pequenos passos para frente e para trás enquanto alterna o peso entre as pernas e movimenta levemente o quadril. Em seguida, retira uma das mãos do bolso e gira lentamente o corpo para o lado, ficando em posição lateral para mostrar o caimento do conjunto. Ela passa suavemente a mão pela lateral do quadril e da coxa, faz uma pequena pose lateral e retorna naturalmente para a posição de frente. Finaliza colocando novamente as mãos nos bolsos e fazendo pequenos movimentos corporais de modelo. Movimentos femininos, leves, espontâneos e realistas, como uma pessoa real divulgando roupa para TikTok Shop. Câmera completamente fixa. Manter exatamente a mesma pessoa, corpo, proporções, roupa, tecido, cores e ambiente da imagem original. Não adicionar nem remover elementos. Sem fala, sem áudio, sem zoom, sem movimentos de câmera e sem deformações.",
+    "tags": [
+      "No Face",
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-noface-v3-4",
+    "title": "MOVIMENTO DO TECIDO",
+    "filterCategory": "No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/4X52n39.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A modelo começa de frente, segura delicadamente as duas laterais da peça superior e faz um movimento curto para mostrar a leveza e o movimento do tecido. Solta a roupa, coloca uma mão no bolso e gira rapidamente o corpo para uma posição de três quartos. Volta para frente, cruza uma perna levemente à frente da outra e passa uma mão suavemente pela lateral do quadril até a coxa. Finaliza dando um pequeno passo em direção à câmera. Movimentos fluidos, confiantes e naturais, sem sensualização exagerada. Manter exatamente a roupa original, formato, estampa, corpo, tom de pele e ambiente. Enquadramento sempre do pescoço para baixo. Câmera fixa, sem zoom, sem fala e sem áudio.",
+    "tags": [
+      "No Face",
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-noface-v3-5",
+    "title": "AGACHAMENTO E ELASTICIDADE",
+    "filterCategory": "No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/uYQs7s8.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A modelo começa de frente e faz um agachamento curto e natural, mantendo o tronco alinhado. Enquanto sobe, desliza suavemente as duas mãos das coxas até a cintura. Ao ficar totalmente em pé, abre uma perna para o lado em um movimento rápido, inclina levemente o quadril e estende os braços por um instante como se estivesse revelando o look completo. Finaliza puxando delicadamente a barra da peça para mostrar o caimento e soltando. Movimento contínuo, confiante e chamativo, estilo TikTok Shop. Manter exatamente roupa, tecido, estampa, corpo, proporções, pele e cenário. Câmera fixa, pescoço para baixo, sem zoom, fala ou áudio.",
+    "tags": [
+      "No Face",
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-noface-v3-6",
+    "title": "ELASTICIDADE E CAIMENTO",
+    "filterCategory": "No Face",
+    "mediaType": "video",
+    "mediaUrl": "https://i.imgur.com/ysKO0vz.mp4",
+    "description": "Modelo estilo No Face de alta performance. Clique em copiar para usar o prompt.",
+    "prompt": "A modelo começa de frente e faz uma demonstração rápida dos detalhes da roupa. Primeiro segura delicadamente a extremidade de uma manga e estica poucos centímetros, soltando em seguida. Repete na outra manga. Depois segura a barra da camiseta com as duas mãos, estica suavemente para os lados e solta. Finaliza segurando discretamente as laterais do short para demonstrar o caimento, soltando imediatamente e fazendo uma pose de frente. Movimentos rápidos, naturais e focados exclusivamente no produto. Preservar exatamente tecido, estampa, comprimento, corpo, pele e cenário. Sem deformações, câmera fixa e sem áudio.",
+    "tags": [
+      "No Face",
+      "Animações"
+    ]
+  },
+  {
+    "id": "prompt-55",
+    "title": "SELFIE EM QUARTO DE HOTEL",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-olive-halter-hotel.jpg",
+    "description": "Selfie realista de plano médio em quarto de hotel, vestindo top cropped halter verde-oliva com colar de flor.",
+    "prompt": "A medium close-up selfie of a young woman with long, straight, center-parted dark brown hair and olive skin. She has thick dark eyebrows, soft pink blush, and glossy dark brown lipstick, looking directly into the camera with a neutral, calm expression. She is wearing a fitted, ribbed olive green halter-neck crop top and a delicate silver necklace with a flower-shaped pendant. A dark brown leather shoulder bag strap is visible on her left shoulder. On her left upper arm, there is a tattoo of two butterflies, and a script tattoo is visible on her left forearm. She is wearing light-wash denim jeans. The background is a hotel room with a television mounted on the wall showing a streaming service interface, a black desk with a white landline phone, and a hallway door in the back. The lighting is soft and ambient, casting gentle shadows. The image has a sharp focus on the subject, photorealistic, high detail.",
+    "tags": [
+      "Imagens",
+      "Ambientes"
+    ]
+  },
+  {
+    "id": "prompt-56",
+    "title": "SELFIE NO ESPELHO - CORSET TROPICAL",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-tropical-corset-mirror.jpg",
+    "description": "Mirror selfie estilo TikTok/Instagram em quarto com corset verde tropical vibrante e capinha de flores.",
+    "prompt": "{\n  \"meta\": {\n    \"aspect_ratio\": \"9:16\",\n    \"quality\": \"ultra_photorealistic\",\n    \"resolution\": \"8k\",\n    \"camera\": \"câmera frontal do iPhone 15 Pro Max\",\n    \"lens\": \"24mm grande angular\",\n    \"style\": \"realismo de câmera de iPhone, não de estúdio, não profissional, textura natural visível\"\n  },\n  \"character_lock\": {\n    \"identity_source\": \"\",\n    \"face_identity\": [\n      \"rosto oval, maxilar bem definido e contornado, nariz reto com ponta levemente empinada, lábios cheios e bem delineados com gloss natural, olhos castanhos amendoados com delineado gatinho escuro, sobrancelhas arqueadas e preenchidas, olhar sedutor e confiante\"\n    ],\n    \"regras_de_aparencia\": {\n      \"descricao_geral\": \"cabelo longo liso castanho escuro com mechas frontais loiras (money piece) contornando o rosto, pele com tom bronzeado natural, marcas de biquíni de bronzeamento bem evidentes no colo, textura de pele suave com leve oleosidade natural na zona T\",\n      \"detalhes_extras\": \"piercing de argola fino no lado inferior direito do lábio, tatuagens escuras complexas visíveis no antebraço direito\"\n    }\n  },\n  \"cena\": {\n    \"local\": \"quarto ou closet com espelho de parede\",\n    \"ambiente\": [\n      \"porta ou lateral de armário branco à esquerda\",\n      \"monitor de computador emitindo luz azul ao fundo à direita\",\n      \"ambiente organizado e com pouca luz ambiente\"\n    ],\n    \"atmosfera\": \"casual, vaidosa, estética de rede social (TikTok/Instagram)\"\n  },\n  \"iluminacao\": {\n    \"tipo\": \"iluminação artificial de ambiente interno\",\n    \"luz_principal\": \"luz frontal difusa vindo possivelmente do teto ou frente do espelho, iluminando o rosto e destacando o colo\",\n    \"luz_de_preenchimento\": \"sombras marcadas abaixo do maxilar e nas laterais do corpo\",\n    \"contraste\": \"contraste médio-alto\",\n    \"evitar\": [\n      \"iluminação de estúdio\",\n      \"ring light artificial\",\n      \"aparência profissional\",\n      \"tons quentes/laranja\",\n      \"flash estourado\"\n    ]\n  },\n  \"perspectiva_da_camera\": {\n    \"pov\": \"selfie no espelho (mirror selfie)\",\n    \"angulo\": \"frontal reto, altura do peito\",\n    \"distancia\": \"plano médio, cortando na altura da cintura\",\n    \"visibilidade_do_celular\": \"celular visível, segurado pela mão direita no nível do ombro, com capinha branca decorada com desenhos florais pretos e detalhes em rosa\"\n  },\n  \"assunto\": {\n    \"genero\": \"feminino\",\n    \"idade\": \"adulto (21+)\",\n    \"vibe\": \"influenciadora tropical, estilosa, urbana\",\n    \"textura_pele\": \"pele maquiada mas com textura realista, leve brilho natural de oleosidade nas bochechas e nariz\",\n    \"expressao\": {\n      \"olhos\": \"olhando fixamente para o reflexo da tela do celular\",\n      \"boca\": \"fechada, relaxada\",\n      \"emocao\": \"neutra, focada na pose\"\n    },\n    \"pose\": {\n      \"posicao\": \"em pé, tronco de frente para o espelho\",\n      \"apoio\": \"sem apoio visível, postura ereta\",\n      \"mao\": \"mão direita segurando o celular mostrando unhas amendoadas com esmalte escuro e vários anéis prateados, braço esquerdo abaixado e parcialmente fora do quadro\"\n    },\n    \"roupa\": {\n      \"blusa\": {\n        \"tipo\": \"vestido ou blusa tipo corset com alças finas\",\n        \"caimento\": \"justo ao corpo, decote coração\",\n        \"detalhes\": \"tecido liso e acetinado de cor verde vibrante com estampa tropical contendo bananas amarelas, folhas e uma arara verde e roxa\"\n      },\n      \"extra\": [\n        \"duas correntes prateadas finas no pescoço (uma com pingente de coração, outra com medalha redonda)\",\n        \"relógio prateado e pulseiras finas no pulso esquerdo\",\n        \"bolsa preta com alça de corrente pendurada no ombro esquerdo\"\n      ]\n    }\n  },\n  \"qualidade_da_imagem\": {\n    \"foco\": \"foco cravado no rosto da modelo e no celular\",\n    \"granulacao\": \"ruído visível em baixa luminosidade\",\n    \"nitidez\": \"NÃO extremamente nítida, mais lo-fi\",\n    \"realismo\": \"parece uma selfie real de iPhone postada online\",\n    \"artefatos_de_sensor\": \"leve perda de definição nas áreas escuras do fundo\",\n    \"distorcao_de_lente\": \"barrel distortion leve de 24mm, esticando levemente as bordas\",\n    \"pos_processamento\": \"nitidez artificial (oversharpening) típica de algoritmo iOS\"\n  }\n}",
+    "tags": [
+      "Imagens",
+      "Mirror No Face"
+    ]
+  },
+  {
+    "id": "prompt-57",
+    "title": "MIRROR SELFIE - BANHEIRO BEGE",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-20.webp",
+    "description": "Selfie casual de espelho em banheiro moderno, com biquinho leve, calça cinza e top sem alças.",
+    "prompt": "{\n  \"meta\": {\n    \"aspect_ratio\": \"9:16\",\n    \"quality\": \"ultra_photorealistic\",\n    \"resolution\": \"8k\",\n    \"camera\": \"câmera frontal do iPhone 15 Pro Max\",\n    \"lens\": \"24mm grande angular\",\n    \"style\": \"realismo de selfie do iPhone, não de estúdio, não profissional, textura natural visível\"\n  },\n  \"cena\": {\n    \"local\": \"Banheiro moderno com revestimento bege\",\n    \"ambiente\": [\n      \"Box de vidro com chuveiro de teto ao fundo\",\n      \"Frascos de amenities fixados na parede à esquerda\",\n      \"Vaso sanitário branco com tampa aberta visível no canto inferior direito\",\n      \"Limpo e organizado\"\n    ],\n    \"atmosfera\": \"Casual, selfie cotidiana em ambiente doméstico ou hotel\"\n  },\n  \"iluminação\": {\n    \"tipo\": \"Luz artificial de teto de banheiro\",\n    \"luz principal\": \"Luz zenital criando sombras suaves sob o queixo e clavícula\",\n    \"luz de preenchimento\": \"Reflexo difuso nas paredes bege, luz suave sem flash direto\",\n    \"contraste\": \"Médio, realçando a profundidade do cabelo preto\"\n  },\n  \"perspectiva_da_câmera\": {\n    \"pov\": \"Selfie no espelho (Mirror Selfie)\",\n    \"ângulo\": \"Altura do peito, levemente inclinado\",\n    \"distância\": \"Plano médio (do quadril para cima)\",\n    \"visibilidade_do_celular\": \"iPhone preto com capa de corações vermelhos segurado pela mão esquerda\"\n  },\n  \"assunto\": {\n    \"gênero\": \"Feminino\",\n    \"idade\": \"adulto (21+)\",\n    \"vibe\": \"Urbana, casual, jovem\",\n    \"expressão\": {\n      \"olhos\": \"Olhando diretamente para o próprio reflexo/tela do celular\",\n      \"boca\": \"Fazendo biquinho (duckface) leve\",\n      \"emoção\": \"Descontraída, confiante\"\n    },\n    \"pose\": {\n      \"position\": \"Em pé, corpo levemente inclinado para frente\",\n      \"mão\": \"Mão esquerda segurando o celular\"\n    },\n    \"roupa\": {\n      \"blusa\": {\n        \"tipo\": \"Top sem alças (tubinho)\",\n        \"caimento\": \"Ajustado ao corpo\",\n        \"detalhes\": \"Tecido preto fosco liso\"\n      },\n      \"extra\": [\n        \"Calça jeans cinza estonada com botão metálico visível\",\n        \"Colar fino com pingente delicado\",\n        \"Piercing pequeno no nariz\"\n      ]\n    }\n  },\n  \"qualidade_da_imagem\": {\n    \"foco\": \"Foco cravado no plano do espelho\",\n    \"granulação\": \"ruído visível em baixa luminosidade\",\n    \"realismo\": \"parece uma selfie real de iPhone postada online\",\n    \"artefatos_de_sensor\": \"Leve reflexo de luz no topo do espelho vindo da lâmpada\",\n    \"distorcao_de_lente\": \"barrel distortion leve de 24mm\"\n  }\n}",
+    "tags": [
+      "Imagens",
+      "Mirror No Face",
+      "Ambientes"
+    ]
+  },
+  {
+    "id": "prompt-58",
+    "title": "CLOSE-UP EXTREMO - TOUCA DE PELE",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-21.webp",
+    "description": "Selfie ultra aproximada de rosto apoiado na mão, usando touca preta de pele em cozinha residencial.",
+    "prompt": "EXTREME ultra close-up smartphone selfie, EXACT same camera angle and distance as the reference image. Camera is positioned VERY close to the face (approximately 15–18 cm), slightly BELOW eye level and tilted upward. The perspective exaggerates the nose and lips naturally, exactly like a real front-facing phone camera. The frame is tightly cropped: the top of the black fur hat is visible, eyebrows fully visible, eyes partially relaxed and half-open, nose centered and dominant, lips fully visible, and the chin partially cropped by the bottom edge of the frame. NO additional headroom. NO zooming out. NO reframing. The subject is resting her face on her LEFT hand. The palm presses into the cheek, slightly deforming the skin naturally. Fingers are vertical along the cheek. Fingernails are almond-shaped, medium length, painted glossy deep red. Lips are full, soft pink, slightly glossy, relaxed and closed. Lip shape and angle must remain neutral, no smile, no tension. Visible natural lip lines and moisture. Nose is close to the camera with visible nostrils due to the upward angle. Natural skin shine on the nose tip. Skin is COMPLETELY natural: visible pores, freckles across nose and cheeks, slight redness, uneven tone, no smoothing, no beauty filters, no retouching. Eyes are relaxed, looking slightly downward toward the camera. Eyelashes are natural, eyebrows thick and natural with visible individual hairs. Hair is straight blonde with darker roots, visible on both sides of the face, falling naturally. A dense black fur hat frames the forehead closely, touching near the eyebrows, with visible individual fur strands. Lighting is soft indoor ambient daylight, neutral temperature, coming from above and slightly to the side. No dramatic shadows, no studio lighting. Background is an indoor kitchen environment, softly out of focus. Light-colored wall texture, refrigerator visible on the right side. DO NOT beautify. DO NOT correct proportions. DO NOT adjust symmetry. No logos, no text, no watermarks, no UI icons.",
+    "tags": [
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-59",
+    "title": "SELFIE NO INTERIOR DO VEÍCULO",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-25.webp",
+    "description": "Selfie de close-up frontal em interior de carro com luz natural suave, vestindo regata branca canelada.",
+    "prompt": "Selfie ultra realista de jovem adulta brasileira, 19 anos, sentada no interior de um veículo, orientação frontal para a câmera, capturada com câmera frontal de smartphone. Expressão neutra, lábios fechados levemente projetados, olhar direto para a lente, calma sem exagero expressivo. Tom de pele claro, textura real com poros visíveis, sardas distribuídas pelo nariz e bochechas, acabamento natural sem aparência plastificada. Cabelo loiro, longo, partição central, liso com leve ondulação natural, solto sem styling elaborado. Maquiagem leve: base ou corretivo suave com acabamento natural, máscara de cílios evidente, definição sutil nos olhos, blush discreto, lábios com produto nude ou gloss transparente. Vestindo regata branca de algodão canelado, estilo casual. Colar de corrente fina dourada com pingente pequeno e discreto. Ambiente: interior de veículo com encosto de banco, teto do carro e janela lateral visíveis, situação cotidiana sem preparação de cenário. Iluminação natural lateral/frontal suave, difusa, sombras leves e realistas na pele. Câmera frontal de smartphone, estilo UGC nativo, ângulo ligeiramente abaixo da linha dos olhos, enquadramento close-up do peito para cima, proporção vertical 9:16, nitidez alta no rosto sem desfoque artificial. Sem filtros, contraste natural, saturação equilibrada, tratamento mínimo preservando textura real. Alto nível de autenticidade UGC: imperfeições naturais visíveis, iluminação não controlada, ambiente cotidiano, ausência de pose publicitária.",
+    "tags": [
+      "Imagens"
+    ]
+  },
+  {
+    "id": "prompt-60",
+    "title": "SELFIE CASUAL NA PRAIA",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-27.webp",
+    "description": "Estética espontânea UGC na praia sob o sol de verão, cabelo ondulado ao vento e biquíni azul-turquesa.",
+    "prompt": "Mulher jovem realizando selfie casual ao ar livre em ambiente de praia, com o rosto apoiado sobre a mão, transmitindo estética espontânea e natural típica de UGC. Jovem adulta, expressão relaxada, leve sorriso neutro, olhos parcialmente semicerrados devido à incidência direta de luz solar. Cabelo castanho, longo, ondulado natural, com leve frizz e desorganização causada pela brisa marítima. Top de biquíni verde azulado, modelo simples, alças finas, sem estampas. Maquiagem mínima com acabamento natural, pele com brilho de luz solar, blush suave e lábios em tom neutro. Argolas pequenas em metal dourado, colar fino dourado, pulseira dourada com pequenos pingentes. Estética de câmera frontal de smartphone, ângulo levemente baixo, câmera próxima ao rosto. Close-up do tronco superior até a cabeça, enquadramento vertical 9:16 com sujeito levemente descentralizado. Foco nítido, luz natural intensa, textura de pele visível e realista, sem suavização excessiva. Ambiente de praia próximo à linha do mar, céu azul limpo, mar visível ao fundo, linha do horizonte natural. Dia ensolarado de verão, sensação de tranquilidade e informalidade. Iluminação natural direta do sol, com realces fortes e sombras suaves.",
+    "tags": [
+      "Imagens",
+      "Ambientes"
+    ]
+  },
+  {
+    "id": "prompt-61",
+    "title": "STORIES DE INSTAGRAM COM REGATA BRASIL",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-28.webp",
+    "description": "Selfie vertical realista estilo Stories de Instagram, com leve ruído, vestindo regata verde da bandeira nacional.",
+    "prompt": "9:16 Ultra-realistic, hand-taken vertical selfie of a 21-year-old blonde woman in a relaxed pose, captured in the authentic style of Instagram Stories. Slight motion blur, smooth texture and low resolution, warm indoor lighting. Close-up vertical selfie filling most of the Stories frame, camera very close to the face, imperfect angle of a hand-taken photo. She smiles with a relaxed and confident expression, direct eye contact with the camera. Instagram Stories realism - slight exposure variation, shallow depth of field, subtle grain, slightly softened iPhone edges, no cinematic polish. Natural, loose hair color or hairstyle. Minimal or optional makeup. Delicate gold rings on her fingers, shoulders framed by a green tank top in the colors of the Brazilian flag. Neutral inner background, softly blurred. No text on screen, no stickers, just the selfie in storyboard style.",
+    "tags": [
+      "Imagens",
+      "YouTube Create"
+    ]
+  },
+  {
+    "id": "prompt-62",
+    "title": "STORIES CASUAL EM FAZENDA BRASILEIRA",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-29.webp",
+    "description": "Selfie autêntica ao ar livre em fazenda com coque no cabelo e regata de alça branca.",
+    "prompt": "Ultra-realistic, hand-held vertical selfie of a 21-year-old blonde woman in a relaxed pose, in the authentic style of Instagram Stories. Slight motion blur, smooth texture and low resolution, natural lighting, daylight. Close-up vertical selfie filling most of the Stories frame, camera very close to the face, imperfect angle of a hand-taken photo. She smiles with a relaxed and confident expression, direct eye contact with the camera. Instagram Stories realism - slight variation in exposure, shallow depth of field, subtle grain, edges slightly softened by the iPhone, no cinematic retouching. Her face is slim and symmetrical, like a model's, her teeth are white and aligned, her skin is clear, youthful and attractive; Her hair is tied up in a bun. No makeup. The scene takes place in an open-air setting, like a typical Brazilian farm, a farm with banana trees, chickens, plenty of land, trees, and vegetation all around. Audio: The woman brings the camera close to her face and says in Brazilian Portuguese: \"É difícil de acreditar que eu não sou real né? Mas isso é porque eu sou linda, eu entendo!\". After the first sentence, the woman laughs naturally. After the laugh, the woman speaks again: \"O passo a passo pra gerar vídeos assim está no link, só clicar!\". Shoulders framed by a white tank top with thin straps. Neutral and slightly blurred background. No text on the screen, no stickers, just the selfie in storyboard style.",
+    "tags": [
+      "Imagens",
+      "Ambientes",
+      "YouTube Create"
+    ]
+  },
+  {
+    "id": "prompt-63",
+    "title": "CLOSE-UP INFLUENCER COM LAPELA DJI",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-30.webp",
+    "description": "Close-up super nítido de modelo loira vestindo regata Prada com microfone de lapela DJI.",
+    "prompt": "Ultra-realistic close-up of a 20-year-old blonde influencer with slightly wavy blonde hair, 8K resolution, natural creator-style photography. Final hyper-realistic close-up scene, wearing a white Prada tank top, blue jeans, and a visible DJI lapel microphone. Same home environment with neutral light wall and warm cozy interior lighting. Camera at eye level, close-up of face and upper shoulders, vertical 9:16 framing. Her face fills most of the frame creating intimacy and trust. Warm and genuine smile, friendly eyes, relaxed facial muscles, confident yet approachable. She looks happy, calm, and trustworthy — not posing. Looking directly at the lens with a slight natural head tilt, minimal movement. Her expression clearly suggests \"trust me, come with me, click the link, follow me\" — the exact second before or after a call to action. Soft and even light on the face, natural skin highlights, no harsh shadows, visible realistic skin texture. No cinematic lighting, pure creator realism. Smartphone/creator aesthetic, everything in focus, no blur, no bokeh, no HDR. Looks like a real final frame from a TikTok or Reel. Final hook moment of trust, high conversion potential, ideal for last frame of video, thumbnail, CTA in Stories, or remarketing impression.",
+    "tags": [
+      "Imagens",
+      "Influenciadoras"
+    ]
+  },
+  {
+    "id": "prompt-64",
+    "title": "SELFIE NO CARRO - DUNKIN' ICED COFFEE",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-31.webp",
+    "description": "Selfie realista de close-up no carro com copo de café gelado Dunkin', jaqueta de couro e óculos de sol.",
+    "prompt": "Ultra-photorealistic 9:16 vertical iPhone 15 Pro Max front camera selfie of a young blonde woman sitting inside a car with brown leather seats. 8K resolution, natural iPhone camera realism with visible sensor noise, slight 24mm barrel distortion, iOS oversharpening artifacts. She has straight light blonde hair, loose, oval face shape, full lips, slim nose, smooth glowing skin with natural highlight on cheekbones, fine pores visible under the light, glossy lip texture, long almond-shaped nails painted in dark wine/burgundy polish. She wears a white ribbed cotton turtleneck tank top fitted to the body with a small silver metallic detail at the neckline, a dark brown leather jacket draped over her arms with visible metal zippers, dark oval sunglasses with slightly translucent tortoiseshell frame, thick gold hoop earrings. She holds a large clear plastic Dunkin' iced coffee cup with an orange straw near her face, lips slightly pursed around the straw. Neutral relaxed expression, eyes hidden behind sunglasses directed at the camera. Selfie taken from a slight low angle, medium-close shot from bust up. Left hand holding the phone out of frame. Car interior background with modern clean interior, sunroof/windows showing diffused daylight. Natural daylight entering through the front and top windows illuminating her face and chest softly. Medium contrast between illuminated skin and darker car interior background. No studio lighting, no ring light, no flash, no warm/orange tones. Lo-fi quality, not extremely sharp, looks like a real iPhone selfie posted online. Slight reflections of the car interior visible on the sunglasses lenses. Casual urban lifestyle aesthetic, 'that girl' vibe, trendy and confident.",
+    "tags": [
+      "Imagens",
+      "Ambientes"
+    ]
+  },
+  {
+    "id": "prompt-65",
+    "title": "MIRROR SELFIE NO ELEVADOR",
+    "filterCategory": "Imagens",
+    "mediaType": "image",
+    "mediaUrl": "https://zayraai.com/images/prompts/prompt-ai-influencer-33.webp",
+    "description": "Selfie de espelho no elevador com pele bronzeada, cabelo efeito molhado, corset marrom e minissaia cargo.",
+    "prompt": "",
+    "tags": [
+      "Imagens",
+      "Mirror No Face",
+      "Ambientes"
+    ]
+  }
+]

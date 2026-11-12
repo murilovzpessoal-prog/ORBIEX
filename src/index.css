@@ -1,0 +1,254 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+@theme {
+  --color-brand-DEFAULT: #14b8a6;
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-shine: shine 3s infinite;
+}
+
+@layer utilities {
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .glass-nav {
+    background: rgba(5, 5, 5, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .text-gradient {
+    background: linear-gradient(to right, var(--color-brand-400), #8b5cf6, #d946ef);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  /* CUSTOM BUTTON STYLES */
+  .custom-btn {
+    position: relative;
+    padding: 16px 40px;
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 12px;
+    overflow: hidden;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-400), #8b5cf6);
+    box-shadow: inset 0px -15px 20px -5px rgba(255, 255, 255, 0.35);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .custom-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    transform: skewX(-25deg);
+    animation: shine 3s infinite;
+    pointer-events: none;
+  }
+
+  .custom-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+  }
+
+  /* Mockup CSS for Features Section */
+  .mockup-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform-origin: center;
+      width: 100%;
+  }
+
+  /* Responsive MacBook Container */
+  .macbook-lid {
+      position: relative;
+      width: 90vw; /* Responsive width */
+      max-width: 750px;
+      aspect-ratio: 16 / 10;
+      background: #000;
+      border-radius: clamp(8px, 2vw, 14px);
+      padding: 1.2%; 
+      border: 1px solid #333;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      z-index: 10;
+      margin-left: auto;
+      margin-right: auto;
+  }
+
+  .macbook-screen {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border-radius: clamp(4px, 1vw, 8px);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+  }
+
+  .macbook-base {
+      width: 90.2vw;
+      max-width: 752px;
+      height: clamp(8px, 2vw, 14px);
+      background: linear-gradient(to bottom, #d1d5db 0%, #9ca3af 100%);
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      position: relative;
+      margin-top: -2px;
+      border: 1px solid #888;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: center;
+      margin-left: auto;
+      margin-right: auto;
+  }
+
+  .base-notch {
+      width: 10%;
+      height: 50%;
+      background: rgba(0,0,0,0.15);
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+  }
+
+  .mac-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 13%;
+      height: 4%;
+      background: #000;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
+
+  .mac-camera {
+      width: 20%;
+      height: 50%;
+      background: #1a1a1a;
+      border-radius: 50%;
+  }
+
+  /* IPHONE */
+  .iphone-container {
+      position: absolute;
+      bottom: -5%;
+      left: 0; 
+      width: 22%; /* Reduced for better proportion relative to macbook */
+      min-width: 80px;
+      max-width: 215px;
+      aspect-ratio: 1 / 2.14;
+      background: #111;
+      border-radius: clamp(20px, 4vw, 40px);
+      padding: 1%; 
+      box-shadow: 15px 30px 60px rgba(0,0,0,0.8);
+      border: 2px solid #333; 
+      z-index: 60;
+  }
+
+  /* Mobile Optimization */
+  @media (max-width: 768px) {
+      .mockup-wrapper {
+          /* Shift right slightly so iPhone doesn't cut off */
+          padding-left: 0;
+          padding-right: 0;
+          margin-top: 2rem; /* Add space from button */
+      }
+      .macbook-lid, .macbook-base {
+          width: 95%;
+      }
+      .iphone-container {
+          left: 2%; 
+          bottom: -5%;
+          width: 25%; /* Explicitly smaller on mobile */
+          border-radius: 18px;
+          border-width: 1px;
+          box-shadow: 10px 20px 40px rgba(0,0,0,0.6);
+      }
+  }
+
+  .iphone-screen {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border-radius: clamp(18px, 3.5vw, 36px);
+      overflow: hidden; 
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .dynamic-island {
+      width: 35%; 
+      height: 4%;
+      background: #000;
+      border-radius: 20px;
+      position: absolute;
+      top: 2.5%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes shine {
+  0% { left: -100%; opacity: 0; }
+  20% { opacity: 1; }
+  50%, 100% { left: 200%; opacity: 0; }
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

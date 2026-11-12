@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production build
+dist/
+dist-ssr/
+*.local
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Backups, zips, downloads & scratch
+*.zip
+*.tar.gz
+backup_orbix_project.tar.gz
+cooud-site/
+cooud.com.zip
+clone_cooud.js
+download_extra_chunks.js
+download_images.sh
+scratch/
+.git_disabled/
+.vscode/
+
+# Logs and OS files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.system_generated/

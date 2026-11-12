@@ -32,6 +32,7 @@ export type ViewId =
   | 'headlines'
   | 'hooks'
   | 'prompts'
+  | 'prompt-gen'
   | 'automations'
   | 'credits'
   | 'community'
@@ -70,6 +71,7 @@ export const NAV_GROUPS: NavItem[][] = [
 ];
 
 export const NAV_FOOTER: NavItem[] = [
+  { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles, badge: { text: 'NOVO', tone: 'amber' } },
   { id: 'support', label: 'Suporte', icon: LifeBuoy },
   { id: 'help', label: 'Ajuda', icon: CircleHelp },
 ];
@@ -80,6 +82,7 @@ export const VIEW_TITLES: Record<ViewId, string> = {
   home: 'Início',
   agent: 'Agente IA',
   prompts: 'Biblioteca de Prompts',
+  'prompt-gen': 'Gerador de Prompts',
   products: 'Produtos',
   product: 'Score Produto',
   store: 'Score Lojista',

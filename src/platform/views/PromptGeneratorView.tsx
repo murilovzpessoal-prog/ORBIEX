@@ -17,7 +17,6 @@ import {
   Zap,
   ShieldCheck,
   Camera,
-  Activity,
   Video,
   Film,
   Sparkles,
@@ -119,79 +118,159 @@ function greeting() {
   return h < 5 ? 'Boa madrugada' : h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
 }
 
-/* ─────────────────────────── engine de prompts ─────────────────────────── */
+/* ─────────────────────────── engine de prompts inteligente ─────────────────────────── */
 
 function buildPromptsFromIdea(userIdea: string): { steps: string[]; text: string; prompts: PromptBlock[] } {
   const idea = userIdea.trim();
   const lower = idea.toLowerCase();
 
-  // Detecta movimento implícito ou explícito
-  let motionEn = 'slow organic 360-degree orbit camera movement showing 3D fit and drapery';
-  let motionPt = 'Giro suave de 360 graus com estabilização de câmera destacando o caimento da peça.';
+  // 1. Extração semântica do produto e nicho
+  let productLabel = 'Produto de Alta Conversão';
+  let category: 'fitness' | 'fashion' | 'swim' | 'shoes' | 'jewelry' | 'beauty' | 'gadget' | 'general' = 'general';
 
-  if (lower.includes('agacha') || lower.includes('transpar') || lower.includes('elasticidade')) {
-    motionEn = 'deep athletic squat movement test in front of full-length mirror, camera tracks descent, proving zero fabric transparency and locked waistband';
-    motionPt = 'Agachamento atlético no limite em frente ao espelho, comprovando zero transparência do tecido e firmeza do cós.';
-  } else if (lower.includes('caminha') || lower.includes('desfile') || lower.includes('passo')) {
-    motionEn = 'confident forward runway walk towards camera, dynamic steadycam tracking shot, natural fabric flutter with each stride';
-    motionPt = 'Caminhada frontal confiante com câmera rastreando o movimento e balanço natural do tecido.';
-  } else if (lower.includes('zoom') || lower.includes('detalhe') || lower.includes('textura')) {
-    motionEn = 'smooth macro push-in lens movement, revealing intricate garment stitching, ribbed weave and micro-fabric elasticity';
-    motionPt = 'Aproximação suave em lente macro evidenciando a costura dupla e a textura do tecido.';
-  } else if (lower.includes('espelho') || lower.includes('ugc') || lower.includes('celular')) {
-    motionEn = 'vertical mirror POV recording, authentic natural handheld phone sway, model touches waistband and spins slightly with casual confidence';
-    motionPt = 'Gravação vertical em espelho estilo POV de celular, modelo confere o ajuste na cintura e dá meio giro.';
+  if (
+    lower.includes('fitness') ||
+    lower.includes('legging') ||
+    lower.includes('top') ||
+    lower.includes('agacha') ||
+    lower.includes('cós') ||
+    lower.includes('compress') ||
+    lower.includes('transpar') ||
+    lower.includes('short') ||
+    lower.includes('bermuda') ||
+    lower.includes('academia') ||
+    lower.includes('macacão fitness')
+  ) {
+    category = 'fitness';
+    productLabel = 'Conjunto Fitness de Alta Compressão';
+  } else if (
+    lower.includes('vestido') ||
+    lower.includes('saia') ||
+    lower.includes('blazer') ||
+    lower.includes('alfaiataria') ||
+    lower.includes('camisa') ||
+    lower.includes('linho') ||
+    lower.includes('pantalona') ||
+    lower.includes('jeans') ||
+    lower.includes('moda')
+  ) {
+    category = 'fashion';
+    productLabel = 'Peça de Vestuário com Caimento Fluido';
+  } else if (
+    lower.includes('biquíni') ||
+    lower.includes('biquini') ||
+    lower.includes('maiô') ||
+    lower.includes('maio') ||
+    lower.includes('praia') ||
+    lower.includes('lingerie') ||
+    lower.includes('cinta') ||
+    lower.includes('sutiã')
+  ) {
+    category = 'swim';
+    productLabel = 'Moda Praia & Modelagem Anatômica';
+  } else if (lower.includes('tênis') || lower.includes('tenis') || lower.includes('sapato') || lower.includes('calçado') || lower.includes('bota') || lower.includes('salto')) {
+    category = 'shoes';
+    productLabel = 'Calçado com Tecnologia de Amortecimento';
+  } else if (lower.includes('relógio') || lower.includes('relogio') || lower.includes('joia') || lower.includes('joias') || lower.includes('colar') || lower.includes('brinco') || lower.includes('anel') || lower.includes('ouro') || lower.includes('prata')) {
+    category = 'jewelry';
+    productLabel = 'Acessório de Joalheria & Luxo';
+  } else if (lower.includes('sérum') || lower.includes('serum') || lower.includes('creme') || lower.includes('batom') || lower.includes('maquiagem') || lower.includes('pele') || lower.includes('perfume') || lower.includes('cabelo') || lower.includes('cosmético')) {
+    category = 'beauty';
+    productLabel = 'Cosmético & Tratamento Dermatológico';
+  } else if (lower.includes('garrafa') || lower.includes('copo') || lower.includes('fone') || lower.includes('suporte') || lower.includes('gadget') || lower.includes('smartwatch') || lower.includes('térmic') || lower.includes('eletrônico')) {
+    category = 'gadget';
+    productLabel = 'Gadget de Alta Utilidade & Ergonomia';
   }
 
+  // 2. Extração de dinâmica de movimento e física de cena
+  let motionEn = '';
+  let motionPt = '';
+
+  if (category === 'fitness') {
+    motionEn = 'deep athletic squat movement test in front of full-length illuminated mirror. Camera tracks downward at a 45-degree angle following the descent, model holds the deep squat proving zero fabric transparency and locked anti-roll waistband, then rises smoothly with a 360-degree organic orbit glide';
+    motionPt = 'Agachamento atlético no limite em frente ao espelho com descida rastreada em 45°, provando zero transparência do tecido e firmeza do cós duplo.';
+  } else if (category === 'fashion') {
+    motionEn = 'confident 360-degree orbital steadycam glide around the model. Camera tracks the fluid drape and natural bounce of the fabric, soft natural breeze creating dynamic garment flutter, ending with an elegant forward catwalk stride toward the lens';
+    motionPt = 'Giro 360° em steadycam capturando o caimento fluido e balanço natural do tecido, finalizando com passada elegante em direção à lente.';
+  } else if (category === 'swim') {
+    motionEn = 'smooth vertical pan and slow 180-degree turn under soft golden sunlight. Camera accentuates anatomical contour sculpting, seamless edge transition, and zero-mark fit with delicate slow-motion fabric resilience';
+    motionPt = 'Varredura vertical suave sob luz natural evidenciando contorno anatômico, acabamento sem costura e ajuste segunda pele.';
+  } else if (category === 'shoes') {
+    motionEn = 'low-angle dynamic tracking camera matching foot strike on textured surface. Slow motion 60fps captures visible sole cushioning compression, tread grip reaction, and forward explosive energy return';
+    motionPt = 'Câmera baixa rente ao chão em 60fps registrando o impacto da pisada, absorção de choque e resposta elástica do solado.';
+  } else if (category === 'jewelry') {
+    motionEn = 'macro probe lens push-in with continuous slow rotational roll. Ambient lighting glints across precision-beveled edges, sapphire crystal reflection, and brushed metallic micro-textures in razor-sharp focus';
+    motionPt = 'Aproximação em lente macro probe com rotação suave revelando reflexos de luz nos chanfros metálicos e acabamento artesanal.';
+  } else if (category === 'beauty') {
+    motionEn = 'ultra-slow motion 120fps macro shot: concentrated droplet falls and spreads across smooth clean skin, instant absorption with dewy luminous finish and soft studio ring-light reflection';
+    motionPt = 'Macro em 120fps capturando a queda da gota, absorção instantânea e viço luminoso na pele com iluminação de estúdio.';
+  } else if (category === 'gadget') {
+    motionEn = 'first-person POV hands demonstration: tactile opening mechanism with acoustic click, ice-cold water poured into chamber with condensation steam, 360-degree roll proving watertight seal';
+    motionPt = 'Demonstração prática em primeira pessoa: mecanismo de vedação, teste antivazamento com água gelada e acabamento térmico.';
+  } else {
+    // Dinâmica adaptativa geral baseada em termos digitados
+    if (lower.includes('giro') || lower.includes('360') || lower.includes('volta')) {
+      motionEn = 'smooth organic 360-degree steadycam rotation around subject, showcasing 3D fit, silhouette lines and realistic lighting interaction';
+      motionPt = 'Giro 360 graus contínuo destacando a silhueta tridimensional e interação de luz.';
+    } else if (lower.includes('câmera lenta') || lower.includes('slow') || lower.includes('lenta')) {
+      motionEn = 'cinematic 60fps slow-motion capture, smooth motion blur, physics-based fabric and hair dynamics with subtle camera track';
+      motionPt = 'Câmera lenta cinematográfica a 60fps com rastreamento suave e física orgânica.';
+    } else {
+      motionEn = 'delicate vertical handheld mobile POV sway, model subtly shifts weight side to side, showing real-world authenticity and texture detail';
+      motionPt = 'Movimentação natural estilo POV de celular com estabilização sutil destacando textura e caimento real.';
+    }
+  }
+
+  // 3. Montagem dos blocos de prompts para os motores profissionais
   const prompts: PromptBlock[] = [
     {
       engine: 'kling',
       engineLabel: 'Kling AI V1.5 / V2.0',
       title: 'Prompt de Movimento Vertical (Kling AI)',
-      promptEn: `High-end commercial video, vertical format 9:16. ${idea}. Motion directive: ${motionEn}. Authentic mobile UGC aesthetic, natural body proportions, rich textile fabric texture, authentic skin tones. Smooth natural motion blur, seamless cinematic flow, soft natural ambient lighting. Ultra sharp focus, 8k resolution, raw quality, 30fps.`,
-      negativePrompt: 'deformed hands, extra fingers, mutated anatomy, blur, jitter, artifacts, cartoonish, 3d render, plastic skin, oversaturation, distortion, face glitch, bad proportions',
+      promptEn: `High-end commercial video, vertical format 9:16. ${idea}. Motion directive: ${motionEn}. Authentic mobile UGC aesthetic, natural body proportions, rich textile fabric texture, authentic skin tones. Smooth natural motion blur, seamless cinematic flow, soft natural ambient lighting. Ultra sharp focus, 8k resolution, raw quality, 30fps. --motion_amplitude 6.5 --camera_motion smooth`,
+      negativePrompt: 'deformed hands, extra fingers, mutated anatomy, blur, jitter, artifacts, cartoonish, 3d render, plastic skin, oversaturation, distortion, face glitch, bad proportions, flicker',
       cameraDirective: `Câmera: ${motionPt}`,
       aspectRatio: '9:16',
-      explanationPt: `Otimizado especificamente para a física de vídeo do Kling AI, garantindo que o movimento (${motionPt.split('.')[0]}) ocorra de forma fluida sem distorcer membros ou mãos.`,
+      explanationPt: `Calibrado para o motor de física do Kling AI: preserva a integridade de mãos e membros durante a movimentação e estabiliza a textura têxtil no enquadramento vertical.`,
     },
     {
       engine: 'flow',
       engineLabel: 'Google Flow / VEO 3',
-      title: 'Prompt de Alta Fidelidade Cinematográfica (Google Flow)',
-      promptEn: `Cinematic commercial fashion shot, aspect ratio 9:16. ${idea}. Camera choreograph: ${motionEn}. Filmed on 35mm Arri Alexa camera with master prime lens f/1.8. Soft diffused window lighting, subtle volumetric shadows, natural color grade, accurate fabric micro-textures. Photorealistic depth of field, 4k master render.`,
-      negativePrompt: 'flicker, anatomical distortion, low resolution, noisy, plastic textures, blown-out highlights, artifacts, extra limbs, bad eyes',
-      cameraDirective: `Coreografia Óptica: Lente 35mm Arri Alexa em f/1.8 com rastreamento contínuo.`,
+      title: 'Prompt Cinematográfico Óptico (Google Flow / VEO)',
+      promptEn: `Cinematic commercial fashion shot, aspect ratio 9:16. ${idea}. Choreography: ${motionEn}. Filmed on 35mm Arri Alexa LF with master prime lens f/1.8. Soft diffused window lighting, subtle volumetric shadows, natural color grade, accurate micro-textures. Photorealistic depth of field, 4k master render, realistic optical bokeh.`,
+      negativePrompt: 'flicker, anatomical distortion, low resolution, noisy, plastic textures, blown-out highlights, artifacts, extra limbs, bad eyes, artificial gloss',
+      cameraDirective: `Diretiva Óptica: Lente 35mm Arri Alexa em f/1.8 com rastreamento contínuo e luz suave difusa.`,
       aspectRatio: '9:16',
-      explanationPt: `Direcionado para a estética cinematográfica de alta resolução do Google Flow / VEO, com parâmetros de iluminação volumétrica e profundidade de campo f/1.8.`,
+      explanationPt: `Otimizado para render cinematográfico do Google Flow: volumetria de luz realista, profundidade de campo rasa e fidelidade física em 4K.`,
     },
     {
       engine: 'midjourney',
       engineLabel: 'Midjourney V6.1 / Flux Pro',
-      title: 'Prompt de Fotografia Editorial Hiper-realista (Midjourney / Flux)',
-      promptEn: `High fashion editorial photograph, dynamic pose captured mid-motion: ${motionEn}. ${idea}. Modern luxury aesthetic, authentic human model with realistic skin texture, intricate cloth weave. Soft studio lighting, clean minimalist composition. Shot with Hasselblad X2D 100C, 85mm portrait lens, shallow depth of field --ar 9:16 --v 6.1 --style raw --q 2`,
-      negativePrompt: '--no cartoon, 3d, render, illustration, bad anatomy, deformed fingers, extra limbs, oversaturated, blurry, text, watermark',
-      cameraDirective: 'Enquadramento: Lente 85mm f/1.4 Hasselblad em estúdio minimalista.',
+      title: 'Prompt de Fotografia Editorial (Midjourney / Flux)',
+      promptEn: `High-fashion editorial photograph, dynamic pose captured mid-motion: ${motionEn}. ${idea}. Modern luxury aesthetic, authentic human model with realistic skin pores, intricate weave detail. Soft studio rim lighting, clean minimalist composition. Shot with Hasselblad X2D 100C, 85mm portrait lens, shallow depth of field --ar 9:16 --v 6.1 --style raw --q 2`,
+      negativePrompt: '--no cartoon, 3d, render, illustration, bad anatomy, deformed fingers, extra limbs, oversaturated, blurry, text, watermark, plastic skin',
+      cameraDirective: 'Enquadramento: Lente 85mm f/1.4 Hasselblad em estúdio minimalista de alta moda.',
       aspectRatio: '9:16',
-      explanationPt: `Ideal para gerar fotos de catálogo, capa de anúncio ou imagem de referência inicial para depois animar no Kling ou Flow.`,
+      explanationPt: `Ideal para gerar a imagem base fotorrealista de capa ou catálogo para depois animar com precisão no Kling AI ou Flow.`,
     },
     {
       engine: 'ugc',
-      engineLabel: 'Roteiro & Copy TikTok Shop',
-      title: 'Estrutura Completa de Fala & Ação de Cena (0 a 15 Segundos)',
-      promptEn: `[0-3s GANCHO]: "Se você achava que ${idea.slice(0, 40)} ia ficar transparente ou marcar no corpo, para tudo e olha esse teste real no espelho!"\n[AÇÃO VISUAL]: Modelo executa ${motionPt.toLowerCase()}\n[TEXTO NA TELA]: "ZERO TRANSPARÊNCIA?! Teste real no espelho (Não enrola o cós)"\n[4-10s BENEFÍCIO]: "O tecido tem compressão anatômica que modela a cintura sem sufocar. O toque é macio e não desce durante o agachamento."\n[11-15s CTA]: "Está com frete grátis liberado na loja hoje. Clica no link do carrinho aqui embaixo antes que esgote!"`,
+      engineLabel: 'Roteiro Orgânico TikTok Shop (0 a 15s)',
+      title: 'Estrutura Completa de Fala & Ação de Cena',
+      promptEn: `[0-3s GANCHO POV]:\nPOV: você finalmente achou ${productLabel.toLowerCase()} que veste perfeito e não marca nada no corpo.\n\n[3-7s DEMONSTRAÇÃO & MOVIMENTO]:\n(Ação no vídeo: modelo faz o teste real no espelho - ${motionPt.toLowerCase()})\n(Texto pequeno na tela: "POV: teste real no espelho | Zero transparência")\n\n[7-11s QUEBRA DE OBJEÇÃO & BENEFÍCIO]:\n"O tecido tem uma compressão firme que segura tudo sem sufocar, o cós não enrola e você agacha sem medo."\n\n[11-15s FINALIZAÇÃO ORGÂNICA]:\n"Veste bem demais. Deixei o link fixado aqui embaixo na sacolinha para quem quiser conferir."`,
       aspectRatio: '9:16',
-      explanationPt: `Roteiro comercial de alta conversão estruturado com gatilho visual de retenção nos primeiros 3 segundos e quebra imediata da objeção principal.`,
+      explanationPt: `Estrutura de conversão no formato POV nativo do TikTok Shop: sem termos agressivos de vendedor, foco em quebra imediata da objeção de transparência e retenção no primeiro segundo.`,
     },
   ];
 
   return {
     steps: [
-      'Decompondo intenção semântica e sujeito principal...',
-      `Mapeando dinâmica de movimento: ${motionPt.split(' ')[0]}...`,
-      'Parametrizando lentes ópticas (35mm/85mm) e proporção 9:16...',
-      'Compilando prompts em inglês técnico com filtros anti-distorção...',
+      `Analisando intenção criativa para ${productLabel}...`,
+      `Mapeando dinâmica de movimento: ${motionPt.split('.')[0]}...`,
+      'Parametrizando lentes ópticas (35mm/85mm), iluminação e proporção 9:16...',
+      'Sintetizando diretivas avançadas para Kling AI, Google Flow, Midjourney e UGC...',
     ],
-    text: `Aqui estão os prompts calibrados para a sua ideia: **"${idea}"**.\n\nEstruturei versões específicas para os principais motores de IA (Kling AI, Google Flow, Midjourney) e o roteiro comercial de conversão. Você pode copiar qualquer prompt ou enviá-lo direto para o Agente IA com 1 clique:`,
+    text: `Aqui estão os prompts arquitetados para a sua ideia: **"${idea}"**.\n\nDecompus seu conceito com especificações de movimento de câmera, física têxtil e filtros anti-distorção para os principais motores de IA. Você pode copiar qualquer prompt ou enviá-lo diretamente para o Agente IA com 1 clique:`,
     prompts,
   };
 }
@@ -338,25 +417,35 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
       text: raw,
     };
 
+    // Pré-calcula os prompts para usar os rótulos de etapas dinâmicos e inteligentes
+    const generated = buildPromptsFromIdea(raw);
+
     const initialAgentMsg: PromptMessage = {
       id: agentMsgId,
       role: 'agent',
       text: '',
       status: 'thinking',
-      steps: [
-        { label: 'Decompondo intenção semântica e sujeito principal...', done: false },
-        { label: 'Mapeando dinâmica de movimento e física de câmera...', done: false },
-        { label: 'Parametrizando lentes ópticas (35mm/85mm) e proporção 9:16...', done: false },
-        { label: 'Compilando prompts em inglês técnico com filtros anti-distorção...', done: false },
-      ],
+      steps: generated.steps.map((label) => ({ label, done: false })),
     };
 
-    // Atualiza título se for a primeira mensagem
     const shortTitle = raw.length > 28 ? `${raw.slice(0, 28)}...` : raw;
+    const targetSessionId = activeSession?.id || activeId || (sessions[0]?.id ?? Date.now());
 
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === activeId
+    setSessions((prev) => {
+      const idx = prev.findIndex((s) => s.id === targetSessionId);
+      if (idx === -1) {
+        return [
+          {
+            id: targetSessionId,
+            title: shortTitle,
+            updatedAt: Date.now(),
+            msgs: [userMsg, initialAgentMsg],
+          },
+          ...prev,
+        ];
+      }
+      return prev.map((s) =>
+        s.id === targetSessionId
           ? {
               ...s,
               title: s.msgs.length === 0 ? shortTitle : s.title,
@@ -364,17 +453,18 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
               msgs: [...s.msgs, userMsg, initialAgentMsg],
             }
           : s
-      )
-    );
+      );
+    });
 
     setInput('');
     setBusy(true);
+    setTimeout(() => scrollToBottom(true), 60);
 
-    // Efeito de escaneamento em etapas com loading visual top
+    // Efeito de escaneamento em etapas com loading visual natural e progressivo
     setTimeout(() => {
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeId
+          s.id === targetSessionId
             ? {
                 ...s,
                 msgs: s.msgs.map((m) =>
@@ -389,12 +479,13 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
             : s
         )
       );
-    }, 500);
+      scrollToBottom(true);
+    }, 700);
 
     setTimeout(() => {
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeId
+          s.id === targetSessionId
             ? {
                 ...s,
                 msgs: s.msgs.map((m) =>
@@ -409,12 +500,13 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
             : s
         )
       );
-    }, 1100);
+      scrollToBottom(true);
+    }, 1500);
 
     setTimeout(() => {
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeId
+          s.id === targetSessionId
             ? {
                 ...s,
                 msgs: s.msgs.map((m) =>
@@ -429,14 +521,13 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
             : s
         )
       );
-    }, 1700);
+      scrollToBottom(true);
+    }, 2300);
 
     setTimeout(() => {
-      const generated = buildPromptsFromIdea(raw);
-
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeId
+          s.id === targetSessionId
             ? {
                 ...s,
                 msgs: s.msgs.map((m) =>
@@ -455,7 +546,8 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
         )
       );
       setBusy(false);
-    }, 2300);
+      setTimeout(() => scrollToBottom(true), 80);
+    }, 3100);
   };
 
   return (
@@ -538,7 +630,7 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
         {/* Topbar do Console */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/[0.06] px-4 sm:px-6">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-[#22c55e]" />
+            <span className={`h-2 w-2 shrink-0 rounded-full ${busy ? 'bg-[var(--mvz-gold)] animate-pulse' : 'bg-[#22c55e]'}`} />
             <span className="text-[13px] font-bold text-white truncate">
               {activeSession.title}
             </span>
@@ -553,6 +645,13 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
             </span>
           </div>
         </div>
+
+        {/* Linha laser de escaneamento superior quando ocupado */}
+        {busy && (
+          <div className="relative z-10 h-0.5 w-full overflow-hidden bg-white/5">
+            <div className="mvz-sweep absolute inset-0" />
+          </div>
+        )}
 
         {/* Área de Mensagens / Chat Scroll */}
         <div
@@ -621,20 +720,26 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
                 ) : (
                   <div key={m.id} className="mvz-msg-in flex items-start gap-3.5">
                     <div className="relative shrink-0 mt-1" style={{ width: 32, height: 32 }}>
-                      <div className="mvz-orb absolute inset-[2px] rounded-full" style={{ boxShadow: '0 0 12px rgba(212,175,55,0.45)' }} />
+                      <div className={`mvz-orb absolute inset-[2px] rounded-full ${m.status === 'thinking' ? 'mvz-orb-live' : ''}`} style={{ boxShadow: '0 0 14px rgba(212,175,55,0.45)' }} />
+                      {m.status === 'thinking' && (
+                        <div className="mvz-ring-spin absolute inset-0 rounded-full" style={{ animationDuration: '2.2s' }} />
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-4">
                       {/* Status de Loading e Steps do Scanner */}
                       {m.steps && (
-                        <div className="rounded-2xl border border-white/[0.08] bg-[#080706] p-4 space-y-2 font-mono text-[11px]">
-                          <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-gold)] flex items-center gap-1.5">
-                              <Activity size={12} className={m.status === 'thinking' ? 'animate-spin' : ''} />
+                        <div className="rounded-2xl border border-[var(--mvz-line)] bg-[#0d0c0a] p-4 space-y-2.5 font-mono text-[11px] shadow-lg">
+                          <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
+                            <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--mvz-gold)] flex items-center gap-2">
+                              <span className="relative flex h-2 w-2">
+                                <span className={`absolute inline-flex h-full w-full rounded-full bg-[var(--mvz-gold)] opacity-75 ${m.status === 'thinking' ? 'animate-ping' : ''}`} />
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--mvz-gold)]" />
+                              </span>
                               <span>{m.status === 'thinking' ? 'Scanner Neural Ativo • Processando' : 'Prompt Compilado com Sucesso'}</span>
                             </span>
-                            <span className="text-[10px] text-white/40">
-                              {m.status === 'thinking' ? 'Calibrando pesos...' : 'Fidelidade 99.8%'}
+                            <span className="text-[10px] text-[var(--mvz-dim)]">
+                              {m.status === 'thinking' ? 'Calculando ótica e física...' : 'Fidelidade 99.8%'}
                             </span>
                           </div>
 
@@ -642,19 +747,26 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
                             {m.steps.map((s) => (
                               <div
                                 key={s.label}
-                                className={`flex items-center gap-2 ${
-                                  s.done ? 'text-[var(--mvz-gold-light)]' : 'text-white/30'
+                                className={`flex items-center gap-2 transition-colors duration-200 ${
+                                  s.done ? 'text-[var(--mvz-gold-light)] font-medium' : 'text-white/30'
                                 }`}
                               >
                                 {s.done ? (
-                                  <Check size={12} className="text-[#22c55e]" />
+                                  <Check size={12} className="text-[#22c55e] shrink-0" />
                                 ) : (
-                                  <Loader2 size={12} className="animate-spin text-[var(--mvz-gold)]" />
+                                  <Loader2 size={12} className="animate-spin text-[var(--mvz-gold)] shrink-0" />
                                 )}
-                                <span>{s.label}</span>
+                                <span className="leading-snug">{s.label}</span>
                               </div>
                             ))}
                           </div>
+
+                          {m.status === 'thinking' && (
+                            <div className="mt-2 pt-2 border-t border-white/[0.04] flex items-center gap-2 text-[10.5px] text-[var(--mvz-dim)]">
+                              <span className="mvz-think-dot h-1.5 w-1.5 rounded-full bg-[var(--mvz-gold)]" />
+                              <span className="italic">Arquitetando diretivas para Kling AI, Google Flow, Midjourney e UGC...</span>
+                            </div>
+                          )}
                         </div>
                       )}
 

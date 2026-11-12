@@ -265,7 +265,7 @@ export function reply(
   if (has(normalized, 'quem é você', 'quem e voce', 'o que você faz', 'o que voce faz', 'como você me ajuda', 'qual sua função')) {
     return {
       steps: [],
-      text: 'Sou o **Orbiex**, seu agente de IA focado em e-commerce e TikTok Shop.\n\nMeu papel é resolver seus problemas práticos no dia a dia: validar se produtos têm demanda real, calcular margens de lucro e markup, criar roteiros de vídeo para conversão, analisar fotos/criativos e estruturar sua operação para escala.\n\nSe você tiver uma dúvida, um produto em mente ou uma imagem para avaliar, é só me mandar!',
+      text: 'Sou o **Orbiex**, seu agente de IA focado em **TikTok Shop com IA, comissões de afiliado e vendas sem aparecer**.\n\nMeu papel é resolver seus problemas práticos no dia a dia: validar se produtos têm demanda real no TikTok Shop, calcular comissões e margens, criar roteiros virais e ganchos POV de alta retenção, analisar fotos/criativos e estruturar sua operação para escala.\n\nSe você tiver uma dúvida, um produto em mente ou uma imagem para avaliar, é só me mandar!',
       suggestions: [
         'Analise um produto para mim',
         'Como calcular a margem de lucro?',
@@ -559,7 +559,7 @@ export function reply(
   return {
     steps: [],
     text: `Entendi. Para te orientar com precisão:\n\n` +
-      `No e-commerce e no TikTok Shop, o caminho mais rápido para ter resultado é focar em uma oferta clara com boa margem, criativos diretos com gancho forte nos primeiros 3 segundos e despacho rápido em até 48 horas.\n\n` +
+      `No TikTok Shop com IA e no modelo de afiliado comissionado, o caminho mais rápido para ter resultado é focar em uma oferta validada com alta tração, criativos magnéticos gerados por IA com gancho nos primeiros 3 segundos e consistência de postagens diárias sem precisar aparecer.\n\n` +
       `Me diz com mais detalhes qual é o produto ou a dúvida específica que você tem agora, que eu analiso e te dou o próximo passo exato.`,
     suggestions: [
       'Quais produtos estão em alta hoje?',

@@ -440,7 +440,7 @@ Voce pode enviar a foto de qualquer roupa na ferramenta, e a IA identifica a mod
       steps:
         mode === 'expert'
           ? [
-              'Mapeando pipeline de IA generativa para moda e e-commerce...',
+              'Mapeando pipeline de IA generativa para TikTok Shop e afiliados...',
               'Reunindo parametros tecnicos de renderizacao e animacao...',
             ]
           : ['Mapeando ferramentas de IA recomendadas...'],

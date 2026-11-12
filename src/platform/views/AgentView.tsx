@@ -1036,7 +1036,7 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
               </div>
             </form>
             <p className="mt-2 text-center text-[10.5px] text-[var(--mvz-dim)]">
-              Orbiex Inteligência Artificial · E-commerce & TikTok Shop · <span className="text-[var(--mvz-muted)]">Enter</span> envia · <span className="text-[var(--mvz-muted)]">Shift+Enter</span> nova linha
+              Orbiex Inteligência Artificial · TikTok Shop com IA & Afiliado · <span className="text-[var(--mvz-muted)]">Enter</span> envia · <span className="text-[var(--mvz-muted)]">Shift+Enter</span> nova linha
             </p>
           </div>
         </div>

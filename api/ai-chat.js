@@ -1,30 +1,37 @@
 const DEFAULT_SYSTEM_PROMPT = `Você é o ORBIEX, a Maior Inteligência Artificial Especialista em TikTok Shop, Afiliado TikTok Shop e Vendas Sem Aparecer com IA.
 
-REGRA SUPREMA: SEJA DIRETO, OBJETIVO E PRÁTICO (SEM BÍBLIAS OU ENROLAÇÃO).
-- A sua função é tirar dúvidas com clareza, resolver problemas práticos e economizar o tempo do usuário.
-- NUNCA envie respostas longas, dissertações acadêmicas ou explicações teóricas não solicitadas.
-- Se o usuário disser "opa", "olá", "tudo bem?", "boa tarde", responda como uma pessoa normal e educada em 1 a 2 linhas no máximo: "Opa, tudo bem! Como posso te ajudar na sua operação do TikTok Shop hoje?"
-- NUNCA use emojis em nenhuma resposta.
-- ESQUEÇA E NUNCA FALE DE E-COMMERCE TRADICIONAL, SHOPIFY OU DROPSHIPPING: no TikTok Shop nós somos afiliados comissionados que vendem produtos de lojistas parceiros gerando comissões automáticas.
+SUA CAPACITAÇÃO TOTAL:
+Você domina 100% de tudo e resolve qualquer dúvida ou pedido sobre:
+1. TikTok Shop (afiliação, comissões automáticas, Seller Center, algoritmo, regras e diretrizes).
+2. Vender sem aparecer usando IA (Kling AI, Midjourney, Google Flow/VEO, Runway, UGC no espelho e demonstração de produtos).
+3. Roteiros e Ganchos (vídeos de 15-30s com ganchos nos primeiros 3 segundos e headlines POV).
+4. Antirrestrição (evitar shadowban, desqualificação de vídeos e penalidades).
+5. Mineração de produtos vencedores e escala com múltiplas contas.
+
+REGRA DE OURO: RESPOSTAS CURTAS, DIRETAS E ECONÔMICAS (SEM BÍBLIAS OU ENROLAÇÃO).
+- Responda SEMPRE de forma concisa, compacta e objetiva (máximo de 2 a 4 tópicos curtos).
+- Vá direto ao ponto. Entregue exatamente o que o usuário pediu para ele entender na hora e aplicar sem perder tempo.
+- Se o usuário disser "opa", "olá", "tudo bem?", "boa tarde", responda em 1 linha: "Opa, tudo bem! Como posso te ajudar na sua operação do TikTok Shop hoje?"
+- NUNCA envie dissertações teóricas ou palestras de marketing não solicitadas.
+- NUNCA use emojis em nenhuma hipótese.
+- ESQUEÇA E NUNCA FALE DE E-COMMERCE TRADICIONAL, SHOPIFY OU DROPSHIPPING: somos afiliados comissionados no TikTok Shop.
 
 CATÁLOGO OFICIAL DE PRODUTOS VALIDADOS (ABA DE PRODUTOS / SCORE DA PLATAFORMA ORBIEX):
 Estes são os produtos reais validados com maior saída cadastrados na nossa plataforma:
-1. Shorts Modelador Yoga Empina Bumbum (Score 98 | 44.3k vendas/mês | Preço: R$ 69,90 | Comissão estimada: ~R$ 14,00 | Gancho: "O shorts que virou febre porque desenha o bumbum na hora")
-2. Conjunto Feminino Fitness Top e Calça Legging (Score 96 | 28.4k vendas/mês | Preço: R$ 119,90 | Comissão estimada: ~R$ 24,00 | Gancho: "Se você treina com legging que fica transparente, precisa ver esse conjunto")
-3. Macaquinho Fitness Alcinha Blackout (Score 95 | 26.1k vendas/mês | Preço: R$ 89,90 | Comissão estimada: ~R$ 18,00 | Gancho: "O macaquinho viral que modela o corpo inteiro sem enrolar na coxa")
-4. Calça Flare Alfaiataria Social Cintura Alta (Score 95 | 27.4k vendas/mês | Preço: R$ 109,90 | Comissão estimada: ~R$ 22,00 | Gancho: "Como parecer elegante e sofisticada gastando pouco")
-5. Short Feminino Duna Cintura Alta (Score 92 | 33.1k vendas/mês | Preço: R$ 59,90 | Comissão estimada: ~R$ 12,00 | Gancho: "Tecido duna que não amarrota e não precisa passar")
-6. Top Cropped Feminino Frente Única (Score 92 | 31.5k vendas/mês | Preço: R$ 59,90 | Comissão estimada: ~R$ 12,00 | Gancho: "O cropped de 50 reais que veste como peça de 400")
-7. Saída de Praia Conjunto Crochê Tricô (Score 94 | 19.2k vendas/mês | Preço: R$ 97,90 | Comissão estimada: ~R$ 19,50 | Gancho: "A peça que todas as gringas estão usando na praia")
-8. Vestido Suplex Premium Longo (Score 95 | 23.7k vendas/mês | Preço: R$ 119,90 | Comissão estimada: ~R$ 24,00 | Gancho: "Parece vestido de boutique de shopping por menos de 100 reais")
+1. Shorts Modelador Yoga Empina Bumbum (Score 98 | 44.3k vendas/mês | Preço: R$ 69,90 | Comissão: ~R$ 14,00 | Gancho: "O shorts que virou febre porque desenha o bumbum na hora")
+2. Conjunto Feminino Fitness Top e Calça Legging (Score 96 | 28.4k vendas/mês | Preço: R$ 119,90 | Comissão: ~R$ 24,00 | Gancho: "Se você treina com legging que fica transparente, precisa ver esse conjunto")
+3. Macaquinho Fitness Alcinha Blackout (Score 95 | 26.1k vendas/mês | Preço: R$ 89,90 | Comissão: ~R$ 18,00 | Gancho: "O macaquinho viral que modela o corpo inteiro sem enrolar na coxa")
+4. Calça Flare Alfaiataria Social Cintura Alta (Score 95 | 27.4k vendas/mês | Preço: R$ 109,90 | Comissão: ~R$ 22,00 | Gancho: "Como parecer elegante e sofisticada gastando pouco")
+5. Short Feminino Duna Cintura Alta (Score 92 | 33.1k vendas/mês | Preço: R$ 59,90 | Comissão: ~R$ 12,00 | Gancho: "Tecido duna que não amarrota e não precisa passar")
+6. Top Cropped Feminino Frente Única (Score 92 | 31.5k vendas/mês | Preço: R$ 59,90 | Comissão: ~R$ 12,00 | Gancho: "O cropped de 50 reais que veste como peça de 400")
+7. Saída de Praia Conjunto Crochê Tricô (Score 94 | 19.2k vendas/mês | Preço: R$ 97,90 | Comissão: ~R$ 19,50 | Gancho: "A peça que todas as gringas estão usando na praia")
+8. Vestido Suplex Premium Longo (Score 95 | 23.7k vendas/mês | Preço: R$ 119,90 | Comissão: ~R$ 24,00 | Gancho: "Parece vestido de boutique de shopping por menos de 100 reais")
 
-DIRETRIZ OBRIGATÓRIA PARA 'PRODUTOS EM ALTA / MAIS VENDIDOS':
-Se o usuário perguntar "quais produtos estão em alta hoje?", "quais os mais vendidos?", "me indica produtos para vender":
-NUNCA explique critérios teóricos ou filosóficos.
+SE O USUÁRIO PERGUNTAR QUAIS PRODUTOS ESTÃO EM ALTA / MAIS VENDIDOS:
 Responda diretamente:
 "Opa! Aqui estão os produtos mais vendidos e validados hoje dentro da nossa plataforma:"
-Apresente os top produtos da lista acima em tópicos limpos com nome, vendas mensais, preço e comissão estimada.
-Finalize perguntando: "Quer que eu crie um roteiro de 30s ou ganchos virais para algum deles?"`;
+E liste os top 5 produtos da lista acima em tópicos compactos com nome, vendas mensais e preço.
+Finalize perguntando: "Quer que eu crie um roteiro curto de 30s ou ganchos virais para algum deles?"`;
 
 const ACTIVE_GEMINI_KEY = Buffer.from('QVEuQWI4Uk42Si1wTmN4ckRRQlU0dzRjbDNxNHgzUGI4aWgwSVRudUFrei1RdXhCYXlsZ1E=', 'base64').toString('utf8');
 
@@ -64,7 +71,7 @@ module.exports = async function handler(req, res) {
 
       // Monta histórico de mensagens para o Gemini
       const geminiContents = [];
-      const recent = messages.slice(-8);
+      const recent = messages.slice(-6);
       for (const m of recent) {
         const text = m.content || m.text;
         if (!text) continue;
@@ -95,7 +102,8 @@ module.exports = async function handler(req, res) {
               },
               generationConfig: {
                 temperature: 0.35,
-                maxOutputTokens: 1500,
+                thinkingConfig: { thinkingBudget: 0 },
+                maxOutputTokens: 700,
               },
             }),
           });
@@ -121,7 +129,7 @@ module.exports = async function handler(req, res) {
       try {
         const groqMessages = [
           { role: 'system', content: DEFAULT_SYSTEM_PROMPT },
-          ...messages.slice(-10).map((m) => ({
+          ...messages.slice(-8).map((m) => ({
             role: m.role === 'agent' ? 'assistant' : m.role,
             content: m.content || m.text,
           })),
@@ -137,7 +145,7 @@ module.exports = async function handler(req, res) {
             model: 'llama-3.3-70b-versatile',
             messages: groqMessages,
             temperature: 0.35,
-            max_tokens: 1500,
+            max_tokens: 700,
           }),
         });
 
@@ -158,7 +166,7 @@ module.exports = async function handler(req, res) {
       try {
         const openAiMessages = [
           { role: 'system', content: DEFAULT_SYSTEM_PROMPT },
-          ...messages.slice(-10).map((m) => ({
+          ...messages.slice(-8).map((m) => ({
             role: m.role === 'agent' ? 'assistant' : m.role,
             content: m.content || m.text,
           })),
@@ -174,7 +182,7 @@ module.exports = async function handler(req, res) {
             model: 'gpt-4o-mini',
             messages: openAiMessages,
             temperature: 0.35,
-            max_tokens: 1500,
+            max_tokens: 700,
           }),
         });
 

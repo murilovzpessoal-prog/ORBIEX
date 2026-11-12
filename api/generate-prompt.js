@@ -73,8 +73,9 @@ module.exports = async function handler(req, res) {
                 parts: [{ text: PROMPT_ARCHITECT_SYSTEM_PROMPT }],
               },
               generationConfig: {
-                temperature: 0.4,
-                maxOutputTokens: 2500,
+                temperature: 0.35,
+                thinkingConfig: { thinkingBudget: 0 },
+                maxOutputTokens: 1200,
               },
             }),
           });

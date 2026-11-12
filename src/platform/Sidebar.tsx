@@ -1,7 +1,7 @@
 import { LogOut, Settings, X } from 'lucide-react';
 import { Fragment } from 'react';
 import { NAV_FOOTER, NAV_GROUPS, type NavItem, type ViewId } from './data';
-import { Logo, Pill } from './ui';
+import { Logo } from './ui';
 import type { UserProfile } from './ProfileSettingsModal';
 import { getInitials } from './ProfileSettingsModal';
 
@@ -34,9 +34,6 @@ function Item({ item, active, onClick }: { item: NavItem; active: boolean; onCli
 
       {/* Label */}
       <span className="flex-1 truncate text-left tracking-wide">{item.label}</span>
-
-      {/* Badge (NOVO, HOT, AO VIVO, etc.) */}
-      {item.badge && <Pill tone={item.badge.tone}>{item.badge.text}</Pill>}
     </button>
   );
 }

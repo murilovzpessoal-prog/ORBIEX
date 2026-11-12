@@ -52,26 +52,26 @@ export interface NavItem {
 export const NAV_GROUPS: NavItem[][] = [
   [
     { id: 'home', label: 'Início', icon: Home },
-    { id: 'agent', label: 'Agente IA', icon: Bot, badge: { text: 'AO VIVO', tone: 'green' } },
-    { id: 'journey', label: 'Minha Jornada', icon: Compass, badge: { text: 'METAS', tone: 'amber' } },
+    { id: 'agent', label: 'Agente IA', icon: Bot },
+    { id: 'journey', label: 'Minha Jornada', icon: Compass },
     { id: 'prompts', label: 'Biblioteca de Prompts', icon: Library },
-    { id: 'products', label: 'Produtos', icon: Package, badge: { text: 'HOT', tone: 'amber' } },
+    { id: 'products', label: 'Produtos', icon: Package },
   ],
   [
-    { id: 'product', label: 'Score Produto', icon: Gauge, badge: { text: 'NOVO', tone: 'cyan' } },
-    { id: 'store', label: 'Score Lojista', icon: Store, badge: { text: 'NOVO', tone: 'cyan' } },
+    { id: 'product', label: 'Score Produto', icon: Gauge },
+    { id: 'store', label: 'Score Lojista', icon: Store },
     { id: 'scanner', label: 'Scanner', icon: ScanSearch },
   ],
   [
-    { id: 'headlines', label: 'Gerador de Headline', icon: Wand2, badge: { text: 'NOVO', tone: 'amber' } },
+    { id: 'headlines', label: 'Gerador de Headline', icon: Wand2 },
     { id: 'hooks', label: 'Hooks Virais', icon: Zap },
-    { id: 'motion', label: 'Extrator de Movimentos', icon: ScanEye, badge: { text: 'NOVO', tone: 'amber' } },
-    { id: 'turbo', label: 'Turbo Seguidores', icon: Flame, badge: { text: 'VIRAL', tone: 'pink' } },
+    { id: 'motion', label: 'Extrator de Movimentos', icon: ScanEye },
+    { id: 'turbo', label: 'Turbo Seguidores', icon: Flame },
   ],
 ];
 
 export const NAV_FOOTER: NavItem[] = [
-  { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles, badge: { text: 'NOVO', tone: 'amber' } },
+  { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles },
   { id: 'support', label: 'Suporte', icon: LifeBuoy },
   { id: 'help', label: 'Ajuda', icon: CircleHelp },
 ];

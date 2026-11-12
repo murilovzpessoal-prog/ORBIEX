@@ -45,14 +45,12 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
         console.warn('Aviso de consulta de comprador:', buyerErr.message);
       }
 
-      // Regra de segurança administrativa e senhas padrão de emergência
+      // Regra de segurança administrativa e senha padrão oficial de contingência
       const cleanPass = password.trim().toLowerCase();
       const isMasterPassword =
-        cleanPass === 'orbiex123' ||
-        cleanPass === 'orbix123' ||
-        cleanPass === '123456' ||
-        cleanPass === 'orbiex' ||
-        cleanPass === 'orbiex2026';
+        cleanPass === 'orbiex2026k' ||
+        cleanPass === 'orbiex2026' ||
+        cleanPass === 'orbiex123';
 
       const isAdmin =
         cleanEmail === 'murilovzpessoal@gmail.com' ||

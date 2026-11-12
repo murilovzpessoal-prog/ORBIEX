@@ -56,8 +56,8 @@ export const NAV_GROUPS: NavItem[][] = [
     { id: 'home', label: 'Início', icon: Home },
     { id: 'agent', label: 'Agente IA', icon: Bot },
     { id: 'journey', label: 'Minha Jornada', icon: Compass },
-    { id: 'prompts', label: 'Biblioteca de Prompts', icon: Library },
     { id: 'products', label: 'Produtos', icon: Package },
+    { id: 'prompts', label: 'Biblioteca de Prompts', icon: Library },
   ],
   [
     { id: 'product', label: 'Score Produto', icon: Gauge },
@@ -67,8 +67,8 @@ export const NAV_GROUPS: NavItem[][] = [
   [
     { id: 'headlines', label: 'Gerador de Headline', icon: Wand2 },
     { id: 'hooks', label: 'Hooks Virais', icon: Zap },
-    { id: 'motion', label: 'Extrator de Movimentos', icon: ScanEye },
     { id: 'antirestriction', label: 'Antirrestrição', icon: ShieldAlert },
+    { id: 'motion', label: 'Extrator de Movimentos', icon: ScanEye },
     { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles },
     { id: 'turbo', label: 'Turbo Seguidores', icon: Flame },
   ],

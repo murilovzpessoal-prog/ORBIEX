@@ -11,6 +11,7 @@ import {
   Calendar,
   BarChart3,
   Award,
+  RotateCcw,
 } from 'lucide-react';
 
 interface MissionStep {
@@ -151,6 +152,34 @@ interface WeekRecord {
   amount: number;
 }
 
+function generateDailySlots(): DayRecord[] {
+  const result: DayRecord[] = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const isToday = i === 0;
+    result.push({
+      id: isToday ? 'today' : `d-${i}`,
+      label: isToday ? 'HOJE' : `D-${i}`,
+      sublabel: `${day}/${month}`,
+      amount: 0,
+    });
+  }
+  return result;
+}
+
+function generateWeeklySlots(): WeekRecord[] {
+  return [
+    { id: 'w-1', label: 'Sem 1', sublabel: '3 sem atrás', amount: 0 },
+    { id: 'w-2', label: 'Sem 2', sublabel: '2 sem atrás', amount: 0 },
+    { id: 'w-3', label: 'Sem 3', sublabel: 'Semana passada', amount: 0 },
+    { id: 'w-cur', label: 'Sem Atual', sublabel: 'Esta Semana', amount: 0 },
+  ];
+}
+
 export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void } = {}) {
   // Screen mode: 'selection' (3 mission cards) | 'execution' (detailed dashboard)
   const [screenMode, setScreenMode] = useState<'selection' | 'execution'>('selection');
@@ -168,13 +197,13 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
   // Chart view mode: 'daily' | 'weekly'
   const [chartMode, setChartMode] = useState<'daily' | 'weekly'>('daily');
 
-  // Daily Checklist items completed for today
+  // Daily Checklist items completed for today (começa 100% zerado)
   const [completedSteps, setCompletedSteps] = useState<number[]>(() => {
     try {
-      const saved = localStorage.getItem('orbiex_daily_checklist_v3') || localStorage.getItem('orbix_daily_checklist_v3');
-      return saved ? JSON.parse(saved) : [1];
+      const saved = localStorage.getItem('orbiex_daily_checklist_v4');
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return [1];
+      return [];
     }
   });
 
@@ -182,41 +211,28 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
     setCompletedSteps((prev) => {
       const next = prev.includes(stepId) ? prev.filter((id) => id !== stepId) : [...prev, stepId];
       try {
-        localStorage.setItem('orbix_daily_checklist_v3', JSON.stringify(next));
+        localStorage.setItem('orbiex_daily_checklist_v4', JSON.stringify(next));
       } catch {}
       return next;
     });
   };
 
-  // Daily data (last 7 days)
+  // Daily data (últimos 7 dias, começando 100% zerado)
   const [dailyData, setDailyData] = useState<DayRecord[]>(() => {
     try {
-      const saved = localStorage.getItem('orbiex_chart_daily_v3') || localStorage.getItem('orbix_chart_daily_v3');
+      const saved = localStorage.getItem('orbiex_chart_daily_v4');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return [
-      { id: 'd-6', label: 'D-6', sublabel: '05/11', amount: 480 },
-      { id: 'd-5', label: 'D-5', sublabel: '06/11', amount: 650 },
-      { id: 'd-4', label: 'D-4', sublabel: '07/11', amount: 920 },
-      { id: 'd-3', label: 'D-3', sublabel: '08/11', amount: 1100 },
-      { id: 'd-2', label: 'D-2', sublabel: '09/11', amount: 1450 },
-      { id: 'd-1', label: 'D-1', sublabel: '10/11', amount: 1850 },
-      { id: 'today', label: 'HOJE', sublabel: 'Hoje', amount: 2650 },
-    ];
+    return generateDailySlots();
   });
 
-  // Weekly data (last 4 weeks)
+  // Weekly data (últimas 4 semanas, começando 100% zerado)
   const [weeklyData, setWeeklyData] = useState<WeekRecord[]>(() => {
     try {
-      const saved = localStorage.getItem('orbiex_chart_weekly_v3') || localStorage.getItem('orbix_chart_weekly_v3');
+      const saved = localStorage.getItem('orbiex_chart_weekly_v4');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return [
-      { id: 'w-1', label: 'Sem 1', sublabel: 'Out 14 - 20', amount: 4850 },
-      { id: 'w-2', label: 'Sem 2', sublabel: 'Out 21 - 27', amount: 6920 },
-      { id: 'w-3', label: 'Sem 3', sublabel: 'Out 28 - 03', amount: 8400 },
-      { id: 'w-cur', label: 'Sem Atual', sublabel: 'Esta Semana', amount: 9100 },
-    ];
+    return generateWeeklySlots();
   });
 
   // Input value for registering revenue
@@ -275,48 +291,54 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
     };
   }, [activeTier]);
 
-  // Total 30 days calculation
+  // Total 30 dias: soma real dos ganhos registrados (começa em R$ 0,00)
   const totalLast30Days = useMemo(() => {
-    const dailySum = dailyData.reduce((acc, curr) => acc + curr.amount, 0);
-    // Baseline simulated monthly past balance
-    const baseBalance = 3200;
-    return baseBalance + dailySum;
+    return dailyData.reduce((acc, curr) => acc + curr.amount, 0);
   }, [dailyData]);
 
-  // Max value for Daily scaling
+  // Ganho de Hoje
+  const todayEarnings = useMemo(() => {
+    const todaySlot = dailyData.find((d) => d.id === 'today');
+    return todaySlot ? todaySlot.amount : 0;
+  }, [dailyData]);
+
+  // Ganho da Semana Atual
+  const currentWeekEarnings = useMemo(() => {
+    const weekSlot = weeklyData.find((w) => w.id === 'w-cur');
+    return weekSlot ? weekSlot.amount : 0;
+  }, [weeklyData]);
+
+  // Teto dinâmico do gráfico diário
   const maxDailyValue = useMemo(() => {
-    const highest = Math.max(...dailyData.map((d) => d.amount), 500);
-    return Math.ceil(highest * 1.15);
+    const highest = Math.max(...dailyData.map((d) => d.amount), 0);
+    return highest > 0 ? Math.ceil(highest * 1.25) : 500;
   }, [dailyData]);
 
-  // Max value for Weekly scaling
+  // Teto dinâmico do gráfico semanal
   const maxWeeklyValue = useMemo(() => {
-    const highest = Math.max(...weeklyData.map((w) => w.amount), 1000);
-    return Math.ceil(highest * 1.15);
+    const highest = Math.max(...weeklyData.map((w) => w.amount), 0);
+    return highest > 0 ? Math.ceil(highest * 1.25) : 1000;
   }, [weeklyData]);
 
   // Parse numeric input from currency or plain string
   const parseInputValue = (val: string): number => {
     if (!val) return 0;
-    // Remove "R$", spaces, replace dots with nothing (if used as thousand separator) and comma with dot
     let cleaned = val.replace(/[^\d,.]/g, '').trim();
     if (cleaned.includes(',') && cleaned.includes('.')) {
-      // 3.000,00 -> 3000.00
       cleaned = cleaned.replace(/\./g, '').replace(',', '.');
     } else if (cleaned.includes(',')) {
-      // 3000,00 -> 3000.00
       cleaned = cleaned.replace(',', '.');
     }
     const num = parseFloat(cleaned);
     return isNaN(num) ? 0 : num;
   };
 
-  // Register earnings
+  // Registrar faturamento
   const handleRegisterRevenue = (customAmount?: number) => {
     const amountToAdd = customAmount !== undefined ? customAmount : parseInputValue(inputVal);
     if (amountToAdd <= 0) return;
 
-    // 1. Update Daily data (HOJE)
+    // 1. Atualiza dia atual (HOJE)
     const updatedDaily = dailyData.map((item) => {
       if (item.id === 'today') {
         return { ...item, amount: item.amount + amountToAdd };
@@ -325,7 +347,7 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
     });
     setDailyData(updatedDaily);
 
-    // 2. Update Weekly data (Sem Atual)
+    // 2. Atualiza semana atual (Sem Atual)
     const updatedWeekly = weeklyData.map((item) => {
       if (item.id === 'w-cur') {
         return { ...item, amount: item.amount + amountToAdd };
@@ -334,32 +356,49 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
     });
     setWeeklyData(updatedWeekly);
 
-    // 3. Mark step 4 (Registrar ganhos) as completed in the checklist automatically!
-    if (!completedSteps.includes(4)) {
+    // 3. Marca passo 3 de execução automaticamente
+    if (!completedSteps.includes(3)) {
       setCompletedSteps((prev) => {
-        const next = [...prev, 4];
+        const next = [...prev, 3];
         try {
-          localStorage.setItem('orbix_daily_checklist_v3', JSON.stringify(next));
+          localStorage.setItem('orbiex_daily_checklist_v4', JSON.stringify(next));
         } catch {}
         return next;
       });
     }
 
-    // Persist
+    // Persiste no localStorage
     try {
-      localStorage.setItem('orbix_chart_daily_v3', JSON.stringify(updatedDaily));
-      localStorage.setItem('orbix_chart_weekly_v3', JSON.stringify(updatedWeekly));
+      localStorage.setItem('orbiex_chart_daily_v4', JSON.stringify(updatedDaily));
+      localStorage.setItem('orbiex_chart_weekly_v4', JSON.stringify(updatedWeekly));
     } catch {}
 
     setInputVal('');
-    setFeedbackMsg(`+ ${formatCurrency(amountToAdd)} registrado com sucesso no gráfico!`);
+    setFeedbackMsg(`+ ${formatCurrency(amountToAdd)} registrado! Saldo e gráfico atualizados.`);
     setTimeout(() => setFeedbackMsg(null), 3500);
+  };
+
+  // Zerar histórico para recomeçar
+  const handleResetData = () => {
+    const cleanDaily = generateDailySlots();
+    const cleanWeekly = generateWeeklySlots();
+    setDailyData(cleanDaily);
+    setWeeklyData(cleanWeekly);
+    setCompletedSteps([]);
+    try {
+      localStorage.setItem('orbiex_chart_daily_v4', JSON.stringify(cleanDaily));
+      localStorage.setItem('orbiex_chart_weekly_v4', JSON.stringify(cleanWeekly));
+      localStorage.setItem('orbiex_daily_checklist_v4', JSON.stringify([]));
+    } catch {}
+    setFeedbackMsg('Histórico zerado com sucesso!');
+    setTimeout(() => setFeedbackMsg(null), 3000);
   };
 
   const handleActivateMission = (tier: MissionTier, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setActiveTierId(tier.id);
     try {
+      localStorage.setItem('orbiex_active_mission', tier.id);
       localStorage.setItem('orbix_active_mission', tier.id);
     } catch {}
     setScreenMode('execution');
@@ -392,8 +431,8 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
 
     return (
       <div className="mvz-fade-up pb-24 space-y-6 max-w-7xl mx-auto">
-        {/* ── 1. Top Navigation: Voltar para Escolha de Metas ── */}
-        <div className="flex items-center justify-between">
+        {/* ── 1. Top Navigation: Voltar para Escolha de Metas + Zerar ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={() => setScreenMode('selection')}
             className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[12px] font-bold text-white/80 transition-all duration-200 hover:border-[var(--mvz-gold)]/60 hover:bg-white/[0.07] hover:text-[var(--mvz-gold-light)]"
@@ -402,9 +441,21 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
             <span>Voltar para Escolha de Metas</span>
           </button>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-3.5 py-1 text-[11px] font-semibold text-[var(--mvz-gold-light)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--mvz-gold)] animate-ping" />
-            Operação em Tempo Real
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleResetData}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-2 text-[11px] font-bold text-white/60 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300"
+              title="Zerar todos os ganhos registrados e tarefas para começar do zero"
+            >
+              <RotateCcw size={13} />
+              <span>Zerar Histórico</span>
+            </button>
+
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-3.5 py-1 text-[11px] font-semibold text-[var(--mvz-gold-light)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--mvz-gold)] animate-ping" />
+              Operação em Tempo Real
+            </div>
           </div>
         </div>
 
@@ -646,7 +697,23 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/[0.06] text-[11px] text-white/60">
+                {/* Sub-métricas: Hoje & Esta Semana */}
+                <div className="mt-3.5 grid grid-cols-2 gap-2.5 rounded-xl border border-white/[0.06] bg-black/40 p-2.5">
+                  <div>
+                    <span className="text-[9.5px] uppercase tracking-wider text-white/40 block font-bold">Hoje</span>
+                    <span className={`text-[12.5px] font-extrabold ${todayEarnings > 0 ? tierTheme.badgeText : 'text-white/60'}`}>
+                      {formatCurrency(todayEarnings)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] uppercase tracking-wider text-white/40 block font-bold">Esta Semana</span>
+                    <span className={`text-[12.5px] font-extrabold ${currentWeekEarnings > 0 ? tierTheme.badgeText : 'text-white/60'}`}>
+                      {formatCurrency(currentWeekEarnings)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3.5 flex items-center justify-between pt-2.5 border-t border-white/[0.06] text-[11px] text-white/60">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[var(--mvz-gold-light)] font-bold">Meta:</span>
                     <span>{activeTier.targetMonthlyRevenue}</span>
@@ -733,8 +800,9 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                   <div className="relative z-10 grid grid-cols-7 gap-2 sm:gap-4 h-[210px] items-end w-full">
                     {dailyData.map((d) => {
                       const isToday = d.id === 'today';
-                      // Percentage of height inside 180px
-                      const heightPercent = Math.max(8, Math.min(100, Math.round((d.amount / maxDailyValue) * 100)));
+                      const isZero = d.amount <= 0;
+                      // Se zerado, fica no piso de 2% (linha de base plana). Se tiver valor, escala proporcionalmente.
+                      const heightPercent = isZero ? 2 : Math.max(8, Math.min(100, Math.round((d.amount / maxDailyValue) * 100)));
 
                       return (
                         <div
@@ -746,8 +814,8 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                             {formatCurrency(d.amount)}
                           </div>
 
-                          {/* Tag de Valor Fixo acima da barra do dia atual */}
-                          {isToday && (
+                          {/* Tag de Valor Fixo acima da barra do dia atual (apenas se > 0) */}
+                          {isToday && d.amount > 0 && (
                             <span className={`mb-1 text-[10px] font-extrabold ${tierTheme.badgeText} drop-shadow`}>
                               {formatShortCurrency(d.amount)}
                             </span>
@@ -758,7 +826,9 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                             <div
                               style={{ height: `${heightPercent}%` }}
                               className={`w-full rounded-lg transition-all duration-700 ease-out ${
-                                isToday
+                                isZero
+                                  ? 'bg-white/[0.05] border border-dashed border-white/[0.08]'
+                                  : isToday
                                   ? `${tierTheme.barGradient} brightness-110`
                                   : 'bg-[#1c1a16] border border-white/[0.1] hover:border-white/30 hover:bg-[#2a2620]'
                               }`}
@@ -784,7 +854,9 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                   <div className="relative z-10 grid grid-cols-4 gap-4 sm:gap-8 h-[210px] items-end w-full">
                     {weeklyData.map((w) => {
                       const isCurrentWeek = w.id === 'w-cur';
-                      const heightPercent = Math.max(8, Math.min(100, Math.round((w.amount / maxWeeklyValue) * 100)));
+                      const isZero = w.amount <= 0;
+                      // Se zerado, fica no piso de 2%. Se tiver valor, escala proporcionalmente.
+                      const heightPercent = isZero ? 2 : Math.max(8, Math.min(100, Math.round((w.amount / maxWeeklyValue) * 100)));
 
                       return (
                         <div
@@ -796,8 +868,8 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                             {formatCurrency(w.amount)}
                           </div>
 
-                          {/* Tag de Valor Fixo na Semana Atual */}
-                          {isCurrentWeek && (
+                          {/* Tag de Valor Fixo na Semana Atual (apenas se > 0) */}
+                          {isCurrentWeek && w.amount > 0 && (
                             <span className={`mb-1 text-[10.5px] font-extrabold ${tierTheme.badgeText} drop-shadow`}>
                               {formatShortCurrency(w.amount)}
                             </span>
@@ -808,7 +880,9 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                             <div
                               style={{ height: `${heightPercent}%` }}
                               className={`w-full rounded-lg transition-all duration-700 ease-out ${
-                                isCurrentWeek
+                                isZero
+                                  ? 'bg-white/[0.05] border border-dashed border-white/[0.08]'
+                                  : isCurrentWeek
                                   ? `${tierTheme.barGradient} brightness-110`
                                   : 'bg-[#1c1a16] border border-white/[0.1] hover:border-white/30 hover:bg-[#2a2620]'
                               }`}
@@ -844,7 +918,11 @@ export function JourneyView({ onUse: _onUse }: { onUse?: (text: string) => void 
                   </strong>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>Hoje: <strong className="text-white font-bold">{formatCurrency(todayEarnings)}</strong></span>
+                  <span className="text-white/20">|</span>
+                  <span>Semana: <strong className="text-white font-bold">{formatCurrency(currentWeekEarnings)}</strong></span>
+                  <span className="text-white/20">|</span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-[var(--mvz-gold)]" />
                     <span className="text-[var(--mvz-gold-light)] font-semibold">

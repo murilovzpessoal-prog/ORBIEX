@@ -17,6 +17,8 @@ import {
   Camera,
   Sun,
   History,
+  Activity,
+  Cpu,
 } from 'lucide-react';
 import type { ViewId } from '../data';
 import { copyText } from './ChatParts';
@@ -43,12 +45,58 @@ interface Props {
   onNavigate?: (view: ViewId) => void;
 }
 
+const MOTION_PRESETS = [
+  {
+    id: 'orbit',
+    label: 'Giro 360° Suave (Orbit)',
+    desc: 'Rotação completa mostrando frente, costas e caimento',
+    en: 'slow 360-degree organic orbit camera movement, full anatomical rotation, showing back and front drape of the garment with smooth stabilization',
+    pt: 'Giro suave de 360 graus da modelo mostrando frente e costas do look com câmera orbitando de forma estável.',
+  },
+  {
+    id: 'squat',
+    label: 'Agachamento & Teste de Transparência',
+    desc: 'Movimento de agachar provando elasticidade e blackout',
+    en: 'deep athletic squat motion test, camera follows body descent smoothly, showing high waistband stability and zero fabric shear transparency in mirror reflection',
+    pt: 'Agachamento atlético no limite provando elasticidade máxima, cós firme e zero transparência do tecido.',
+  },
+  {
+    id: 'walk',
+    label: 'Caminhada & Desfile Frontal',
+    desc: 'Passada confiante em direção à lente com movimento de tecido',
+    en: 'confident runway forward walk towards camera, dynamic steadycam tracking shot, natural fabric flutter with each stride, fluid organic motion',
+    pt: 'Caminhada frontal confiante em direção à câmera com acompanhamento suave e balanço natural da peça.',
+  },
+  {
+    id: 'macro',
+    label: 'Zoom Lento nos Detalhes (Push-In)',
+    desc: 'Aproximação suave destacando textura, costura e elasticidade',
+    en: 'smooth macro push-in lens movement, revealing intricate fabric stitching, ribbed texture, micro-weave elasticity and premium garment finish',
+    pt: 'Aproximação lenta de lente macro destacando a trama do tecido, costuras duplas e qualidade do acabamento.',
+  },
+  {
+    id: 'mirror',
+    label: 'Espelho Vertical POV (UGC Natural)',
+    desc: 'Câmera na mão em primeira pessoa com toque no look',
+    en: 'vertical mirror POV recording, authentic natural handheld phone camera sway, model touches waistband and spins slightly with casual confidence',
+    pt: 'Gravação em espelho vertical estilo POV de celular, modelo passa a mão na cintura e confere o ajuste.',
+  },
+  {
+    id: 'slowmo',
+    label: 'Câmera Lenta Cinemática 60fps',
+    desc: 'Física ultradetalhada de cabelo, corpo e tecido',
+    en: 'ultra smooth 60fps slow-motion capture, cinematic fluid dynamics, gentle hair and fabric breeze motion, high framerate precision',
+    pt: 'Captura em câmera lenta 60fps com física fluida de tecido e movimento cinematográfico suave.',
+  },
+];
+
 const TEMPLATE_IDEAS = [
   {
     title: 'Vídeo Viral Moda Fitness TikTok',
     desc: 'Demonstração de legging blackout e top com giro 360 no espelho sem transparência.',
     text: 'Vídeo vertical no espelho mostrando um conjunto fitness feminino na cor vinho, modelo agacha suavemente e faz um giro de 360 graus mostrando a compressão na cintura e zero transparência do tecido.',
     engine: 'kling',
+    motion: 'squat',
     aspect: '9:16',
   },
   {
@@ -56,13 +104,15 @@ const TEMPLATE_IDEAS = [
     desc: 'Ensaio fotográfico de vestido midi em cenário minimalista com luz natural de fim de tarde.',
     text: 'Ensaio fotográfico editorial de alta moda com vestido canelado elegante em ambiente minimalista, iluminação suave de fim de tarde entrando pela janela, cores naturais e textura rica de tecido.',
     engine: 'midjourney',
+    motion: 'orbit',
     aspect: '9:16',
   },
   {
     title: 'Comercial Cinematográfico de Produto',
     desc: 'Animação de câmera fluida com iluminação de estúdio luxuoso destacando detalhes.',
-    text: 'Câmera lenta cinematográfica com iluminação de estúdio profissional em fundo escuro, câmera se aproxima suavemente destacando acabamentos dourados e costura de alta qualidade.',
+    text: 'Câmera lenta cinematográfica com iluminação de estúdio profissional em fundo escuro, câmera se aproxima suavemente destacando acabamentos e costura de alta qualidade.',
     engine: 'flow',
+    motion: 'macro',
     aspect: '16:9',
   },
   {
@@ -70,6 +120,7 @@ const TEMPLATE_IDEAS = [
     desc: 'Influenciadora testando a peça na prática nos primeiros 3 segundos para reter o feed.',
     text: 'Roteiro de criativo UGC com influenciadora provando na prática que a peça não aperta nem marca, fala energética nos primeiros 2 segundos e chamada para ação no carrinho laranja.',
     engine: 'chatgpt',
+    motion: 'mirror',
     aspect: '9:16',
   },
 ];
@@ -88,14 +139,6 @@ const ASPECT_RATIOS = [
   { id: '16:9', label: '16:9 Cinema', desc: 'YouTube & Widescreen' },
   { id: '1:1', label: '1:1 Quadrado', desc: 'Feed Instagram' },
   { id: '4:5', label: '4:5 Retrato', desc: 'Carrossel & Anúncios' },
-];
-
-const CAMERA_STYLES = [
-  'UGC Natural (Câmera na Mão / iPhone)',
-  'Cinematográfico 35mm (Arri Alexa)',
-  'Giro Suave 360 Graus (Orbit Camera)',
-  'Espelho Vertical POV (Estilo Provador)',
-  'Macro Close-up Detalhado (Textura)',
 ];
 
 const LIGHTING_STYLES = [
@@ -120,16 +163,17 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
   // Entradas do Usuário
   const [rawIdea, setRawIdea] = useState('');
   const [targetEngine, setTargetEngine] = useState('all');
+  const [selectedMotion, setSelectedMotion] = useState('orbit');
   const [aspectRatio, setAspectRatio] = useState('9:16');
-  const [cameraStyle, setCameraStyle] = useState(CAMERA_STYLES[0]);
   const [lightingStyle, setLightingStyle] = useState(LIGHTING_STYLES[0]);
   const [includeNegative, setIncludeNegative] = useState(true);
   const [includeCameraTags, setIncludeCameraTags] = useState(true);
 
-  // Estados de Interface
+  // Estados de Interface & Efeito de Carregamento
   const [listening, setListening] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [genStep, setGenStep] = useState(0);
+  const [genStep, setGenStep] = useState(1);
+  const [genProgress, setGenProgress] = useState(0);
   const [activeTab, setActiveTab] = useState<'all' | 'video' | 'image' | 'script' | 'history'>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -184,19 +228,36 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
     }
   };
 
-  // Motor Inteligente de Construção de Prompts
+  // Motor Inteligente de Construção de Prompts com Efeito de Carregamento HUD
   const generatePrompts = useCallback(() => {
     if (!rawIdea.trim()) return;
 
     setGenerating(true);
     setGenStep(1);
+    setGenProgress(15);
 
-    setTimeout(() => setGenStep(2), 500);
-    setTimeout(() => setGenStep(3), 1100);
+    // Efeito de escaneamento neural em 4 etapas
+    const t1 = setTimeout(() => {
+      setGenStep(2);
+      setGenProgress(45);
+    }, 600);
 
-    setTimeout(() => {
+    const t2 = setTimeout(() => {
+      setGenStep(3);
+      setGenProgress(75);
+    }, 1200);
+
+    const t3 = setTimeout(() => {
+      setGenStep(4);
+      setGenProgress(95);
+    }, 1800);
+
+    const t4 = setTimeout(() => {
+      setGenProgress(100);
+
       const idea = rawIdea.trim();
       const now = Date.now();
+      const motionObj = MOTION_PRESETS.find((m) => m.id === selectedMotion) || MOTION_PRESETS[0];
       const generatedList: GeneratedPrompt[] = [];
 
       // 1. Prompt para Kling AI (Vídeo & Movimento Realista)
@@ -206,18 +267,18 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
           engine: 'kling',
           engineLabel: 'Kling AI V1.5 / V2.0',
           category: 'video',
-          title: 'Prompt Cinematográfico de Movimento Vertical (Kling AI)',
-          promptEn: `High-end commercial video, vertical format ${aspectRatio}. ${idea}. Shot on realistic mobile camera, authentic UGC social media aesthetic, natural body proportions, rich textile fabric texture, authentic skin tones. ${cameraStyle}, subtle camera movement, natural motion blur, seamless flow, ${lightingStyle}. Ultra sharp focus, 8k resolution, raw quality, 30fps.`,
-          promptPt: `Vídeo comercial vertical em formato ${aspectRatio}. ${idea}. Capturado em ângulo realista, estética natural de rede social, proporções anatômicas fiéis, textura nítida do tecido. ${cameraStyle}, movimento suave de câmera, ${lightingStyle}. Foco ultranítido e alta fidelidade.`,
+          title: 'Prompt de Movimento Vertical com Física Realista (Kling AI)',
+          promptEn: `High-end commercial video, vertical format ${aspectRatio}. ${idea}. Motion directive: ${motionObj.en}. Authentic mobile UGC aesthetic, natural body proportions, rich textile fabric texture, authentic skin tones. Smooth natural motion blur, seamless cinematic flow, ${lightingStyle}. Ultra sharp focus, 8k resolution, raw quality, 30fps.`,
+          promptPt: `Vídeo comercial vertical em formato ${aspectRatio}. ${idea}. Movimento: ${motionObj.pt}. Capturado em ângulo realista, estética natural de rede social, proporções fiéis e textura nítida do tecido sob ${lightingStyle}. Foco ultranítido e alta fidelidade.`,
           negativePrompt: includeNegative
             ? 'deformed hands, extra fingers, mutated anatomy, blur, jitter, artifacts, cartoonish, 3d render, plastic skin, oversaturation, distortion, face glitch, bad proportions'
             : undefined,
           cameraMotion: includeCameraTags
-            ? 'Camera: Handheld organic pan, smooth slow orbit, gentle zoom-in, steady gimbal stabilization'
+            ? `Camera Movement: ${motionObj.en}`
             : undefined,
           lighting: lightingStyle,
           aspectRatio,
-          tags: ['Kling AI', 'Vídeo Vertical', 'Física Realista', 'Sem Distorção'],
+          tags: ['Kling AI', 'Vídeo Vertical', motionObj.label.split(' ')[0], 'Sem Distorção'],
           createdAt: now,
         });
       }
@@ -230,13 +291,13 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
           engineLabel: 'Google Flow / VEO 3',
           category: 'video',
           title: 'Prompt de Alta Fidelidade Cinematográfica (Google Flow)',
-          promptEn: `Cinematic commercial fashion shot, aspect ratio ${aspectRatio}. ${idea}. Filmed on 35mm Arri Alexa camera with master prime lens f/1.8. ${lightingStyle}, soft volumetric shadows, natural color grade, accurate fabric micro-textures. ${cameraStyle}, steady cinematic tracking, photorealistic depth of field, 4k master render.`,
-          promptPt: `Plano cinematográfico comercial de moda em formato ${aspectRatio}. ${idea}. Filmado em lente nobre 35mm f/1.8 com profundidade de campo suave. ${lightingStyle}, sombras volumétricas sutis, gradação de cores naturais e microtextura do tecido. ${cameraStyle}, rastreamento estável e render 4K.`,
+          promptEn: `Cinematic commercial fashion shot, aspect ratio ${aspectRatio}. ${idea}. Camera choreograph: ${motionObj.en}. Filmed on 35mm Arri Alexa camera with master prime lens f/1.8. ${lightingStyle}, soft volumetric shadows, natural color grade, accurate fabric micro-textures. Photorealistic depth of field, 4k master render.`,
+          promptPt: `Plano cinematográfico comercial de moda em formato ${aspectRatio}. ${idea}. Coreografia de câmera: ${motionObj.pt}. Filmado em lente nobre 35mm f/1.8 com profundidade de campo suave sob ${lightingStyle}. Rastreamento estável e render 4K.`,
           negativePrompt: includeNegative
             ? 'flicker, anatomical distortion, low resolution, noisy, plastic textures, blown-out highlights, artifacts, extra limbs, bad eyes'
             : undefined,
           cameraMotion: includeCameraTags
-            ? 'Camera: Smooth dynamic tracking, subtle slow tilt down, steady frame centering'
+            ? `Camera Directive: ${motionObj.en}`
             : undefined,
           lighting: lightingStyle,
           aspectRatio,
@@ -253,8 +314,8 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
           engineLabel: 'Midjourney V6.1 / Flux Pro',
           category: 'image',
           title: 'Prompt de Fotografia Editorial Hiper-realista (Midjourney / Flux)',
-          promptEn: `High fashion editorial photograph, full shot. ${idea}. Modern aesthetic, authentic human model with realistic skin texture, intricate cloth weave, luxury aesthetic. ${lightingStyle}, soft specular highlights, clean minimalist composition. Shot with Hasselblad X2D 100C, 85mm portrait lens, shallow depth of field --ar ${aspectRatio.replace(':', ':')} --v 6.1 --style raw --q 2`,
-          promptPt: `Fotografia editorial de alta moda em plano inteiro. ${idea}. Estética moderna, modelo autêntica com textura de pele fotorrealista, tecido de alta densidade e acabamento refinado. ${lightingStyle}, reflexos suaves e composição limpa. Capturada com Hasselblad X2D 100C em lente 85mm.`,
+          promptEn: `High fashion editorial photograph, dynamic pose captured mid-motion: ${motionObj.en}. ${idea}. Modern luxury aesthetic, authentic human model with realistic skin texture, intricate cloth weave. ${lightingStyle}, soft specular highlights, clean minimalist composition. Shot with Hasselblad X2D 100C, 85mm portrait lens, shallow depth of field --ar ${aspectRatio.replace(':', ':')} --v 6.1 --style raw --q 2`,
+          promptPt: `Fotografia editorial de alta moda capturada no ápice da ação: ${motionObj.pt}. ${idea}. Modelo autêntica com textura de pele fotorrealista, tecido de alta densidade e acabamento refinado sob ${lightingStyle}. Capturada com Hasselblad X2D 100C em lente 85mm.`,
           negativePrompt: includeNegative
             ? '--no cartoon, 3d, render, illustration, bad anatomy, deformed fingers, extra limbs, oversaturated, blurry, text, watermark'
             : undefined,
@@ -274,13 +335,13 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
           engineLabel: 'Hailuo AI (Minimax)',
           category: 'video',
           title: 'Prompt de Dinâmica Natural e Tecido (Hailuo AI)',
-          promptEn: `Ultra-fluid video sequence, ${aspectRatio}. ${idea}. Natural physical cloth dynamics, realistic fabric elasticity and tension. Model performs smooth organic motion, confident posture, engaging facial expression. ${cameraStyle}, clear front focus, ${lightingStyle}. High definition output, zero artifacting.`,
-          promptPt: `Sequência de vídeo ultrafluida em ${aspectRatio}. ${idea}. Física natural do caimento e elasticidade do tecido durante o movimento. Movimento orgânico e expressivo da modelo. ${cameraStyle}, foco frontal nítido e ${lightingStyle}. Alta definição sem artefatos.`,
+          promptEn: `Ultra-fluid video sequence, ${aspectRatio}. ${idea}. Motion execution: ${motionObj.en}. Natural physical cloth dynamics, realistic fabric elasticity and tension. Model performs smooth organic motion, confident posture. Clear front focus, ${lightingStyle}. High definition output, zero artifacting.`,
+          promptPt: `Sequência de vídeo ultrafluida em ${aspectRatio}. ${idea}. Dinâmica: ${motionObj.pt}. Física natural do caimento e elasticidade do tecido durante o movimento sob ${lightingStyle}. Alta definição sem artefatos.`,
           negativePrompt: includeNegative
             ? 'body deformation, unrealistic movement, jerky motion, low frame rate, artificial look, duplicate bodies, distorted face'
             : undefined,
           cameraMotion: includeCameraTags
-            ? 'Camera: Continuous smooth follow-through, subtle vertical pan'
+            ? `Motion Dynamics: ${motionObj.en}`
             : undefined,
           lighting: lightingStyle,
           aspectRatio,
@@ -297,10 +358,10 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
           engineLabel: 'Roteiro & Copy Viral UGC',
           category: 'script',
           title: 'Estrutura Completa de Fala & Texto na Tela (0 a 15 Segundos)',
-          promptEn: `[HOOK 0-3S]: "Se você achava que ${idea.slice(0, 45)} ia ficar transparente ou marcar no corpo, para tudo e olha esse teste real no espelho!"\n[AÇÃO DE CÂMERA]: Modelo agacha no limite de costas, se levanta suavemente e passa a mão lateral na cintura mostrando o ajuste anatômico perfeito.\n[TEXTO NA TELA]: "ZERO TRANSPARÊNCIA?! Teste real no espelho (Não enrola o cós)"\n[CORPO 4-10S]: "O tecido é duplo, com compressão inteligente que modela sem sufocar. Não desce durante o agachamento e o toque é macio."\n[CTA 11-15S]: "Está com frete grátis liberado na loja hoje. Clica no link do carrinho aqui embaixo antes que esgote o lote!"`,
-          promptPt: `Roteiro estruturado para alta conversão no TikTok Shop com gancho de retenção nos primeiros 3 segundos, quebra de objeção visual no espelho, demonstração do benefício principal e chamada direta de compra para o carrinho.`,
+          promptEn: `[HOOK 0-3S]: "Se você achava que ${idea.slice(0, 45)} ia marcar no corpo ou ficar desconfortável, para tudo e olha esse teste real no espelho!"\n[AÇÃO DE CÂMERA & MOVIMENTO]: Modelo executa ${motionObj.pt.toLowerCase()}\n[TEXTO NA TELA]: "ZERO TRANSPARÊNCIA?! Teste real no espelho (Não enrola o cós)"\n[CORPO 4-10S]: "O tecido tem compressão anatômica inteligente que modela a cintura sem sufocar. O toque é macio e não desce durante o movimento."\n[CTA 11-15S]: "Está com frete grátis liberado na loja hoje. Clica no link do carrinho aqui embaixo antes que esgote o lote!"`,
+          promptPt: `Roteiro estruturado para alta conversão no TikTok Shop com gancho de retenção nos primeiros 3 segundos, quebra de objeção visual provando o movimento (${motionObj.label}), demonstração prática do benefício e chamada direta para o carrinho.`,
           negativePrompt: undefined,
-          cameraMotion: 'Câmera na altura da cintura com enquadramento vertical aproximando nos detalhes',
+          cameraMotion: `Ação de Cena: ${motionObj.pt}`,
           lighting: 'Iluminação frontal de anel de luz ou janela direta',
           aspectRatio: '9:16',
           tags: ['Roteiro UGC', 'TikTok Shop', 'Gancho 0 a 3s', 'Conversão'],
@@ -311,9 +372,17 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
       setResults(generatedList);
       setHistory((prev) => [...generatedList, ...prev.filter((p) => !generatedList.some((g) => g.id === p.id))]);
       setGenerating(false);
-      setGenStep(0);
-    }, 1600);
-  }, [rawIdea, targetEngine, aspectRatio, cameraStyle, lightingStyle, includeNegative, includeCameraTags]);
+      setGenStep(1);
+      setGenProgress(0);
+    }, 2400);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [rawIdea, targetEngine, selectedMotion, aspectRatio, lightingStyle, includeNegative, includeCameraTags]);
 
   const displayedList = useMemo(() => {
     if (activeTab === 'history') return history;
@@ -372,7 +441,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
             </h1>
 
             <p className="max-w-2xl text-[13px] leading-relaxed text-white/70">
-              Transforme qualquer ideia bruta em comandos neurais de alta precisão parametrizados para Kling AI, Google Flow, Midjourney, Hailuo e roteiros de conversão.
+              Transforme qualquer ideia e movimento desejado em comandos neurais de alta precisão parametrizados para Kling AI, Google Flow, Midjourney, Hailuo e roteiros de conversão.
             </p>
           </div>
 
@@ -392,7 +461,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
           2. ESTÚDIO DIVIDIDO EM 2 COLUNAS: CRIAÇÃO & RESULTADOS
       ──────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-        {/* ── COLUNA ESQUERDA: ENTRADA & PARAMETRIZAÇÃO (5 cols) ── */}
+        {/* ── COLUNA ESQUERDA: ENTRADA, MOVIMENTO & PARAMETRIZAÇÃO (5 cols) ── */}
         <div className="lg:col-span-5 flex flex-col space-y-4">
           <div className="rounded-[24px] border border-white/[0.08] bg-[#0c0c0d] p-5 shadow-xl space-y-5">
             {/* Header da Seção */}
@@ -403,7 +472,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
                   Expressar Ideia Criativa
                 </h3>
               </div>
-              <span className="text-[10px] text-white/40">Entrada Livre</span>
+              <span className="text-[10px] text-white/40">Entrada Inteligente</span>
             </div>
 
             {/* Ideias Modelo / Templates Rápidos */}
@@ -418,6 +487,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
                     onClick={() => {
                       setRawIdea(tpl.text);
                       setTargetEngine(tpl.engine);
+                      setSelectedMotion(tpl.motion);
                       setAspectRatio(tpl.aspect);
                     }}
                     className="flex flex-col text-left rounded-xl border border-white/5 bg-white/[0.02] p-2.5 hover:border-[var(--mvz-gold)]/40 hover:bg-white/[0.04] transition cursor-pointer"
@@ -437,7 +507,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">
-                  Descreva o que você deseja criar:
+                  Descreva o que você deseja criar (ou use a voz):
                 </label>
                 <button
                   type="button"
@@ -474,6 +544,43 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
               </div>
             </div>
 
+            {/* ── SELETOR DE MOVIMENTO DESEJADO ── */}
+            <div className="space-y-2 pt-1 border-t border-white/[0.06]">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-white/70">
+                  <Activity size={12} className="text-[var(--mvz-gold)]" />
+                  <span>Movimento & Dinâmica Desejada:</span>
+                </label>
+                <span className="text-[9.5px] text-[var(--mvz-gold)] font-mono font-bold">
+                  {MOTION_PRESETS.find((m) => m.id === selectedMotion)?.label.split(' ')[0]}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                {MOTION_PRESETS.map((m) => {
+                  const isSelected = selectedMotion === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setSelectedMotion(m.id)}
+                      className={`flex flex-col text-left rounded-xl border p-2.5 transition cursor-pointer ${
+                        isSelected
+                          ? 'border-[var(--mvz-gold)] bg-[var(--mvz-gold)]/15 text-white shadow-sm'
+                          : 'border-white/5 bg-white/[0.02] text-white/60 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <span className="truncate text-[11px] font-bold leading-tight">
+                        {m.label}
+                      </span>
+                      <span className="line-clamp-1 text-[9px] text-white/40 mt-0.5">
+                        {m.desc}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Seleção do Motor Alvo */}
             <div className="space-y-2">
               <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">
@@ -501,47 +608,27 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
               </div>
             </div>
 
-            {/* Proporção / Aspect Ratio */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">
-                Proporção do Enquadramento (Aspect Ratio):
-              </label>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                {ASPECT_RATIOS.map((asp) => (
-                  <button
-                    key={asp.id}
-                    onClick={() => setAspectRatio(asp.id)}
-                    className={`flex flex-col text-center rounded-xl border p-2 transition cursor-pointer ${
-                      aspectRatio === asp.id
-                        ? 'border-[var(--mvz-gold)] bg-[var(--mvz-gold)]/15 text-white font-bold'
-                        : 'border-white/5 bg-white/[0.02] text-white/60 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-[11px] font-bold">{asp.id}</span>
-                    <span className="text-[8.5px] text-white/40 truncate">{asp.desc.split(' ')[0]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Parâmetros de Câmera & Iluminação */}
+            {/* Proporção / Aspect Ratio & Iluminação */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-white/60">
-                  <Camera size={11} className="text-[var(--mvz-gold)]" />
-                  <span>Estilo de Câmera:</span>
+                <label className="text-[10.5px] font-bold uppercase tracking-wider text-white/60">
+                  Proporção (Aspect Ratio):
                 </label>
-                <select
-                  value={cameraStyle}
-                  onChange={(e) => setCameraStyle(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/60 p-2.5 text-[11px] text-white focus:border-[var(--mvz-gold)] focus:outline-none cursor-pointer"
-                >
-                  {CAMERA_STYLES.map((c) => (
-                    <option key={c} value={c} className="bg-neutral-900 text-white">
-                      {c}
-                    </option>
+                <div className="grid grid-cols-2 gap-1">
+                  {ASPECT_RATIOS.map((asp) => (
+                    <button
+                      key={asp.id}
+                      onClick={() => setAspectRatio(asp.id)}
+                      className={`rounded-lg border p-1.5 text-center text-[11px] font-bold transition cursor-pointer ${
+                        aspectRatio === asp.id
+                          ? 'border-[var(--mvz-gold)] bg-[var(--mvz-gold)]/15 text-white'
+                          : 'border-white/5 bg-white/[0.02] text-white/60 hover:text-white'
+                      }`}
+                    >
+                      {asp.id}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -552,7 +639,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
                 <select
                   value={lightingStyle}
                   onChange={(e) => setLightingStyle(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/60 p-2.5 text-[11px] text-white focus:border-[var(--mvz-gold)] focus:outline-none cursor-pointer"
+                  className="w-full rounded-xl border border-white/10 bg-black/60 p-2 text-[11px] text-white focus:border-[var(--mvz-gold)] focus:outline-none cursor-pointer"
                 >
                   {LIGHTING_STYLES.map((l) => (
                     <option key={l} value={l} className="bg-neutral-900 text-white">
@@ -595,11 +682,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
               {generating ? (
                 <>
                   <Wand2 size={16} className="animate-spin text-black" />
-                  <span>
-                    {genStep === 1 && 'Decompondo intenção semântica...'}
-                    {genStep === 2 && 'Calibrando pesos e vocabulário técnico...'}
-                    {genStep === 3 && 'Formatando prompts profissionais...'}
-                  </span>
+                  <span>Sintetizando Prompts Neurais ({genProgress}%)</span>
                 </>
               ) : (
                 <>
@@ -611,7 +694,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
           </div>
         </div>
 
-        {/* ── COLUNA DIREITA: TERMINAL DE RESULTADOS & PROMPTS (7 cols) ── */}
+        {/* ── COLUNA DIREITA: TERMINAL DE RESULTADOS & CARREGAMENTO HUD (7 cols) ── */}
         <div className="lg:col-span-7 flex flex-col space-y-4">
           {/* Barra de Filtros & Ações dos Resultados */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-white/[0.08] bg-[#0c0c0d] p-3 shadow-lg">
@@ -672,7 +755,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
               </button>
             </div>
 
-            {results.length > 0 && (
+            {results.length > 0 && !generating && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={exportAllAsTxt}
@@ -693,8 +776,100 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
             )}
           </div>
 
-          {/* Listagem de Cards de Prompts Gerados */}
-          {displayedList.length === 0 ? (
+          {/* ── 3. EFEITO DE CARREGAMENTO HUD NEURAL SCANNER ── */}
+          {generating ? (
+            <div className="relative overflow-hidden rounded-[24px] border border-[var(--mvz-gold)]/30 bg-[#0c0c0d] p-8 shadow-2xl min-h-[460px] flex flex-col justify-between">
+              {/* Linha laser de scan animada */}
+              <div className="pointer-events-none absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[var(--mvz-gold)] to-transparent blur-sm animate-pulse" />
+
+              {/* Topo do Carregador */}
+              <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-[var(--mvz-gold)] animate-ping" />
+                  <span className="text-[11.5px] font-black uppercase tracking-wider text-white">
+                    Scanner Neural • Processando Requisição
+                  </span>
+                </div>
+                <span className="font-mono text-[12px] font-extrabold text-[var(--mvz-gold-light)]">
+                  {genProgress}%
+                </span>
+              </div>
+
+              {/* Centro com Radar / Orb Dourado */}
+              <div className="my-auto flex flex-col items-center justify-center text-center py-6">
+                <div className="relative mb-6 flex h-28 w-28 items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border border-[var(--mvz-gold)]/20 animate-ping opacity-30" />
+                  <div
+                    className="absolute inset-2 rounded-full border-2 border-[var(--mvz-gold)]/30 border-t-[var(--mvz-gold)] animate-spin"
+                    style={{ animationDuration: '2s' }}
+                  />
+                  <div
+                    className="absolute inset-5 rounded-full border border-white/10 border-b-[var(--mvz-gold)] animate-spin"
+                    style={{ animationDirection: 'reverse', animationDuration: '3.5s' }}
+                  />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--mvz-gold)] bg-black/90 text-[var(--mvz-gold)] shadow-[0_0_25px_rgba(212,175,55,0.35)]">
+                    <Sparkles size={24} className="animate-pulse" />
+                  </div>
+                </div>
+
+                <h3 className="text-[18px] font-black text-white">
+                  Arquitetando Prompts Neurais
+                </h3>
+
+                <p className="mt-1 max-w-md text-[12px] text-white/50">
+                  Analisando física de movimento e sintetizando comandos para Kling AI, Google Flow e Midjourney.
+                </p>
+
+                {/* Barra de Progresso Real */}
+                <div className="mt-5 w-full max-w-md">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/10">
+                    <div
+                      className="h-full bg-gradient-to-r from-[var(--mvz-gold)] via-[#f3e2a4] to-[var(--mvz-gold)] transition-all duration-300 shadow-[0_0_12px_rgba(212,175,55,0.6)]"
+                      style={{ width: `${genProgress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Etapas do Scanner */}
+                <div className="mt-6 w-full max-w-md space-y-2 text-left font-mono text-[11px]">
+                  <div className={`flex items-center gap-2 transition ${genStep >= 1 ? 'text-[var(--mvz-gold-light)]' : 'text-white/30'}`}>
+                    {genStep > 1 ? <Check size={12} className="text-[#22c55e]" /> : <Activity size={12} className="animate-spin text-[var(--mvz-gold)]" />}
+                    <span>1. Decomposição semântica e identificação do sujeito</span>
+                  </div>
+
+                  <div className={`flex items-center gap-2 transition ${genStep >= 2 ? 'text-[var(--mvz-gold-light)]' : 'text-white/30'}`}>
+                    {genStep > 2 ? <Check size={12} className="text-[#22c55e]" /> : genStep === 2 ? <Activity size={12} className="animate-spin text-[var(--mvz-gold)]" /> : <div className="h-3 w-3 rounded-full border border-white/20" />}
+                    <span>2. Mapeamento de dinâmica: {MOTION_PRESETS.find((m) => m.id === selectedMotion)?.label}</span>
+                  </div>
+
+                  <div className={`flex items-center gap-2 transition ${genStep >= 3 ? 'text-[var(--mvz-gold-light)]' : 'text-white/30'}`}>
+                    {genStep > 3 ? <Check size={12} className="text-[#22c55e]" /> : genStep === 3 ? <Activity size={12} className="animate-spin text-[var(--mvz-gold)]" /> : <div className="h-3 w-3 rounded-full border border-white/20" />}
+                    <span>3. Parametrização óptica ({aspectRatio}, lente 35mm e {lightingStyle.split(' ')[0]})</span>
+                  </div>
+
+                  <div className={`flex items-center gap-2 transition ${genStep >= 4 ? 'text-[var(--mvz-gold-light)]' : 'text-white/30'}`}>
+                    {genStep >= 4 ? <Activity size={12} className="animate-spin text-[var(--mvz-gold)]" /> : <div className="h-3 w-3 rounded-full border border-white/20" />}
+                    <span>4. Compilação em inglês técnico e injeção de negative filters</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rodapé de Telemetria */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3 text-[10.5px] text-white/40">
+                <span className="flex items-center gap-1">
+                  <Cpu size={11} className="text-[var(--mvz-gold)]" />
+                  <span>Tokens Processados: 480</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <ShieldCheck size={11} className="text-[#22c55e]" />
+                  <span>Filtro Anti-Glitch: Ativado</span>
+                </span>
+                <span className="font-mono text-[var(--mvz-gold-light)]">
+                  Fidelidade: 99.8%
+                </span>
+              </div>
+            </div>
+          ) : displayedList.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[#0c0c0d]/60 p-12 text-center min-h-[460px]">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--mvz-gold)]/30 bg-black/60 text-[var(--mvz-gold)] shadow-[0_0_20px_rgba(212,175,55,0.15)] mb-4">
                 <Terminal size={24} />
@@ -703,7 +878,7 @@ export function PromptGeneratorView({ onUseInAgent, onNavigate }: Props) {
                 Pronto para arquitetar seus prompts, {displayName}?
               </h3>
               <p className="mt-1.5 max-w-md text-[12.5px] leading-relaxed text-white/50">
-                Descreva sua ideia no painel ao lado ou selecione uma das ideias modelo para gerar prompts calibrados para os motores mais avançados do mercado.
+                Descreva sua ideia, escolha o movimento que deseja ver no vídeo e clique em Gerar para sintetizar prompts prontos para produção.
               </p>
             </div>
           ) : (

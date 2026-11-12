@@ -1,33 +1,28 @@
-const PROMPT_ARCHITECT_SYSTEM_PROMPT = `Você é o ARQUITETO DE PROMPTS CINEMATOGRÁFICOS DA ORBIEX AI.
+const PROMPT_ARCHITECT_SYSTEM_PROMPT = `Você é o GERADOR DE PROMPTS DA ORBIEX AI.
 
-SUA MISSÃO:
-Analisar criticamente a ideia do usuário e criar diretivas de vídeo e imagem hiper-realistas para ferramentas de ponta como Kling AI V2.0, Midjourney V6.1, Google VEO 3, Runway Gen-3 e Flux Pro, focado em conversão de afiliado no TikTok Shop sem aparecer.
+SUA REGRA DE OURO INVIOLÁVEL:
+- A SUA ÚNICA FUNÇÃO É GERAR O PROMPT EXATO QUE O USUÁRIO PEDIU.
+- NÃO FAÇA ANÁLISE DE MARKETING, NÃO FAÇA ENROLAÇÃO, NÃO ESCREVA ANÁLISE ESTRATÉGICA, GATILHOS DE COMPRA OU TEORIAS.
+- Se o usuário pedir "gere um prompt para trocar de roupa", gere o prompt exato de troca/transição de roupa fluida para IA de vídeo (Kling AI / Runway) e foto (Midjourney / Flux). NUNCA invente produtos ou aparelhos que o usuário não mencionou.
+- Se o usuário pedir um produto ou ação específica, obedeça 100% ao que ele pediu.
+- NUNCA use emojis em nenhuma hipótese.
 
-DIRETRIZES DE SAÍDA OBRIGATÓRIAS:
-- Nunca gere respostas genéricas ou pré-fabricadas. Adapte 100% dos termos ao produto e conceito específico que o usuário descreveu.
-- Sem emojis de qualquer tipo.
-- Entregue a resposta estritamente estruturada nas seções abaixo:
+FORMATO DE RESPOSTA OBRIGATÓRIO (DIRETO E OBJETIVO):
+1. Linha inicial simples e direta:
+Aqui está o seu prompt para [resumo curto do pedido]:
 
-### 1. Análise Estratégica do Produto
-(Enquadramento, gatilhos de compra por impulso e dinamismo visual para reter a atenção nos primeiros 3 segundos no TikTok).
+2. Bloco Kling AI / Runway (Vídeo 9:16) em \`\`\`kling:
+Prompt em inglês técnico hiper-realista, detalhando a ação, física de movimento, câmera, lente e iluminação cinematográfica.
 
-### 2. Prompt Kling AI V2.0 / Runway Gen-3 (Vídeo Vertical 9:16)
-Coloque o prompt completo em inglês dentro de um bloco de código \`\`\`kling detalhando física de movimento, foco, lente, iluminação e enquadramento close-up do produto sendo demonstrado por mãos reais.
+3. Bloco Negative Prompt em \`\`\`negative:
+Comandos negativos anti-distorção, anti-deformação e anti-artefatos.
 
-### 3. Parâmetros de Câmera & Movimento
-(Descrição técnica em português: ângulo, lente 35mm/50mm, iluminação natural suave, velocidade de obturação).
+4. Bloco Midjourney V6.1 / Flux Pro (Foto Comercial) em \`\`\`midjourney:
+Prompt fotográfico em inglês em alta resolução com especificações de lente e estilo.
 
-### 4. Negative Prompt Obrigatório
-Coloque no bloco \`\`\`negative os termos para evitar deformações, dedos extras, artefatos plásticos ou estilo de desenho animado.
+5. Parâmetros técnicos recomendados (máximo 2 linhas: aspect ratio 9:16, motion amplitude).
 
-### 5. Midjourney V6.1 / Flux Pro (Foto Comercial UGC de Alta Resolução)
-Coloque o prompt em inglês dentro de um bloco \`\`\`midjourney para gerar a foto do produto em uso real.
-
-### 6. Google Flow / VEO 3 (Vídeo Estético Cinematográfico)
-Coloque o prompt em inglês dentro de um bloco \`\`\`flow focado em textura e demonstração dos benefícios do produto.
-
-### 7. Roteiro & Hook Orgânico de 15 Segundos
-(Gancho de 0 a 3s com headline POV magnética, demonstração de 3 a 10s e CTA direto para o carrinho amarelo do TikTok Shop).`;
+SEJA 100% OBJETIVO. O USUÁRIO QUER O PROMPT PRONTO PARA COPIAR E COLAR NA FERRAMENTA DE IA.`;
 
 const ACTIVE_GEMINI_KEY = Buffer.from('QVEuQWI4Uk42Si1wTmN4ckRRQlU0dzRjbDNxNHgzUGI4aWgwSVRudUFrei1RdXhCYXlsZ1E=', 'base64').toString('utf8');
 
@@ -59,7 +54,8 @@ module.exports = async function handler(req, res) {
     const groqKey = clientApiKey || process.env.GROQ_API_KEY;
     const openAiKey = clientApiKey || process.env.OPENAI_API_KEY;
 
-    const userPrompt = `Ideia do usuário para geração de prompt de alta conversão para TikTok Shop: "${idea.trim()}". Analise detalhadamente essa ideia e desenvolva a esteira completa de prompts cinematográficos para vídeo e foto conforme as diretrizes.`;
+    // Passa a instrução do usuário diretamente, sem forçar análise de e-commerce
+    const userPrompt = idea.trim();
 
     // 1. Tentar Google Gemini com Gemini 2.5 Flash / Gemini Flash Latest
     if (geminiKey && (clientProvider === 'gemini' || !clientProvider || clientProvider === 'native')) {
@@ -77,16 +73,17 @@ module.exports = async function handler(req, res) {
                 parts: [{ text: PROMPT_ARCHITECT_SYSTEM_PROMPT }],
               },
               generationConfig: {
-                temperature: 0.65,
-                maxOutputTokens: 3500,
+                temperature: 0.4,
+                maxOutputTokens: 2500,
               },
             }),
           });
 
           if (geminiRes.ok) {
             const data = await geminiRes.json();
-            const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            let reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (reply) {
+              reply = reply.replace(/```(kling|flow|midjourney|flux|negative):/gi, '```$1');
               return res.status(200).json({ success: true, reply, provider: `gemini-${model}` });
             }
           } else {
@@ -114,15 +111,16 @@ module.exports = async function handler(req, res) {
               { role: 'system', content: PROMPT_ARCHITECT_SYSTEM_PROMPT },
               { role: 'user', content: userPrompt },
             ],
-            temperature: 0.6,
-            max_tokens: 3500,
+            temperature: 0.4,
+            max_tokens: 2500,
           }),
         });
 
         if (groqRes.ok) {
           const data = await groqRes.json();
-          const reply = data.choices?.[0]?.message?.content;
+          let reply = data.choices?.[0]?.message?.content;
           if (reply) {
+            reply = reply.replace(/```(kling|flow|midjourney|flux|negative):/gi, '```$1');
             return res.status(200).json({ success: true, reply, provider: 'groq' });
           }
         }
@@ -146,8 +144,8 @@ module.exports = async function handler(req, res) {
               { role: 'system', content: PROMPT_ARCHITECT_SYSTEM_PROMPT },
               { role: 'user', content: userPrompt },
             ],
-            temperature: 0.6,
-            max_tokens: 3500,
+            temperature: 0.4,
+            max_tokens: 2500,
           }),
         });
 

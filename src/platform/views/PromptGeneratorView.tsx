@@ -9,6 +9,7 @@ import {
   ArrowDown,
   Check,
   Copy,
+  History,
   Loader2,
   Mic,
   Plus,
@@ -20,6 +21,7 @@ import {
   Video,
   Film,
   Sparkles,
+  X,
 } from 'lucide-react';
 import type { ViewId } from '../data';
 import { Rich, copyText } from './ChatParts';
@@ -299,11 +301,15 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
   const [listening, setListening] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showJump, setShowJump] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
 
   const activeSession = useMemo(
     () => sessions.find((s) => s.id === activeId) || sessions[0],
     [sessions, activeId]
   );
+  const sortedSessions = useMemo(() => {
+    return [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [sessions]);
   const msgs = activeSession?.msgs || [];
   const empty = msgs.length === 0;
 
@@ -582,38 +588,48 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
           </div>
 
           {/* Lista de Sessões Anteriores */}
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">
-              Histórico ({sessions.length})
-            </span>
+          <div className="space-y-1.5 flex flex-col flex-1 min-h-0">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">
+              <span>Histórico de Prompts ({sortedSessions.length})</span>
+            </div>
 
-            <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
-              {sessions.map((s) => (
-                <div
-                  key={s.id}
-                  className={`group flex items-center justify-between rounded-xl px-2.5 py-2 text-[11.5px] transition ${
-                    s.id === activeId
-                      ? 'border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 text-white font-medium'
-                      : 'border border-transparent bg-white/[0.02] text-white/60 hover:text-white hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <button
-                    onClick={() => setActiveId(s.id)}
-                    className="truncate text-left flex-1 cursor-pointer"
+            <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
+              {sortedSessions.map((s) => {
+                const isActive = s.id === activeSession.id;
+                return (
+                  <div
+                    key={s.id}
+                    className={`group flex items-center justify-between rounded-xl px-2.5 py-2 text-[12px] transition ${
+                      isActive
+                        ? 'border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/10 text-white font-semibold shadow-sm'
+                        : 'border border-transparent bg-white/[0.02] text-white/60 hover:text-white hover:bg-white/[0.04]'
+                    }`}
                   >
-                    <span className="truncate">{s.title}</span>
-                  </button>
-                  {sessions.length > 1 && (
                     <button
-                      onClick={() => removeSession(s.id)}
-                      className="ml-1 opacity-0 group-hover:opacity-100 text-white/30 hover:text-rose-400 p-1 transition cursor-pointer"
-                      title="Excluir histórico"
+                      onClick={() => setActiveId(s.id)}
+                      className="truncate text-left flex-1 cursor-pointer pr-1"
+                      title={s.title}
                     >
-                      <Trash2 size={11} />
+                      <span className="truncate block font-medium">{s.title}</span>
+                      <span className="text-[10px] text-white/35 block mt-0.5 font-normal">
+                        {s.msgs.length} {s.msgs.length === 1 ? 'mensagem' : 'mensagens'}
+                      </span>
                     </button>
-                  )}
-                </div>
-              ))}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeSession(s.id);
+                      }}
+                      className="ml-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/40 hover:text-rose-400 hover:bg-rose-500/15 transition cursor-pointer"
+                      title="Excluir este chat"
+                      aria-label="Excluir este chat"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -630,6 +646,14 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
         {/* Topbar do Console */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/[0.06] px-4 sm:px-6">
           <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              onClick={() => setHistOpen((o) => !o)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:bg-white/5 lg:hidden cursor-pointer shrink-0"
+              aria-label="Histórico de Prompts"
+              title="Abrir Histórico"
+            >
+              <History size={16} />
+            </button>
             <span className={`h-2 w-2 shrink-0 rounded-full ${busy ? 'bg-[var(--mvz-gold)] animate-pulse' : 'bg-[#22c55e]'}`} />
             <span className="text-[13px] font-bold text-white truncate">
               {activeSession.title}
@@ -640,6 +664,14 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={newSession}
+              className="flex items-center gap-1 rounded-lg border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-2.5 py-1 text-[11px] font-bold text-[var(--mvz-gold-light)] hover:bg-[var(--mvz-gold)] hover:text-black transition lg:hidden cursor-pointer"
+              title="Criar novo prompt"
+            >
+              <Plus size={12} />
+              <span>Novo</span>
+            </button>
             <span className="rounded-md border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-[var(--mvz-gold-light)]">
               Kling • Flow • Midjourney
             </span>
@@ -940,6 +972,94 @@ export function PromptGeneratorView({ onUseInAgent }: Props) {
           </div>
         </div>
       </section>
+
+      {/* ── DRAWER MOBILE DE HISTÓRICO ── */}
+      {histOpen && (
+        <div className="fixed inset-0 z-50 flex lg:hidden bg-black/80 backdrop-blur-sm">
+          <div className="w-[280px] bg-[#0c0c0d] border-r border-white/10 p-4 flex flex-col justify-between h-full shadow-2xl">
+            <div className="space-y-4 flex flex-col flex-1 min-h-0">
+              <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative shrink-0" style={{ width: 22, height: 22 }}>
+                    <div className="mvz-orb absolute inset-0 rounded-full" />
+                  </div>
+                  <div>
+                    <span className="text-[12.5px] font-black text-white leading-tight block">Histórico</span>
+                    <span className="text-[9.5px] text-white/40 block">Prompts Anteriores</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      newSession();
+                      setHistOpen(false);
+                    }}
+                    className="p-1.5 text-[var(--mvz-gold)] hover:text-white cursor-pointer"
+                    title="Novo Chat"
+                  >
+                    <Plus size={16} />
+                  </button>
+                  <button
+                    onClick={() => setHistOpen(false)}
+                    className="p-1.5 text-white/50 hover:text-white cursor-pointer"
+                    title="Fechar"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 overflow-y-auto flex-1 pr-1">
+                {sortedSessions.map((s) => {
+                  const isActive = s.id === activeSession.id;
+                  return (
+                    <div
+                      key={s.id}
+                      className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-[12px] transition ${
+                        isActive
+                          ? 'border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/10 text-white font-semibold'
+                          : 'border border-transparent bg-white/[0.02] text-white/60 hover:text-white'
+                      }`}
+                    >
+                      <button
+                        onClick={() => {
+                          setActiveId(s.id);
+                          setHistOpen(false);
+                        }}
+                        className="truncate text-left flex-1 cursor-pointer pr-1"
+                        title={s.title}
+                      >
+                        <span className="truncate block font-medium">{s.title}</span>
+                        <span className="text-[10px] text-white/35 block mt-0.5 font-normal">
+                          {s.msgs.length} {s.msgs.length === 1 ? 'mensagem' : 'mensagens'}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSession(s.id);
+                        }}
+                        className="ml-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/40 hover:text-rose-400 hover:bg-rose-500/15 transition cursor-pointer"
+                        title="Excluir este chat"
+                        aria-label="Excluir este chat"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-white/[0.06] text-[10.5px] text-white/40 flex items-center justify-between">
+              <span>Orbiex Prompt Studio</span>
+              <span className="text-[var(--mvz-gold-light)] font-mono">v3.4</span>
+            </div>
+          </div>
+          <div className="flex-1" onClick={() => setHistOpen(false)} />
+        </div>
+      )}
     </div>
   );
 }

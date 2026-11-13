@@ -16,6 +16,7 @@ dist-ssr/
 # Backups, zips, downloads & scratch
 *.zip
 *.tar.gz
+backups/
 backup_orbix_project.tar.gz
 cooud-site/
 cooud.com.zip

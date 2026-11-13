@@ -1,5 +1,6 @@
-import React, { Component, type ReactNode } from 'react';
+import React, { Component, type ReactNode, useState, useEffect } from 'react';
 import PlatformApp from './platform/PlatformApp';
+import CourseMembersApp from './course-members/CourseMembersApp';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -69,10 +70,19 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 export default function App() {
+  const [route, setRoute] = useState(() => (typeof window !== 'undefined' ? window.location.hash : ''));
+
+  useEffect(() => {
+    const handleHash = () => setRoute(window.location.hash);
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const isCourseStandalone = route.startsWith('#/curso') || route.startsWith('#/formacao');
+
   return (
     <ErrorBoundary>
-      <PlatformApp />
+      {isCourseStandalone ? <CourseMembersApp /> : <PlatformApp />}
     </ErrorBoundary>
   );
 }
-

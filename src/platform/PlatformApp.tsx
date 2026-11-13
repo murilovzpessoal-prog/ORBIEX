@@ -23,7 +23,6 @@ import { JourneyView } from './views/JourneyView';
 import { AutomationsView } from './views/AutomationsView';
 import { CommunityView, CreditsView, HelpView } from './views/MiscViews';
 import { SupportChatView } from './views/SupportChatView';
-import { LoginView } from './views/LoginView';
 import { AccessInstructionsView } from './views/AccessInstructionsView';
 import { MembersView } from './views/MembersView';
 
@@ -52,22 +51,10 @@ const VALID: ViewId[] = [
 
 const fromHash = (): ViewId => {
   const h = window.location.hash.replace('#/', '') as ViewId;
-  return VALID.includes(h) ? h : 'home';
+  return VALID.includes(h) ? h : 'members';
 };
 
 export default function PlatformApp() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      if (window.location.hash === '#/login') return false;
-      return (
-        localStorage.getItem('orbiex_auth') === 'true' ||
-        localStorage.getItem('orbix_auth') === 'true'
-      );
-    } catch {
-      return false;
-    }
-  });
-
   const [view, setView] = useState<ViewId>(fromHash);
   const [menu, setMenu] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -98,28 +85,9 @@ export default function PlatformApp() {
     document.getElementById('mvz-main')?.scrollTo({ top: 0 });
   }, []);
 
-  const handleLogin = useCallback((email: string, name?: string) => {
-    setIsAuthenticated(true);
-    try {
-      localStorage.setItem('orbiex_auth', 'true');
-      localStorage.setItem('orbix_auth', 'true');
-      localStorage.setItem('orbiex_user_email', email);
-      localStorage.setItem('orbix_user_email', email);
-      if (name) {
-        handleSaveProfile({ ...profile, name });
-      }
-    } catch {}
-    navigate('home');
-  }, [navigate, handleSaveProfile, profile]);
-
   const handleLogout = useCallback(() => {
-    try {
-      localStorage.removeItem('orbiex_auth');
-      localStorage.removeItem('orbix_auth');
-    } catch {}
-    setIsAuthenticated(false);
-    window.location.hash = '#/login';
-  }, []);
+    navigate('members');
+  }, [navigate]);
 
   useEffect(() => {
     const h = () => {
@@ -134,9 +102,6 @@ export default function PlatformApp() {
         hash.includes('boas-vindas')
       ) {
         setShowingInstructions(true);
-      } else if (window.location.hash === '#/login') {
-        setShowingInstructions(false);
-        setIsAuthenticated(false);
       } else {
         setShowingInstructions(false);
         setView(fromHash());
@@ -171,21 +136,12 @@ export default function PlatformApp() {
       <AccessInstructionsView
         onGoToLogin={() => {
           setShowingInstructions(false);
-          setIsAuthenticated(false);
-          window.location.hash = '#/login';
-          if (window.location.pathname !== '/') {
-            try {
-              window.history.pushState({}, '', '/#/login');
-            } catch {}
-          }
+          navigate('members');
         }}
       />
     );
   }
 
-  if (!isAuthenticated) {
-    return <LoginView onLogin={handleLogin} />;
-  }
 
   return (
     <div className="mvz flex h-screen overflow-hidden">

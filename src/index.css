@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+:root {
+  --mvz-gold: #d4af37;
+  --mvz-gold-light: #f5df93;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -251,4 +256,19 @@ html {
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Página de login Alpine Project ── */
+@keyframes alp-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes alp-zoom {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
+}
+.alp-rise { animation: alp-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.alp-zoom { animation: alp-zoom 2.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .alp-rise, .alp-zoom { animation: none; }
 }

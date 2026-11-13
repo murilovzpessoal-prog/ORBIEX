@@ -85,10 +85,10 @@ export function Sidebar({
             <Logo size={38} />
             <div className="leading-tight text-left">
               <div className="text-[17px] font-black tracking-tight text-white group-hover:text-[var(--mvz-gold-light)] transition-colors">
-                Orbiex
+                Projeto
               </div>
               <div className="mt-0.5 text-[9px] font-extrabold uppercase tracking-[0.24em] mvz-grad-text">
-                AI Agent
+                Área de Membros
               </div>
             </div>
           </button>

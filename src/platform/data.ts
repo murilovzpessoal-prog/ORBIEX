@@ -73,7 +73,7 @@ export const NAV_GROUPS: NavItem[][] = [
     { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles },
     { id: 'antirestriction', label: 'Antirrestrição', icon: ShieldAlert },
     { id: 'turbo', label: 'Turbo Seguidores', icon: Flame },
-    { id: 'members', label: 'Área de Membros', icon: GraduationCap },
+    { id: 'members', label: 'Membros do Projeto', icon: GraduationCap },
   ],
 ];
 
@@ -86,7 +86,7 @@ export const ALL_NAV: NavItem[] = [...NAV_GROUPS.flat(), ...NAV_FOOTER];
 
 export const VIEW_TITLES: Record<ViewId, string> = {
   home: 'Início',
-  members: 'Área de Membros',
+  members: 'Área de Membros do Projeto',
   agent: 'Agente IA',
   prompts: 'Biblioteca de Prompts',
   'prompt-gen': 'Gerador de Prompts',

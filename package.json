@@ -1,7 +1,7 @@
 {
-  "name": "orbiex-plataforma",
+  "name": "alpine-project",
   "version": "1.0.0",
-  "description": "",
+  "description": "Alpine Project - Área de Membros Oficial",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -14,6 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
+    "hls.js": "^1.7.2",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

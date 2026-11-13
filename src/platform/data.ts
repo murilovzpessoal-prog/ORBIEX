@@ -56,7 +56,6 @@ export interface NavItem {
 export const NAV_GROUPS: NavItem[][] = [
   [
     { id: 'home', label: 'Início', icon: Home },
-    { id: 'members', label: 'Área de Membros', icon: GraduationCap },
     { id: 'agent', label: 'Agente IA', icon: Bot },
     { id: 'journey', label: 'Minha Jornada', icon: Compass },
     { id: 'products', label: 'Produtos', icon: Package },
@@ -74,6 +73,7 @@ export const NAV_GROUPS: NavItem[][] = [
     { id: 'prompt-gen', label: 'Gerador de Prompts', icon: Sparkles },
     { id: 'antirestriction', label: 'Antirrestrição', icon: ShieldAlert },
     { id: 'turbo', label: 'Turbo Seguidores', icon: Flame },
+    { id: 'members', label: 'Área de Membros', icon: GraduationCap },
   ],
 ];
 

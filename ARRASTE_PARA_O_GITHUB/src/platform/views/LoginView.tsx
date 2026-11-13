@@ -156,20 +156,23 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
       <div className="md:hidden absolute inset-0 -z-10 overflow-hidden bg-black pointer-events-none">
         <video
           src="/assets/login-animation-orbiex.mp4"
-          poster="/assets/login-orbix-man.jpg"
           autoPlay
           loop
           muted
           playsInline
-          className="h-full w-full object-cover object-[center_35%] opacity-35 select-none pointer-events-none scale-105"
+          className="h-full w-full object-cover object-[center_top] opacity-35 select-none pointer-events-none scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/60" />
       </div>
 
       {/* ────────────────────────────────────────────────────────────
-          COLUNA ESQUERDA: VÍDEO EXCLUSIVO ANIMADO DO ESCRITÓRIO ORBIEX + FUSÃO SUAVE
+          COLUNA ESQUERDA: VÍDEO ANIMADO DO PERSONAGEM DOURADO
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative hidden h-full w-full md:block md:w-1/2 lg:w-[55%] overflow-hidden bg-black">
+      <div className="relative hidden h-full w-full md:flex md:w-1/2 lg:w-[54%] items-center justify-center overflow-hidden bg-black">
+        {/* Glow de fundo dourado cósmico */}
+        <div className="pointer-events-none absolute h-[550px] w-[550px] rounded-full bg-[var(--mvz-gold)]/10 blur-[130px]" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-80 w-80 rounded-full bg-[#f59e0b]/10 blur-[100px]" />
+
         {/* Slot da Imagem / Logo no Canto Superior Esquerdo */}
         <div className="absolute left-8 top-8 z-30 flex items-center gap-3">
           {topLeftImage ? (
@@ -179,7 +182,7 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
               className="h-10 w-auto max-w-[180px] object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]"
             />
           ) : (
-            <div className="flex items-center gap-2.5 rounded-2xl border border-white/15 bg-black/70 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+            <div className="flex items-center gap-2.5 rounded-2xl border border-white/15 bg-black/75 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl transition hover:border-[var(--mvz-gold)]/40">
               <Logo size={26} />
               <span className="text-[13px] font-black uppercase tracking-[0.18em] text-white">
                 ORBIEX
@@ -188,49 +191,48 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           )}
         </div>
 
-        {/* Vídeo Animado em Loop Cinematográfico */}
-        <div className="relative h-full w-full">
+        {/* Vídeo Animado em Loop Cinematográfico - Puxado para baixo e perfeitamente enquadrado */}
+        <div className="relative flex h-full w-full items-center justify-center pt-10 pb-4">
           <video
             src="/assets/login-animation-orbiex.mp4"
-            poster="/assets/login-orbix-man.jpg"
             autoPlay
             loop
             muted
             playsInline
-            className="h-full w-full object-cover object-[center_35%] select-none pointer-events-none"
+            className="max-h-[88vh] w-auto max-w-full object-contain drop-shadow-[0_0_60px_rgba(212,175,55,0.25)] select-none pointer-events-none"
           />
 
           {/* Gradientes de Fusão Ultra Profissionais com o Fundo Preto */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-80 bg-gradient-to-r from-transparent via-black/50 to-black" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black via-black/60 to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 via-black/20 to-transparent" />
-          
-          {/* Brilho Dourado Sutil no Topo */}
-          <div className="pointer-events-none absolute -top-16 -left-16 h-72 w-72 rounded-full bg-[var(--mvz-gold)]/10 blur-[85px]" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-44 bg-gradient-to-r from-transparent to-black" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/80 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black via-black/60 to-transparent" />
         </div>
       </div>
 
       {/* ────────────────────────────────────────────────────────────
           COLUNA DIREITA: FORMULÁRIO DE LOGIN / CADASTRO
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative flex h-full w-full items-center justify-center bg-black px-6 sm:px-12 md:w-1/2 lg:w-[45%] lg:px-16">
-        <div className="relative z-10 w-full max-w-[390px]">
+      <div className="relative flex h-full w-full items-center justify-center bg-black px-6 sm:px-10 md:w-1/2 lg:w-[46%] lg:px-12">
+        {/* Glow de fundo sutil */}
+        <div className="pointer-events-none absolute h-96 w-96 rounded-full bg-[var(--mvz-gold)]/5 blur-[120px]" />
+
+        <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-white/10 bg-[#0d0c0e]/85 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:p-9">
           {/* Cabeçalho */}
-          <div className="mb-8">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/10 px-3.5 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.2em] text-[var(--mvz-gold-light)]">
+          <div className="mb-7">
+            <div className="mb-3.5 inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/35 bg-[var(--mvz-gold)]/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--mvz-gold-light)] shadow-[0_0_15px_rgba(212,175,55,0.15)]">
               <Sparkles size={11} className="text-[var(--mvz-gold)]" />
               <span>Agente de IA & Ecossistema</span>
             </div>
-            <h2 className="text-[24px] font-medium tracking-tight text-white sm:text-[26px]">
+            <h2 className="text-[20px] font-medium tracking-tight text-white/80">
               Seja bem-vindo ao
             </h2>
-            <h1 className="mt-1 text-[34px] font-black tracking-tight text-white sm:text-[40px] leading-tight">
-              <span className="mvz-grad-text">
+            <h1 className="mt-0.5 text-[34px] font-black tracking-tight text-white leading-tight">
+              <span className="bg-gradient-to-r from-[#d4af37] via-[#f3e2a4] to-[#eab308] bg-clip-text text-transparent">
                 Orbiex AI
               </span>
             </h1>
-            <p className="mt-3 text-[12.5px] leading-relaxed text-[#8a8a93]">
-              Informe seu nome, o e-mail cadastrado na Cakto e crie sua senha de acesso para liberar sua conta.
+            <p className="mt-2 text-[12.5px] leading-relaxed text-white/60">
+              Informe seu e-mail cadastrado na Cakto e sua senha para liberar seu acesso instantâneo.
             </p>
           </div>
 
@@ -242,62 +244,62 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           )}
 
           {/* Formulário */}
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Campo Nome Completo */}
             <div>
-              <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#909099]">
-                Seu nome completo <span className="text-[9.5px] font-normal text-[#60606b]">(opcional se já comprou)</span>
+              <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/70">
+                Seu nome completo <span className="text-[9.5px] font-normal text-white/40">(opcional se já comprou)</span>
               </label>
-              <div className="relative flex items-center rounded-xl border border-white/[0.12] bg-[#121215] transition-all focus-within:border-white/40 focus-within:bg-[#16161a]">
-                <User size={16} className="ml-3.5 shrink-0 text-[#60606b]" />
+              <div className="relative flex items-center rounded-xl border border-white/15 bg-black/60 transition-all focus-within:border-[var(--mvz-gold)] focus-within:shadow-[0_0_20px_rgba(212,175,55,0.15)]">
+                <User size={16} className="ml-3.5 shrink-0 text-white/40" />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Murilo Henrique"
                   autoComplete="name"
-                  className="w-full bg-transparent py-3 pl-3 pr-4 text-[13.5px] text-white placeholder-[#45454e] outline-none"
+                  className="w-full bg-transparent py-3 pl-3 pr-4 text-[13.5px] text-white placeholder-white/30 outline-none"
                 />
               </div>
             </div>
 
             {/* Campo E-mail */}
             <div>
-              <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#909099]">
+              <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/70">
                 E-mail da compra (Cakto)
               </label>
-              <div className="relative flex items-center rounded-xl border border-white/[0.12] bg-[#121215] transition-all focus-within:border-white/40 focus-within:bg-[#16161a]">
-                <Mail size={16} className="ml-3.5 shrink-0 text-[#60606b]" />
+              <div className="relative flex items-center rounded-xl border border-white/15 bg-black/60 transition-all focus-within:border-[var(--mvz-gold)] focus-within:shadow-[0_0_20px_rgba(212,175,55,0.15)]">
+                <Mail size={16} className="ml-3.5 shrink-0 text-white/40" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="exemplo@email.com"
                   autoComplete="email"
-                  className="w-full bg-transparent py-3 pl-3 pr-4 text-[13.5px] text-white placeholder-[#45454e] outline-none"
+                  className="w-full bg-transparent py-3 pl-3 pr-4 text-[13.5px] text-white placeholder-white/30 outline-none"
                 />
               </div>
             </div>
 
             {/* Campo Senha */}
             <div>
-              <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#909099]">
+              <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/70">
                 Senha de acesso
               </label>
-              <div className="relative flex items-center rounded-xl border border-white/[0.12] bg-[#121215] transition-all focus-within:border-white/40 focus-within:bg-[#16161a]">
-                <Lock size={16} className="ml-3.5 shrink-0 text-[#60606b]" />
+              <div className="relative flex items-center rounded-xl border border-white/15 bg-black/60 transition-all focus-within:border-[var(--mvz-gold)] focus-within:shadow-[0_0_20px_rgba(212,175,55,0.15)]">
+                <Lock size={16} className="ml-3.5 shrink-0 text-white/40" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Sua senha ou senha padrão"
                   autoComplete="current-password"
-                  className="w-full bg-transparent py-3 pl-3 pr-11 text-[13.5px] text-white placeholder-[#45454e] outline-none"
+                  className="w-full bg-transparent py-3 pl-3 pr-11 text-[13.5px] text-white placeholder-white/30 outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 flex items-center text-[#60606b] hover:text-white transition"
+                  className="absolute right-3.5 flex items-center text-white/40 hover:text-white transition"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -310,7 +312,7 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white text-[12.5px] font-extrabold uppercase tracking-wider text-black transition-all hover:bg-[#e8e8ed] active:scale-[0.99] disabled:opacity-60 shadow-[0_4px_24px_rgba(255,255,255,0.08)]"
+                className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f3e2a4] to-[#eab308] text-[12.5px] font-black uppercase tracking-wider text-black transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 shadow-[0_0_25px_rgba(212,175,55,0.35)]"
               >
                 {loading ? (
                   <>
@@ -328,9 +330,9 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           </form>
 
           {/* Rodapé de Segurança / Compliance */}
-          <div className="mt-8 flex items-center justify-center gap-1.5 text-center">
+          <div className="mt-6 flex items-center justify-center gap-1.5 text-center">
             <ShieldCheck size={14} className="shrink-0 text-[#22c55e]" />
-            <span className="text-[11px] font-medium text-[#70707a]">
+            <span className="text-[11px] font-medium text-white/50">
               Acesso exclusivo integrado à Cakto Pay.
             </span>
           </div>

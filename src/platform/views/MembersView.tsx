@@ -1041,45 +1041,23 @@ export function MembersView({ onNavigate }: MembersViewProps) {
                   className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                 />
 
-                {/* Overlay de gradiente suave para leitura perfeita das tags */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/60" />
+                {/* Overlay sutil apenas para contraste do botão de play no hover */}
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors" />
 
-                {/* Conteúdo sobreposto */}
-                <div className="relative z-10 flex h-full w-full flex-col justify-between p-4">
-                  {/* Topo da Capinha: Badge da Aula + Duração */}
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-lg border border-white/20 bg-black/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-md shadow-lg">
-                      AULA {lesson.number}
-                    </span>
-
-                    <span className="flex items-center gap-1 rounded-lg border border-white/15 bg-black/70 px-2 py-1 text-[10.5px] font-bold text-white/90 backdrop-blur-md shadow-lg">
-                      <Clock size={12} className="text-[var(--mvz-gold)]" />
-                      <span>{lesson.duration}</span>
+                {/* Selo discreto de Concluída (apenas se a aula estiver marcada) */}
+                {isDone && (
+                  <div className="absolute top-3 right-3 z-10">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-[#22c55e]/40 bg-black/75 px-2 py-0.5 text-[9.5px] font-black text-[#22c55e] backdrop-blur-md shadow-lg">
+                      <Check size={11} strokeWidth={3} />
+                      CONCLUÍDA
                     </span>
                   </div>
+                )}
 
-                  {/* Centro: Botão de Play que surge ao passar o mouse */}
-                  <div className="flex items-center justify-center my-auto">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--mvz-gold)] text-black shadow-[0_0_24px_rgba(212,175,55,0.7)] opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
-                      <Play size={18} fill="black" className="ml-0.5" />
-                    </div>
-                  </div>
-
-                  {/* Rodapé da Capinha: Categoria da Ferramenta + Status */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="rounded-md border border-white/15 bg-black/75 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md"
-                      style={{ color: lesson.accentColor }}
-                    >
-                      {lesson.categoryLabel}
-                    </span>
-
-                    {isDone && (
-                      <span className="inline-flex items-center gap-1 rounded-md border border-[#22c55e]/40 bg-[#22c55e]/30 px-2 py-0.5 text-[9.5px] font-black text-[#22c55e] backdrop-blur-md">
-                        <Check size={11} strokeWidth={3} />
-                        CONCLUÍDA
-                      </span>
-                    )}
+                {/* Centro: Botão de Play que surge ao passar o mouse */}
+                <div className="relative z-10 flex h-full w-full items-center justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--mvz-gold)] text-black shadow-[0_0_25px_rgba(212,175,55,0.7)] opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                    <Play size={18} fill="black" className="ml-0.5" />
                   </div>
                 </div>
               </div>

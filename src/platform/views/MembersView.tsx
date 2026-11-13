@@ -37,6 +37,7 @@ export interface LessonItem {
   categoryLabel: string;
   duration: string;
   videoUrl?: string;
+  coverImage?: string;
   shortDescription: string;
   fullDescription: string;
   keyPoints: string[];
@@ -607,14 +608,14 @@ export function MembersView({ onNavigate }: MembersViewProps) {
                   />
                 )
               ) : (
-                /* Placeholder Cinematográfico Elegante caso o admin ainda não tenha colado a URL */
-                <div className="relative flex h-full w-full flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-[#15130f] via-[#090807] to-[#040403]">
-                  <div
-                    className="pointer-events-none absolute inset-0 opacity-20"
-                    style={{
-                      background: `radial-gradient(circle at center, ${selectedLesson.accentColor} 0%, transparent 70%)`,
-                    }}
+                /* Placeholder Cinematográfico Elegante usando a capa oficial */
+                <div className="relative flex h-full w-full flex-col items-center justify-center p-8 text-center overflow-hidden">
+                  <img
+                    src={selectedLesson.coverImage || '/assets/capa-modulo-orbiex.jpg'}
+                    alt={selectedLesson.title}
+                    className="absolute inset-0 h-full w-full object-cover object-center opacity-40 filter contrast-125"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-black/50" />
 
                   <div className="relative z-10 flex flex-col items-center">
                     <div
@@ -985,7 +986,6 @@ export function MembersView({ onNavigate }: MembersViewProps) {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredLessons.map((lesson) => {
           const isDone = completedLessons.includes(lesson.id);
-          const LessonIcon = lesson.icon;
 
           return (
             <div
@@ -993,65 +993,55 @@ export function MembersView({ onNavigate }: MembersViewProps) {
               onClick={() => handleSelectLesson(lesson)}
               className="group relative flex flex-col justify-between overflow-hidden rounded-[24px] border border-white/10 bg-[#0d0c0a] p-0 shadow-[0_16px_45px_rgba(0,0,0,0.85)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[var(--mvz-gold)]/60 hover:shadow-[0_20px_60px_rgba(212,175,55,0.2)] cursor-pointer"
             >
-              {/* ── Capinha Cinematográfica (Aspect Ratio 16:9) ── */}
-              <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-[#1c1913] via-[#0d0c0a] to-black p-5 flex flex-col justify-between border-b border-white/[0.08]">
-                {/* Iluminação Neon Temática de Fundo */}
-                <div
-                  className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-2xl opacity-40 group-hover:opacity-75 transition-opacity"
-                  style={{ backgroundColor: lesson.accentColor }}
+              {/* ── Capinha Cinematográfica (Aspect Ratio 16:9) do Risco Superior para Cima ── */}
+              <div className="relative aspect-video w-full overflow-hidden border-b border-white/[0.08]">
+                {/* Imagem Oficial da Capa do Módulo */}
+                <img
+                  src={lesson.coverImage || '/assets/capa-modulo-orbiex.jpg'}
+                  alt={lesson.title}
+                  className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                 />
 
-                {/* Linhas Geométricas Tecnológicas Sutis */}
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
+                {/* Overlay de gradiente suave para leitura perfeita das tags */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/60" />
 
-                {/* Topo da Capinha: Badge da Aula + Duração */}
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="rounded-lg border border-white/15 bg-black/60 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white/90 backdrop-blur-md">
-                    AULA {lesson.number}
-                  </span>
+                {/* Conteúdo sobreposto */}
+                <div className="relative z-10 flex h-full w-full flex-col justify-between p-4">
+                  {/* Topo da Capinha: Badge da Aula + Duração */}
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-lg border border-white/20 bg-black/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-md shadow-lg">
+                      AULA {lesson.number}
+                    </span>
 
-                  <span className="flex items-center gap-1 rounded-lg border border-white/10 bg-black/60 px-2 py-1 text-[10.5px] font-bold text-white/80 backdrop-blur-md">
-                    <Clock size={12} className="text-white/50" />
-                    <span>{lesson.duration}</span>
-                  </span>
-                </div>
+                    <span className="flex items-center gap-1 rounded-lg border border-white/15 bg-black/70 px-2 py-1 text-[10.5px] font-bold text-white/90 backdrop-blur-md shadow-lg">
+                      <Clock size={12} className="text-[var(--mvz-gold)]" />
+                      <span>{lesson.duration}</span>
+                    </span>
+                  </div>
 
-                {/* Centro da Capinha: Ícone 3D em Destaque + Botão de Play com Efeito */}
-                <div className="relative z-10 flex items-center justify-center my-auto">
-                  <div
-                    className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/[0.05] shadow-2xl backdrop-blur-md transition-all duration-300 group-hover:scale-110"
-                    style={{ borderColor: `${lesson.accentColor}66` }}
-                  >
-                    <LessonIcon
-                      size={28}
-                      className="transition-transform duration-300 group-hover:scale-105"
-                      style={{ color: lesson.accentColor }}
-                    />
-
-                    {/* Botão Flutuante de Play Central */}
-                    <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mvz-gold)] text-black shadow-lg">
-                        <Play size={16} fill="black" className="ml-0.5" />
-                      </div>
+                  {/* Centro: Botão de Play que surge ao passar o mouse */}
+                  <div className="flex items-center justify-center my-auto">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--mvz-gold)] text-black shadow-[0_0_24px_rgba(212,175,55,0.7)] opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+                      <Play size={18} fill="black" className="ml-0.5" />
                     </div>
                   </div>
-                </div>
 
-                {/* Rodapé da Capinha: Categoria da Ferramenta */}
-                <div className="relative z-10 flex items-center justify-between">
-                  <span
-                    className="text-[10px] font-extrabold uppercase tracking-wider"
-                    style={{ color: lesson.accentColor }}
-                  >
-                    {lesson.categoryLabel}
-                  </span>
-
-                  {isDone && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-[#22c55e]/40 bg-[#22c55e]/15 px-2 py-0.5 text-[9.5px] font-black text-[#22c55e]">
-                      <Check size={11} strokeWidth={3} />
-                      CONCLUÍDA
+                  {/* Rodapé da Capinha: Categoria da Ferramenta + Status */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="rounded-md border border-white/15 bg-black/75 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md"
+                      style={{ color: lesson.accentColor }}
+                    >
+                      {lesson.categoryLabel}
                     </span>
-                  )}
+
+                    {isDone && (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-[#22c55e]/40 bg-[#22c55e]/30 px-2 py-0.5 text-[9.5px] font-black text-[#22c55e] backdrop-blur-md">
+                        <Check size={11} strokeWidth={3} />
+                        CONCLUÍDA
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

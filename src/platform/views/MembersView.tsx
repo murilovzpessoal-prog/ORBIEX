@@ -910,16 +910,19 @@ export function MembersView({ onNavigate }: MembersViewProps) {
         <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#d4af37]/15 blur-[120px]" />
         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-80 w-80 rounded-full bg-[#38bdf8]/10 blur-[140px]" />
 
-        {/* Mentor / Founder Photo overlay on desktop com alta nitidez e claridade */}
-        <div className="pointer-events-none absolute right-0 top-0 hidden h-full w-[52%] overflow-hidden lg:block">
+        {/* Imagem de Fundo do Banner (Orbiex Golden Orbit & Planet) */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <img
-            src="/assets/login-orbix-man.jpg"
-            alt="Murilo Vaz • Orbiex Founder"
-            className="h-full w-full object-cover object-[center_25%] opacity-85 filter contrast-110 brightness-105"
+            src="/assets/banner-membros-novo.png"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = 'https://i.imgur.com/Vcjy313.png';
+            }}
+            alt="Orbiex Academy Banner"
+            className="h-full w-full object-cover object-right filter brightness-100 contrast-105"
           />
-          {/* Metade esquerda escurecida para manter a leitura dos textos impecável */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#121216] via-[#121216]/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Degradê à esquerda para garantir legibilidade dos textos e destacar o globo dourado */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent sm:via-black/45" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
         </div>
 
         <div className="relative z-10 max-w-2xl">

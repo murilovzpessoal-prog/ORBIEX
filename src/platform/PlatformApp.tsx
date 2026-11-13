@@ -212,7 +212,7 @@ export default function PlatformApp() {
         <main id="mvz-main" className="mvz-scroll flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1280px] p-4 md:p-6">
             {view === 'home' && <HomeView go={navigate} />}
-            {view === 'members' && <MembersView />}
+            {view === 'members' && <MembersView onNavigate={navigate} />}
             {view === 'agent' && <AgentView seed={seed} onSeedUsed={clearSeed} startNew={startNew} onStarted={clearStartNew} />}
             {view === 'journey' && <JourneyView onUse={useInAgent} />}
             {view === 'products' && <WinningProductsView onUseInAgent={useInAgent} onNavigate={navigate} />}

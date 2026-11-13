@@ -38,6 +38,7 @@ export interface LessonItem {
   duration: string;
   videoUrl?: string;
   coverImage?: string;
+  coverFallback?: string;
   shortDescription: string;
   fullDescription: string;
   keyPoints: string[];
@@ -73,6 +74,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#d4af37',
     cardGlow: 'rgba(212, 175, 55, 0.25)',
+    coverImage: '/assets/capa-modulo-orbiex.jpg',
+    coverFallback: 'https://i.imgur.com/069c3d94.jpg',
     icon: Bot,
   },
   {
@@ -100,6 +103,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#22c55e',
     cardGlow: 'rgba(34, 197, 94, 0.25)',
+    coverImage: '/assets/capas/capa-jornada.jpg',
+    coverFallback: 'https://i.imgur.com/Clz4itZ.jpg',
     icon: Compass,
   },
   {
@@ -127,6 +132,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#3b82f6',
     cardGlow: 'rgba(59, 130, 246, 0.25)',
+    coverImage: '/assets/capas/capa-produtos.jpg',
+    coverFallback: 'https://i.imgur.com/gcXSGHY.jpg',
     icon: ShoppingBag,
   },
   {
@@ -154,6 +161,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#d946ef',
     cardGlow: 'rgba(217, 70, 239, 0.25)',
+    coverImage: '/assets/capas/capa-prompts-bib.jpg',
+    coverFallback: 'https://i.imgur.com/6AXWzpj.jpg',
     icon: Bookmark,
   },
   {
@@ -181,6 +190,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#10b981',
     cardGlow: 'rgba(16, 185, 129, 0.25)',
+    coverImage: '/assets/capas/capa-score-produto.jpg',
+    coverFallback: 'https://i.imgur.com/MnAzAIK.jpg',
     icon: Gauge,
   },
   {
@@ -208,6 +219,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#06b6d4',
     cardGlow: 'rgba(6, 182, 212, 0.25)',
+    coverImage: '/assets/capas/capa-score-lojista.jpg',
+    coverFallback: 'https://i.imgur.com/JPoVtiW.jpg',
     icon: Store,
   },
   {
@@ -235,6 +248,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#f59e0b',
     cardGlow: 'rgba(245, 158, 11, 0.25)',
+    coverImage: '/assets/capas/capa-scanner.jpg',
+    coverFallback: 'https://i.imgur.com/5EKpkWs.jpg',
     icon: Radar,
   },
   {
@@ -262,6 +277,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#e11d48',
     cardGlow: 'rgba(225, 29, 72, 0.25)',
+    coverImage: '/assets/capas/capa-headlines.jpg',
+    coverFallback: 'https://i.imgur.com/DgPmWKa.jpg',
     icon: Type,
   },
   {
@@ -289,6 +306,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#eab308',
     cardGlow: 'rgba(234, 179, 8, 0.25)',
+    coverImage: '/assets/capas/capa-hooks.jpg',
+    coverFallback: 'https://i.imgur.com/KoXi9AI.jpg',
     icon: Zap,
   },
   {
@@ -316,6 +335,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#8b5cf6',
     cardGlow: 'rgba(139, 92, 246, 0.25)',
+    coverImage: '/assets/capas/capa-motion.jpg',
+    coverFallback: 'https://i.imgur.com/qZu8hTx.jpg',
     icon: Clapperboard,
   },
   {
@@ -343,6 +364,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#f97316',
     cardGlow: 'rgba(249, 115, 22, 0.25)',
+    coverImage: '/assets/capas/capa-prompt-gen.jpg',
+    coverFallback: 'https://i.imgur.com/ct4Sz5O.jpg',
     icon: Terminal,
   },
   {
@@ -370,6 +393,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#ef4444',
     cardGlow: 'rgba(239, 68, 68, 0.25)',
+    coverImage: '/assets/capas/capa-antirrestricao.jpg',
+    coverFallback: 'https://i.imgur.com/mXr6ST1.jpg',
     icon: ShieldAlert,
   },
   {
@@ -397,6 +422,8 @@ const LESSONS_CATALOG: LessonItem[] = [
     ],
     accentColor: '#ec4899',
     cardGlow: 'rgba(236, 72, 153, 0.25)',
+    coverImage: '/assets/capas/capa-turbo.jpg',
+    coverFallback: 'https://i.imgur.com/Nv7Uaqy.jpg',
     icon: Rocket,
   },
 ];
@@ -612,6 +639,12 @@ export function MembersView({ onNavigate }: MembersViewProps) {
                 <div className="relative flex h-full w-full flex-col items-center justify-center p-8 text-center overflow-hidden">
                   <img
                     src={selectedLesson.coverImage || '/assets/capa-modulo-orbiex.jpg'}
+                    onError={(e) => {
+                      if (selectedLesson.coverFallback && e.currentTarget.src !== selectedLesson.coverFallback) {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = selectedLesson.coverFallback;
+                      }
+                    }}
                     alt={selectedLesson.title}
                     className="absolute inset-0 h-full w-full object-cover object-center opacity-40 filter contrast-125"
                   />
@@ -998,6 +1031,12 @@ export function MembersView({ onNavigate }: MembersViewProps) {
                 {/* Imagem Oficial da Capa do Módulo */}
                 <img
                   src={lesson.coverImage || '/assets/capa-modulo-orbiex.jpg'}
+                  onError={(e) => {
+                    if (lesson.coverFallback && e.currentTarget.src !== lesson.coverFallback) {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = lesson.coverFallback;
+                    }
+                  }}
                   alt={lesson.title}
                   className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                 />

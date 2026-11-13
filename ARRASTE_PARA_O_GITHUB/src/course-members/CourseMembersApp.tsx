@@ -24,12 +24,7 @@ export default function CourseMembersApp() {
     try {
       const stored = localStorage.getItem('projeto_member_user');
       if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.name && (parsed.name.includes('Henrique') || parsed.name.includes('Vaz'))) {
-          parsed.name = 'Murilo Vaz';
-          localStorage.setItem('projeto_member_user', JSON.stringify(parsed));
-        }
-        return parsed;
+        return JSON.parse(stored);
       }
       return INITIAL_USER;
     } catch {

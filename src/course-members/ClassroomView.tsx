@@ -203,7 +203,7 @@ export function ClassroomView({
     if (!newCommentText.trim()) return;
     const newComment: LessonComment = {
       id: `c_${Date.now()}`,
-      author: 'Murilo Vaz (Você)',
+      author: 'Você (Membro)',
       timeAgo: 'Agora mesmo',
       text: newCommentText.trim(),
       likes: 0,

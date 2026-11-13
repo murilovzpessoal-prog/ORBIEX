@@ -80,7 +80,7 @@ export function Topbar({
           {profile?.avatarUrl ? (
             <img src={profile.avatarUrl} alt={profile.name} className="h-full w-full object-cover" />
           ) : (
-            <span>{getInitials(profile?.name || 'murilo vaz')}</span>
+            <span>{getInitials(profile?.name || 'Membro Orbiex')}</span>
           )}
         </button>
       </div>

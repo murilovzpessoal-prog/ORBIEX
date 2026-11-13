@@ -1,8 +1,8 @@
 import type { CourseData, UserAccount } from './types';
 
 export const INITIAL_USER: UserAccount = {
-  name: 'Murilo Vaz',
-  email: 'aluno@projeto.com',
+  name: 'Membro Orbiex',
+  email: 'aluno@orbiex.io',
   memberSince: 'Novembro 2026',
   tier: 'Membro Fundador • Acesso Vitalício',
 };

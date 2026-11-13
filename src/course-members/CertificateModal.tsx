@@ -7,9 +7,7 @@ interface CertificateModalProps {
 }
 
 export function CertificateModal({ user, onClose }: CertificateModalProps) {
-  const recipientName = user.name.toLowerCase().includes('murilo')
-    ? 'Murilo Vaz'
-    : user.name;
+  const recipientName = user.name || 'Membro Orbiex';
 
   const issueDateFormatted = '13 de Novembro de 2026';
   const verificationHash = 'PRJ-8849-BR-2026';
@@ -156,11 +154,11 @@ export function CertificateModal({ user, onClose }: CertificateModalProps) {
           {/* ── RODAPÉ: ASSINATURAS REAIS & SELO METALIZADO SUTIL ── */}
           <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 items-center justify-between gap-6 pt-6 border-t border-white/10 mt-6">
             
-            {/* Assinatura 1: Murilo Vaz */}
+            {/* Assinatura 1: Diretoria */}
             <div className="text-center sm:text-left order-2 sm:order-1">
               <div className="h-10 flex items-center justify-center sm:justify-start">
                 <span className="font-serif italic font-normal text-[22px] sm:text-[24px] tracking-wide text-white/95 drop-shadow">
-                  Murilo Vaz
+                  Diretoria Orbiex
                 </span>
               </div>
               <div className="h-[1px] w-36 mx-auto sm:mx-0 bg-white/30 my-1.5" />

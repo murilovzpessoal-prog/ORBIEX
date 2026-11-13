@@ -17,7 +17,7 @@ export function getStoredProfile(): UserProfile {
       }
     }
   } catch {}
-  return { name: 'murilo vaz', avatarUrl: null };
+  return { name: 'Membro Orbiex', avatarUrl: null };
 }
 
 export function formatUserGreetingName(fullName?: string): string {
@@ -25,7 +25,7 @@ export function formatUserGreetingName(fullName?: string): string {
   const trimmed = fullName.trim();
   if (!trimmed) return 'Membro';
   const first = trimmed.split(/\s+/)[0];
-  // If first word is all lowercase, capitalize first letter (e.g. "murilo" -> "Murilo")
+  // If first word is all lowercase, capitalize first letter
   if (first.toLowerCase() === first && first.length > 0) {
     return first.charAt(0).toUpperCase() + first.slice(1);
   }

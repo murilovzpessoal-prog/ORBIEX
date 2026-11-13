@@ -73,8 +73,6 @@ export function LoginView({ onLogin }: LoginViewProps) {
       const masterPasswords = ['alpine2026', 'orbiex2026k', 'tst123', 'orbiex2026', 'admin123', 'alpine123'];
       const isMasterPass = masterPasswords.includes(cleanPassword.toLowerCase());
       const isAdminEmail =
-        cleanEmail === 'murilovzpessoal@gmail.com' ||
-        cleanEmail === 'murilo@orbiex.ai' ||
         cleanEmail.endsWith('@orbiex.ai') ||
         cleanEmail.endsWith('@orbiex.io');
 
@@ -83,7 +81,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
 
       if (isAdminEmail || isMasterPass) {
         isApproved = true;
-        buyerName = cleanName || 'Murilo Vaz';
+        buyerName = cleanName || 'Membro Orbiex';
       } else {
         // 2. Consulta oficial direta à tabela authorized_buyers no Supabase
         try {

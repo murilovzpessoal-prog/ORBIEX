@@ -52,8 +52,6 @@ export function LoginView({ onLogin }: LoginViewProps) {
       const isMasterPassword = masterPasswords.includes(cleanPass);
 
       const isAdmin =
-        cleanEmail === 'murilovzpessoal@gmail.com' ||
-        cleanEmail === 'murilo@orbiex.ai' ||
         cleanEmail.endsWith('@orbiex.ai') ||
         cleanEmail.endsWith('@orbiex.io');
 
@@ -383,7 +381,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Murilo Henrique"
+                  placeholder="Ex: Lucas Almeida"
                   autoComplete="name"
                   className="w-full bg-transparent py-3 pl-3 pr-4 text-[13.5px] text-white placeholder-white/30 outline-none"
                 />

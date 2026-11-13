@@ -37,7 +37,7 @@ export function ProfileSettingsModal({
   // Sync state whenever modal opens or profile changes
   useEffect(() => {
     if (open) {
-      setName(profile.name || 'murilo vaz');
+      setName(profile.name || 'Membro Orbiex');
       setAvatarUrl(profile.avatarUrl || null);
       setSavedSuccess(false);
       setErrorMsg(null);
@@ -111,7 +111,7 @@ export function ProfileSettingsModal({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanName = name.trim() || 'murilo vaz';
+    const cleanName = name.trim() || 'Membro Orbiex';
     onSave({
       name: cleanName,
       avatarUrl,
@@ -249,7 +249,7 @@ export function ProfileSettingsModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: murilo vaz"
+                placeholder="Ex: Lucas Almeida"
                 maxLength={30}
                 required
                 className="h-11 w-full rounded-xl border border-white/15 bg-black/60 px-4 text-[14px] font-bold text-white placeholder-white/30 transition-all focus:border-[var(--mvz-gold)] focus:bg-black focus:outline-none focus:ring-1 focus:ring-[var(--mvz-gold)]"

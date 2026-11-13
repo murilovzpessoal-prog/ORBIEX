@@ -166,13 +166,9 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
       </div>
 
       {/* ────────────────────────────────────────────────────────────
-          COLUNA ESQUERDA: VÍDEO ANIMADO DO PERSONAGEM DOURADO
+          COLUNA ESQUERDA: VÍDEO ANIMADO DO PERSONAGEM DOURADO (TELA CHEIA LATERAL + ENQUADRAMENTO NO ROSTO/TOPO)
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative hidden h-full w-full md:flex md:w-1/2 lg:w-[54%] items-center justify-center overflow-hidden bg-black">
-        {/* Glow de fundo dourado cósmico */}
-        <div className="pointer-events-none absolute h-[550px] w-[550px] rounded-full bg-[var(--mvz-gold)]/10 blur-[130px]" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-80 w-80 rounded-full bg-[#f59e0b]/10 blur-[100px]" />
-
+      <div className="relative hidden h-full w-full md:block md:w-1/2 lg:w-[50%] overflow-hidden bg-black">
         {/* Slot da Imagem / Logo no Canto Superior Esquerdo */}
         <div className="absolute left-8 top-8 z-30 flex items-center gap-3">
           {topLeftImage ? (
@@ -191,28 +187,25 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           )}
         </div>
 
-        {/* Vídeo Animado em Loop Cinematográfico - Puxado para baixo e perfeitamente enquadrado */}
-        <div className="relative flex h-full w-full items-center justify-center pt-10 pb-4">
-          <video
-            src="/assets/login-animation-orbiex.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="max-h-[88vh] w-auto max-w-full object-contain drop-shadow-[0_0_60px_rgba(212,175,55,0.25)] select-none pointer-events-none"
-          />
+        {/* Vídeo preenchendo toda a coluna esquerda (sem bordas quadradas) e ancorado no topo (object-top) para mostrar a cabeça e o peitoral */}
+        <video
+          src="/assets/login-animation-orbiex.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="h-full w-full object-cover object-top select-none pointer-events-none"
+        />
 
-          {/* Gradientes de Fusão Ultra Profissionais com o Fundo Preto */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-44 bg-gradient-to-r from-transparent to-black" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/80 to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black via-black/60 to-transparent" />
-        </div>
+        {/* Gradientes de Fusão Invisível com o Fundo Preto */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-72 bg-gradient-to-r from-transparent via-black/55 to-black" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black via-black/45 to-transparent" />
       </div>
 
       {/* ────────────────────────────────────────────────────────────
           COLUNA DIREITA: FORMULÁRIO DE LOGIN / CADASTRO
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative flex h-full w-full items-center justify-center bg-black px-6 sm:px-10 md:w-1/2 lg:w-[46%] lg:px-12">
+      <div className="relative flex h-full w-full items-center justify-center bg-black px-6 sm:px-10 md:w-1/2 lg:w-[50%] lg:px-14">
         {/* Glow de fundo sutil */}
         <div className="pointer-events-none absolute h-96 w-96 rounded-full bg-[var(--mvz-gold)]/5 blur-[120px]" />
 

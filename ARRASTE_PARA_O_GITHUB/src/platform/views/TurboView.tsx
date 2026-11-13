@@ -30,7 +30,8 @@ export interface Mascot {
   bio: string;
   bestFor: string;
   defaultIdea: string;
-  defaultProduct: string;
+  defaultEpisode: string;
+  defaultClimax: string;
   promptMotionEnglish: string;
 }
 
@@ -45,13 +46,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/abacatudo.png',
     viralScore: 98.4,
     retentionScore: 96.2,
-    catchphrase: 'Eu choro, mas não falho um supino! Compre logo antes que o chefe veja!',
+    catchphrase: 'Eu choro, mas não perco a pose! Quem tiver coragem que encare a verdade!',
     voiceStyle: 'Voz grossa e rouca, emotivo, chora no meio da frase com intensidade cômica.',
-    personality: 'Marombeiro dramático com coração mole, viciado em creatina e promoções relâmpago.',
-    bio: 'Ficou famoso no TikTok após chorar ao vivo porque um seguidor disse que abacate engorda. É o maior conversor de produtos de vestuário e suplementos.',
-    bestFor: 'Duelos de força, produtos fitness, unboxing de ferramentas e quebra de objeções com drama.',
-    defaultIdea: 'Quero um vídeo onde o Abacatudo chora dizendo que a academia é pesada demais, mas depois mostra que essa peça modela o corpo e dá sustentação total sem marcar nada.',
-    defaultProduct: 'Conjunto Fitness Alta Compressão Sem Costura',
+    personality: 'Marombeiro dramático com coração mole, viciado em novelinhas caóticas e reviravoltas.',
+    bio: 'Ficou famoso no TikTok pelas novelinhas dramáticas com frutas. É o rei dos episódios de academia e das brigas hilárias.',
+    bestFor: 'Duelos de força, dramas na academia, traições cômicas e quebra de tabus.',
+    defaultIdea: 'Quero uma cena dramática onde o Abacatudo chora dizendo que foi traído na academia, mas promete que na Parte 2 vai confrontar todo mundo.',
+    defaultEpisode: 'Episódio 01 - O Flagrante na Academia',
+    defaultClimax: 'Ele encontra uma mensagem misteriosa e a tela escurece com som de batimento cardíaco.',
     promptMotionEnglish:
       '3D muscular anthropomorphic avocado man with crying emotional eyes, flexing biceps in dark luxury studio, dramatic rim lighting, fast dynamic zoom-in, cinematic vertical 9:16, natural lip sync speaking directly to camera, 60fps, photorealistic render',
   },
@@ -65,13 +67,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/moranguete.png',
     viralScore: 96.8,
     retentionScore: 95.5,
-    catchphrase: 'Você realmente achou que eu paguei caro nesse look? Pois achou errado, fofa.',
+    catchphrase: 'Você realmente achou que eu ia ficar calada? Pois achou muito errado, fofa.',
     voiceStyle: 'Voz aveludada, sussurrada, elegante com pitadas certeiras de ironia fina.',
-    personality: 'Diva da alta moda que secretamente compra tudo no precinho no TikTok Shop.',
-    bio: 'Não sai de casa sem salto e vestido preto brilhante. Especialista em detonar concorrentes caros e revelar achadinhos milionários.',
-    bestFor: 'Vestidos, croppeds de amarração, maquiagem, bolsas e fofocas virais de influenciadores.',
-    defaultIdea: 'Quero que a Moranguete faça um deboche com quem gasta R$ 500 no shopping e mostre o caimento luxuoso dessa peça no precinho de fornecedor direto.',
-    defaultProduct: 'Vestido Midi Canelado com Fenda Lateral',
+    personality: 'Diva da alta sociedade que domina a mansão das frutas e arma os planos mais venenosos.',
+    bio: 'Não sai de casa sem salto e vestido preto brilhante. Especialista em confrontos tensos e fofocas de alta tensão.',
+    bestFor: 'Deboches finos, intrigas na mansão, fofocas de alta sociedade e vingança.',
+    defaultIdea: 'Quero que a Moranguete faça um deboche elegante com quem tentou derrubar ela na mansão e anuncie que descobriu o plano secreto.',
+    defaultEpisode: 'Episódio 01 - O Veneno da Moranguete',
+    defaultClimax: 'Ela joga a taça na mesa e encara a câmera com um sorriso vingativo.',
     promptMotionEnglish:
       '3D anthropomorphic strawberry woman doing a supermodel runway spin in sparkling black dress, looking sarcastically at the camera, showing a dress tag, elegant studio spotlight, slow-motion vertical 9:16, realistic textures',
   },
@@ -85,13 +88,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/bananildo.png',
     viralScore: 99.2,
     retentionScore: 97.8,
-    catchphrase: 'Qual foi, parceiro? Ficou moscando, perdeu a melhor oferta do seu feed!',
+    catchphrase: 'Qual foi, parceiro? Ficou moscando, perdeu o maior bafafá da sua vida!',
     voiceStyle: 'Ritmo acelerado, gírias urbanas, energia alta e entonação hipnótica.',
-    personality: 'O malandro gente boa da quebrada das frutas. Fala pelos cotovelos e converte qualquer um.',
-    bio: 'Com mais de 100 milhões de visualizações somadas, Bananildo é o rosto número #1 do formato de ofertas imperdíveis de streetwear.',
-    bestFor: 'Duelos caóticos, promoções relâmpago, tênis, moletons, eletrônicos e hooks de choque.',
-    defaultIdea: 'Quero que o Bananildo chegue acelerado gritando que o algoritmo entregou o cupom secreto que derrubou o preço dessa calça pela metade.',
-    defaultProduct: 'Calça Alfaiataria Social Cintura Alta com Cinto',
+    personality: 'O malandro da quebrada das frutas. Corre mais rápido que todo mundo e sabe de todos os podres.',
+    bio: 'Com mais de 100 milhões de visualizações somadas, Bananildo protagoniza as perseguições mais eletrizantes do feed.',
+    bestFor: 'Fugas alucinadas, esquetes caóticas, brigas de rua cômicas e revelações bombásticas.',
+    defaultIdea: 'Quero que o Bananildo chegue acelerado sem ar dizendo que a vizinha pegou ele no pulo espiando a reunião secreta das frutas.',
+    defaultEpisode: 'Episódio 01 - A Fuga Alucinada',
+    defaultClimax: 'O alarme toca ao fundo e ele pula a cerca gritando pra todo mundo seguir pra ver o final.',
     promptMotionEnglish:
       '3D banana boy character in grey hoodie jumping into the camera frame with extreme excitement, talking with animated hand gestures, pointing at bottom screen, ultra smooth 4k 60fps vertical',
   },
@@ -105,13 +109,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/uvinha.png',
     viralScore: 95.1,
     retentionScore: 94.3,
-    catchphrase: 'Se você passar esse vídeo sem me seguir, seu próximo pedido vai vir sem o brinde!',
+    catchphrase: 'Se você passar esse vídeo sem me seguir, sua curiosidade vai te matar hoje à noite!',
     voiceStyle: 'Voz aguda, musical, teatral e hipnotizante como uma apresentadora de TV ácida.',
-    personality: 'Patricinha do glitter, mimada, não aceita ser ignorada e faz birra irresistível.',
-    bio: 'Ela é a prova viva de que tamanho não é documento. Suas esquetes viralizam em minutos gerando montanhas de comentários.',
-    bestFor: 'Produtos fofos, cosméticos, acessórios de cabelo, desafios interativos e enquetes de feed.',
-    defaultIdea: 'Quero que a Uvinha faça uma birra cômica dizendo que a amiga copiou o look dela e revele onde comprou.',
-    defaultProduct: 'Cropped Frente Única com Amarração Cruzada',
+    personality: 'Patricinha do glitter, mimada, não aceita ser deixada de fora e faz escândalos inesquecíveis.',
+    bio: 'Seus barracos teatrais viralizam em minutos gerando montanhas de comentários e torcidas na internet.',
+    bestFor: 'Birras mimadas, barracos em eventos VIP, ciúmes cômicos e desafios virais.',
+    defaultIdea: 'Quero que a Uvinha faça uma birra cômica dizendo que a rival copiou o penteado e o look dela no baile das frutas.',
+    defaultEpisode: 'Episódio 01 - O Barraco da Patricinha',
+    defaultClimax: 'Ela sobe no palco, pega o microfone e ameaça soltar o áudio proibido.',
     promptMotionEnglish:
       '3D purple grape girl doing a viral cute celebration dance, purple sparkles floating in air, smiling adorably and holding up product with both hands, hyper-detailed 3D animation',
   },
@@ -125,13 +130,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/cerejinha.png',
     viralScore: 97.3,
     retentionScore: 96.5,
-    catchphrase: 'Nem a patroa sabe o que eu achei escondido no armário hoje cedo...',
+    catchphrase: 'Nem a patroa imagina o que eu acabei de escutar atrás dessa porta...',
     voiceStyle: 'Voz sussurrada, misteriosa e fofoqueira, criando curiosidade imediata nos primeiros 2s.',
-    personality: 'Trabalha na mansão dos ricaços e vaza todas as fofocas e cupons secretos das marcas.',
+    personality: 'Trabalha na mansão dos ricaços e grava no celular as conversas proibidas mais comprometedoras.',
     bio: 'Mestre da retenção psicológica. Começa os vídeos sussurrando como se estivesse escondida, garantindo que 90% assistam até o final.',
-    bestFor: 'Hooks de segredo, cupons de desconto, storytelling com reviravolta e fofocas do TikTok Shop.',
-    defaultIdea: 'Quero que a Cerejinha comece sussurrando dizendo que a dona da casa mandou esconder o estoque desse produto porque estava vendendo rápido demais.',
-    defaultProduct: 'Body Suplex Efeito Lipo Modelador',
+    bestFor: 'Fofocas de bastidores, segredos perigosos, revelações no escuro e suspense total.',
+    defaultIdea: 'Quero que a Cerejinha grave no escuro sussurrando que ouviu o patrão combinando um golpe milionário contra a família real das frutas.',
+    defaultEpisode: 'Episódio 01 - A Fofoca Proibida',
+    defaultClimax: 'A porta range, os passos se aproximam e ela desliga a câmera apavorada.',
     promptMotionEnglish:
       '3D cherry maid peering from behind dark luxury door, whispering secretly to camera, looking left and right nervously before holding up a secret product, cinematic 3D realism',
   },
@@ -145,13 +151,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/alface.png',
     viralScore: 94.6,
     retentionScore: 93.9,
-    catchphrase: 'Artigo 5º do TikTok Shop: você tem o direito inalienável de estar maravilhosa hoje.',
+    catchphrase: 'Artigo 5º da constituição: a verdade dói, mas eu vou esfregar na cara de vocês.',
     voiceStyle: 'Voz firme, professoral, ritmo pausado de quem sabe exatamente o que está falando.',
-    personality: 'A defensora dos direitos do consumidor que desmascara marcas falsas com classe.',
-    bio: 'Formada em jurisprudência dos vegetais, entra nos duelos com argumentos irrefutáveis sobre custo-benefício.',
-    bestFor: 'Moda alfaiataria, tecnologia, finanças, quebra de objeções complexas e credibilidade comercial.',
-    defaultIdea: 'Quero que a Dona Rúcula prove juridicamente que comprar essa peça parcelada por dia é mais barato que um café na padaria.',
-    defaultProduct: 'Calça Alfaiataria Premium com Bolsos',
+    personality: 'A promotora implacável das novelinhas que desmascara mentiras em tribunal público.',
+    bio: 'Formada em jurisprudência dos vegetais, entra nos confrontos com documentos e provas irrefutáveis.',
+    bestFor: 'Tribunais cômicos, acusações implacáveis, desmascaramento público e discursos de autoridade.',
+    defaultIdea: 'Quero que a Dona Rúcula chegue com uma pasta preta cheia de provas que anulam o casamento das frutas mais ricas da cidade.',
+    defaultEpisode: 'Episódio 01 - O Dossiê Secreto',
+    defaultClimax: 'Ela abre a pasta na mesa do juiz e a audiência inteira fica de pé em choque.',
     promptMotionEnglish:
       '3D leafy businesswoman adjusting emerald blazer collar, putting on stylish reading glasses, presenting tablet with graphs, speaking with authority, 4k 60fps vertical',
   },
@@ -165,13 +172,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/bananita.png',
     viralScore: 98.7,
     retentionScore: 97.4,
-    catchphrase: 'Essa peça aqui modela até a alma! Se você não garantir agora, vai chorar no feed alheio.',
-    voiceStyle: 'Energia contagiante de musa fitness, amiga próxima, empolgada e incentivadora.',
-    personality: 'Influenciadora que passa o dia testando leggings e tops resistentes.',
-    bio: 'A maior referência de moda fitness da internet. Quando ela posta um teste de agachamento em 3D, a peça esgota em horas.',
-    bestFor: 'Calças legging, macaquinhos fitness, tops com sustentação, cinta modeladora e moda praia.',
-    defaultIdea: 'Quero que a Bananita faça o teste real de zero transparência no agachamento e mostre que a peça não desce nem enrola na cintura.',
-    defaultProduct: 'Macaquinho Fitness Blackout Zero Transparência',
+    catchphrase: 'Achou que eu ia chorar na academia? Eu fiquei foi mais forte e pronta pro troco!',
+    voiceStyle: 'Energia contagiante de musa fitness, decidida, empoderada e provocativa.',
+    personality: 'Influenciadora maromba que transforma desilusões amorosas em motivação brutal e vingança.',
+    bio: 'Seus vídeos de volta por cima e indiretas afiadas geram milhões de compartilhamentos de mulheres no TikTok.',
+    bestFor: 'Superação pós-término, alfinetadas venenosas, rotinas intensas e vingança fitness.',
+    defaultIdea: 'Quero que a Bananita grave um treino pesado mandando uma indireta fulminante pro ex que tá sentado assistindo de boca aberta.',
+    defaultEpisode: 'Episódio 01 - O Troco da Musa',
+    defaultClimax: 'O ex tenta dar um passo na direção dela e o segurança entra na frente com música tensa.',
     promptMotionEnglish:
       '3D banana-haired fitness girl doing a quick 360 spin to show off high-waist jeans from all angles, smiling brightly with thumbs up, studio golden lens flare, 9:16',
   },
@@ -185,13 +193,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/brocolino.png',
     viralScore: 97.9,
     retentionScore: 96.8,
-    catchphrase: 'E-eu calculei a probabilidade... e se você não comprar isso agora, a taxa de arrependimento é 99.8%!',
+    catchphrase: 'E-eu calculei as probabilidades... e o que vai acontecer no próximo episódio é inacreditável!',
     voiceStyle: 'Tímido no começo, com leve gagueira fofa, que explode em entusiasmo frenético.',
-    personality: 'Estudante genial que usa inteligência artificial para achar brechas de preço.',
-    bio: 'Carrega uma mochila cheia de gadgets e cupons. Suas reações assustadas prendem a audiência do primeiro ao último segundo.',
-    bestFor: 'Gadgets, periféricos, cursos, tênis confortáveis, itens escolares e reviews minuciosos.',
-    defaultIdea: 'Quero que o Brocolino calcule a taxa de arrependimento de quem não comprar agora na promoção relâmpago.',
-    defaultProduct: 'Mini Processador e Triturador Turbo',
+    personality: 'Estudante genial que hackeia sistemas e descobre tudo que os outros tentam esconder.',
+    bio: 'Carrega um tablet futurista. Suas reações assustadas prendem a audiência do primeiro ao último segundo.',
+    bestFor: 'Teorias da conspiração, invasões de sistema, pânicos cômicos e revelações tecnológicas.',
+    defaultIdea: 'Quero o Brocolino apavorado mostrando na tela que os arquivos confidenciais da mansão foram descriptografados.',
+    defaultEpisode: 'Episódio 01 - O Hack das Frutas',
+    defaultClimax: 'A tela fica vermelha com aviso de invasor detectado e corta o sinal.',
     promptMotionEnglish:
       '3D broccoli schoolboy nervously checking a futuristic calculator, looking up with wide shocked eyes, pointing finger at screen in disbelief, ultra expressive animation',
   },
@@ -205,13 +214,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/mirtilinho.png',
     viralScore: 96.4,
     retentionScore: 95.8,
-    catchphrase: 'Enquanto você duvida, o drop tá acabando e o beat tá batendo!',
+    catchphrase: 'O beat dropou, a máscara caiu e agora não tem mais volta!',
     voiceStyle: 'Grave com autotune sutil, estilo trap americano, misterioso e seguro.',
-    personality: 'Produtor musical das frutas que cria as trilhas sonoras mais viciantes do feed.',
-    bio: 'Lançou as trends sonoras mais virais do TikTok. Seus vídeos têm sincronização labial perfeita.',
-    bestFor: 'Fones bluetooth, iluminação RGB, camisetas oversized, relógios e tech.',
-    defaultIdea: 'Quero que o Mirtilinho faça uma rima rápida mostrando os detalhes da peça com transição no drop da batida.',
-    defaultProduct: 'Camiseta Streetwear Oversized Heavyweight',
+    personality: 'Produtor musical das frutas que cria as trilhas sonoras mais tensas e os confrontos rimados.',
+    bio: 'Lançou as trends sonoras mais virais do TikTok. Seus episódios usam batidas de suspense que prendem os jovens.',
+    bestFor: 'Duelos de rimas, mistérios no estúdio, desabafos na madrugada e confrontos urbanos.',
+    defaultIdea: 'Quero que o Mirtilinho solte uma rima expondo a traição de quem ele mais confiava no estúdio.',
+    defaultEpisode: 'Episódio 01 - O Drop da Verdade',
+    defaultClimax: 'A luz do estúdio pisca, um vulto aparece na porta e a batida é interrompida.',
     promptMotionEnglish:
       '3D blueberry music producer nodding along to heavy 808 beat with animated hand gestures, subtle neon lighting glow, ultra smooth 60fps vertical',
   },
@@ -225,13 +235,14 @@ const MASCOTS: Mascot[] = [
     fallbackImage: '/turbo-followers/laranjito.png',
     viralScore: 98.1,
     retentionScore: 97.2,
-    catchphrase: 'Chora não, coração! O frete é grátis e a felicidade tá na palma da mão!',
+    catchphrase: 'Chora não, coração! O barraco é grande, mas a risada tá garantida!',
     voiceStyle: 'Voz aberta, gargalhada contagiante, ritmo de apresentador de festa e pagode.',
-    personality: 'O inimigo do mau humor. Faz rimas instantâneas sobre qualquer produto do TikTok Shop.',
-    bio: 'Não existe comentário triste no feed do Laranjito. Ele transforma qualquer dúvida de cliente em uma piada irresistível que termina em compra.',
-    bestFor: 'Ofertas relâmpago, utensílios de churrasco, garrafas térmicas, vestuário de verão e unboxing.',
-    defaultIdea: 'Quero que o Laranjito faça uma piada com quem ainda paga caro e mostre que a felicidade é comprar bem e barato.',
-    defaultProduct: 'Kit com 3 Garrafas Térmicas Degradê',
+    personality: 'O fofoqueiro bem-humorado que transforma confusão em espetáculo popular.',
+    bio: 'Não existe comentário triste no feed do Laranjito. Ele transforma qualquer treta de bairro numa esquete cômica inesquecível.',
+    bestFor: 'Comédias do cotidiano, confusões no pagode, flagras em festas de família e fofocas bem-humoradas.',
+    defaultIdea: 'Quero o Laranjito contando no microfone do pagode como pegou o casal mais certinho da rua num encontro secreto.',
+    defaultEpisode: 'Episódio 01 - O Flagra no Pagode',
+    defaultClimax: 'A pessoa flagrada levanta da mesa com a garrafa na mão e todos começam a gritar.',
     promptMotionEnglish:
       '3D orange character holding miniature megaphone, laughing contagiously and dancing with high energy, confetti falling, bright vivid studio lighting',
   },
@@ -247,11 +258,11 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
   // Estados da Etapa 2 (Esboço da Ideia do Cliente)
   const [userIdea, setUserIdea] = useState(
-    'Quero um vídeo onde o Abacatudo chora dizendo que a academia é pesada demais, mas depois mostra que essa peça modela o corpo e dá sustentação total sem marcar nada.'
+    'Quero uma cena dramática onde o Abacatudo chora dizendo que foi traído na academia, mas promete que na Parte 2 vai confrontar todo mundo.'
   );
-  const [productName, setProductName] = useState('Conjunto Fitness Alta Compressão Sem Costura');
-  const [productPrice, setProductPrice] = useState('R$ 49,90');
-  const [ctaType, setCtaType] = useState<'shop' | 'follow' | 'comment'>('shop');
+  const [episodeTitle, setEpisodeTitle] = useState('Episódio 01 - O Flagrante na Academia');
+  const [plotTwist, setPlotTwist] = useState('Ele encontra uma mensagem misteriosa e a tela escurece com som de batimento cardíaco');
+  const [ctaType, setCtaType] = useState<'follow' | 'comment' | 'share'>('follow');
 
   // Estado de Carregamento Cinematográfico entre Etapa 2 e Etapa 3
   const [isGenerating, setIsGenerating] = useState(false);
@@ -283,7 +294,8 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
   const handleSelectMascot = (m: Mascot) => {
     setSelectedId(m.id);
     setUserIdea(m.defaultIdea);
-    setProductName(m.defaultProduct);
+    setEpisodeTitle(m.defaultEpisode);
+    setPlotTwist(m.defaultClimax);
   };
 
   // Copiar com feedback
@@ -664,21 +676,20 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               <div className="space-y-3 rounded-3xl border border-[var(--mvz-line)] bg-[#0d0c0a] p-6 shadow-xl">
                 <div className="flex items-center justify-between">
                   <label className="text-[12px] font-extrabold uppercase tracking-wider text-white">
-                    Sua Ideia ou Esboço do Vídeo
+                    Sua Ideia ou Cena da Novelinha
                   </label>
                   <span className="text-[11px] text-[var(--mvz-gold)]">A IA vai estruturar e humanizar</span>
                 </div>
 
                 <p className="text-[12px] text-white/60">
-                  Escreva do seu jeito. Pode ser simples ou detalhado. Nós vamos transformar esse esboço em um roteiro
-                  completo de alta retenção no estilo de fala do <strong>{currentMascot.name}</strong>.
+                  Escreva do seu jeito o drama, conflito, fofoca ou situação cômica. Nós vamos transformar esse esboço em um episódio de novela viral no estilo de fala do <strong>{currentMascot.name}</strong>.
                 </p>
 
                 <textarea
                   rows={4}
                   value={userIdea}
                   onChange={(e) => setUserIdea(e.target.value)}
-                  placeholder="Ex: Quero que ele chore porque achou a roupa cara no shopping, mas depois revele que aqui na loja sai pela metade do preço com frete grátis..."
+                  placeholder="Ex: Quero uma cena onde o Abacatudo descobre que foi traído na academia e confronta todo mundo aos prantos prometendo revanche..."
                   className="w-full rounded-2xl border border-white/15 bg-black/60 p-4 text-[13.5px] leading-relaxed text-white placeholder-white/40 focus:border-[var(--mvz-gold)] focus:outline-none transition"
                 />
 
@@ -689,15 +700,15 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                   </span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {[
-                      'Desabafo cômico quebrando objeção de preço',
-                      'Teste real de resistência e caimento sem filtro',
-                      'Segredo de fornecedor direto vazado sem permissão',
-                      'Duelo cômico contra quem gasta caro no shopping',
+                      'Traição dramática na cozinha',
+                      'Flagrante no treino com choro cômico',
+                      'Segredo bombástico revelado ao vivo',
+                      'Duelo épico entre frutas rivais',
                     ].map((sug) => (
                       <button
                         key={sug}
                         onClick={() =>
-                          setUserIdea(`Quero um roteiro de ${sug.toLowerCase()} focando no produto "${productName}".`)
+                          setUserIdea(`Quero um episódio de ${sug.toLowerCase()} com o ${currentMascot.name} no papel principal.`)
                         }
                         className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-white/75 hover:border-[var(--mvz-gold)] hover:text-white hover:bg-white/[0.06] transition"
                       >
@@ -708,43 +719,43 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                 </div>
               </div>
 
-              {/* Informações do Produto & CTA */}
+              {/* Informações da Novela & CTA */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 rounded-3xl border border-[var(--mvz-line)] bg-[#0d0c0a] p-6 shadow-xl">
                 <div>
                   <label className="text-[11.5px] font-bold uppercase tracking-wider text-white/70">
-                    Nome da Peça ou Produto
+                    Título do Episódio / Capítulo
                   </label>
                   <input
                     type="text"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    placeholder="Ex: Calça Alfaiataria Cintura Alta"
+                    value={episodeTitle}
+                    onChange={(e) => setEpisodeTitle(e.target.value)}
+                    placeholder="Ex: Episódio 01 - O Flagrante na Cozinha"
                     className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-black/60 px-3.5 text-[13px] text-white focus:border-[var(--mvz-gold)] focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="text-[11.5px] font-bold uppercase tracking-wider text-white/70">
-                    Preço ou Oferta Especial
+                    Clímax ou Gancho do Final
                   </label>
                   <input
                     type="text"
-                    value={productPrice}
-                    onChange={(e) => setProductPrice(e.target.value)}
-                    placeholder="Ex: R$ 49,90"
+                    value={plotTwist}
+                    onChange={(e) => setPlotTwist(e.target.value)}
+                    placeholder="Ex: Revelação chocante que corta antes do desfecho"
                     className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-black/60 px-3.5 text-[13px] text-white focus:border-[var(--mvz-gold)] focus:outline-none"
                   />
                 </div>
 
                 <div className="sm:col-span-2 pt-2">
                   <label className="text-[11.5px] font-bold uppercase tracking-wider text-white/70">
-                    Objetivo Principal do Vídeo (CTA)
+                    Objetivo Principal do Vídeo (CTA Viral)
                   </label>
                   <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                     {[
-                      { id: 'shop', label: 'Comprar no Carrinho', sub: 'TikTok Shop direto' },
-                      { id: 'follow', label: 'Seguir para Parte 2', sub: 'Turbo de Seguidores' },
+                      { id: 'follow', label: 'Seguir para a Parte 2', sub: 'Turbo de Seguidores' },
                       { id: 'comment', label: 'Comentar no Vídeo', sub: 'Explosão de Algoritmo' },
+                      { id: 'share', label: 'Compartilhar o Drama', sub: 'Viralização Orgânica' },
                     ].map((opt) => (
                       <button
                         key={opt.id}
@@ -786,12 +797,16 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
                 <div className="space-y-2 text-[12px] text-white/70">
                   <div className="flex justify-between">
-                    <span>Produto:</span>
-                    <strong className="text-white line-clamp-1">{productName}</strong>
+                    <span>Episódio:</span>
+                    <strong className="text-white line-clamp-1">{episodeTitle}</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span>Preço:</span>
-                    <strong className="text-[#22c55e]">{productPrice}</strong>
+                    <span>Clímax:</span>
+                    <strong className="text-[var(--mvz-gold)] line-clamp-1">{plotTwist}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Potencial de Retenção:</span>
+                    <strong className="text-[#22c55e]">{currentMascot.retentionScore}%</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Taxa Viral Esperada:</span>
@@ -898,18 +913,19 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               <button
                 onClick={() => {
                   const fullScript =
-                    `ROTEIRO DE ALTA CONVERSÃO - TURBO SEGUIDORES\n` +
+                    `ROTEIRO VIRAL DE NOVELINHA - TURBO SEGUIDORES\n` +
                     `Personagem: ${currentMascot.name} (${currentMascot.fruit})\n` +
-                    `Produto: ${productName} - ${productPrice}\n\n` +
-                    `[0s - 3s HOOK]: "Para tudo o que você tá fazendo agora! ${currentMascot.catchphrase}"\n\n` +
-                    `[3s - 12s DESENVOLVIMENTO]: "${userIdea}"\n\n` +
-                    `[12s - 22s OFERTA]: "Olha o caimento e a qualidade de costura desse ${productName}! No shopping isso não sai por menos de R$ 180, mas hoje tá saindo por apenas ${productPrice} com cupom de primeira compra!"\n\n` +
-                    `[22s - 30s CTA]: "${
-                      ctaType === 'shop'
-                        ? 'Clica agora no carrinho amarelo aqui embaixo antes que o estoque zere!'
-                        : ctaType === 'follow'
-                        ? 'Clica no botão de seguir para não perder o teste de lavagem amanhã!'
-                        : 'Comenta EU QUERO que eu te envio o link direto!'
+                    `Episódio: ${episodeTitle}\n` +
+                    `Clímax / Gancho: ${plotTwist}\n\n` +
+                    `[0s - 3s HOOK DE CHOQUE]: "Para tudo o que você tá fazendo agora! ${currentMascot.catchphrase}"\n\n` +
+                    `[3s - 15s ENREDO & DRAMA]: "${userIdea}"\n\n` +
+                    `[15s - 25s CLÍMAX & REVIRAVOLTA]: "${plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir!"\n\n` +
+                    `[25s - 30s CTA TURBO DE SEGUIDORES]: "${
+                      ctaType === 'follow'
+                        ? 'Clica agora no botão de seguir aqui do lado para não perder a Parte 2 amanhã!'
+                        : ctaType === 'comment'
+                        ? 'Comenta aqui embaixo quem você acha que tá certo nessa história!'
+                        : 'Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver a Parte 2!'
                     }"\n\n` +
                     `PROMPT DE ANIMAÇÃO DE VÍDEO (IMAGE-TO-VIDEO):\n${currentMascot.promptMotionEnglish}`;
 
@@ -1060,18 +1076,18 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               </div>
             </div>
 
-            {/* Linha 2: 3s - 12s DESENVOLVIMENTO */}
+            {/* Linha 2: 3s - 15s ENREDO & DRAMA */}
             <div className="rounded-2xl border border-white/10 bg-[#0d0c0a] p-5 shadow-lg">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                   <span className="rounded-md bg-white/10 px-2.5 py-0.5 text-[10px] font-black uppercase text-white/80">
-                    3s - 12s • DESABAFO & QUEBRA DE OBJEÇÃO
+                    3s - 15s • ENREDO & DRAMA DA CENA
                   </span>
                   <p className="text-[14px] font-semibold text-white leading-relaxed">
                     "{userIdea}"
                   </p>
                   <p className="text-[11.5px] text-white/60">
-                    <strong>Ação de Vídeo:</strong> O {currentMascot.name} gesticula intensamente e aponta para a peça real com close nos detalhes de acabamento.
+                    <strong>Ação de Vídeo:</strong> O {currentMascot.name} gesticula intensamente expressando a emoção da cena com sincronia labial e animação 3D expressiva.
                   </p>
                 </div>
 
@@ -1084,25 +1100,25 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               </div>
             </div>
 
-            {/* Linha 3: 12s - 22s OFERTA DE CHOQUE */}
-            <div className="rounded-2xl border border-[#22c55e]/30 bg-gradient-to-r from-[#22c55e]/10 via-[#0d0c0a] to-[#0d0c0a] p-5 shadow-lg">
+            {/* Linha 3: 15s - 25s CLÍMAX & REVIRAVOLTA */}
+            <div className="rounded-2xl border border-[var(--mvz-gold)]/30 bg-gradient-to-r from-[var(--mvz-gold)]/10 via-[#0d0c0a] to-[#0d0c0a] p-5 shadow-lg">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
-                  <span className="rounded-md bg-[#22c55e] px-2.5 py-0.5 text-[10px] font-black uppercase text-black">
-                    12s - 22s • APRESENTAÇÃO DA OFERTA
+                  <span className="rounded-md bg-[var(--mvz-gold)] px-2.5 py-0.5 text-[10px] font-black uppercase text-black">
+                    15s - 25s • CLÍMAX & GANCHO DO SUSPENSE
                   </span>
                   <p className="text-[14px] font-bold text-white leading-relaxed">
-                    "Olha o caimento e a qualidade de costura desse {productName}! No shopping isso não sai por menos de R$ 180, mas hoje tá saindo por apenas {productPrice} com cupom de primeira compra!"
+                    "{plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir..."
                   </p>
                   <p className="text-[11.5px] text-white/60">
-                    <strong>Ação de Vídeo:</strong> Mostrar etiqueta riscada e puxar o tecido na mão mostrando elasticidade e zero transparência.
+                    <strong>Ação de Vídeo:</strong> Câmera faz um zoom dramático rápido no rosto do {currentMascot.name} com expressão de choque antes do corte final.
                   </p>
                 </div>
 
                 <button
                   onClick={() =>
                     copyToClipboard(
-                      `"Olha o caimento e a qualidade de costura desse ${productName}! No shopping isso não sai por menos de R$ 180, mas hoje tá saindo por apenas ${productPrice} com cupom de primeira compra!"`,
+                      `"${plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir..."`,
                       'script-offer'
                     )
                   }
@@ -1113,30 +1129,30 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               </div>
             </div>
 
-            {/* Linha 4: 22s - 30s CTA TURBO SEGUIDORES */}
+            {/* Linha 4: 25s - 30s CTA TURBO SEGUIDORES */}
             <div className="rounded-2xl border border-[var(--mvz-line)] bg-[#0d0c0a] p-5 shadow-lg">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
                   <span className="rounded-md bg-white/10 px-2.5 py-0.5 text-[10px] font-black uppercase text-white/80">
-                    22s - 30s • CHAMADA DE AÇÃO (CTA)
+                    25s - 30s • CHAMADA DE AÇÃO (CTA TURBO DE SEGUIDORES)
                   </span>
                   <p className="text-[14px] font-bold text-white leading-relaxed">
-                    {ctaType === 'shop'
-                      ? `"Clica agora no carrinho amarelo aqui embaixo antes que o estoque zere e você fique sem o seu tamanho!"`
-                      : ctaType === 'follow'
-                      ? `"Clica no botão de seguir aqui do lado para não perder a Parte 2 onde eu testo a lavagem na máquina!"`
-                      : `"Comenta EU QUERO aqui embaixo que eu vou te mandar o link secreto no seu direct agora mesmo!"`}
+                    {ctaType === 'follow'
+                      ? `"Clica no botão de seguir aqui do lado para não perder a Parte 2 onde a verdade vai aparecer!"`
+                      : ctaType === 'comment'
+                      ? `"Comenta aqui embaixo quem você acha que tá certo antes de ver a continuação!"`
+                      : `"Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver o desfecho!"`}
                   </p>
                 </div>
 
                 <button
                   onClick={() =>
                     copyToClipboard(
-                      ctaType === 'shop'
-                        ? `"Clica agora no carrinho amarelo aqui embaixo antes que o estoque zere e você fique sem o seu tamanho!"`
-                        : ctaType === 'follow'
-                        ? `"Clica no botão de seguir aqui do lado para não perder a Parte 2 onde eu testo a lavagem na máquina!"`
-                        : `"Comenta EU QUERO aqui embaixo que eu vou te mandar o link secreto no seu direct agora mesmo!"`,
+                      ctaType === 'follow'
+                        ? `"Clica no botão de seguir aqui do lado para não perder a Parte 2 onde a verdade vai aparecer!"`
+                        : ctaType === 'comment'
+                        ? `"Comenta aqui embaixo quem você acha que tá certo antes de ver a continuação!"`
+                        : `"Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver o desfecho!"`,
                       'script-cta'
                     )
                   }
@@ -1154,11 +1170,11 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-[var(--mvz-gold)]" />
                 <h4 className="text-[14px] font-black uppercase tracking-wider text-white">
-                  Quer Escalar para 10 Vídeos Semanais?
+                  Quer Criar uma Série Completa de Capítulos?
                 </h4>
               </div>
               <p className="text-[12.5px] text-white/70">
-                Envie esse roteiro para o Agente IA da Orbiex criar um lote completo com 7 variações de ganchos virais.
+                Envie esse roteiro para o Agente IA da Orbiex gerar os próximos episódios com arcos narrativos e ganchos virais.
               </p>
             </div>
 
@@ -1166,14 +1182,14 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               onClick={() => {
                 if (onUse) {
                   onUse(
-                    `Quero criar mais 5 variações deste roteiro do ${currentMascot.name} para o produto "${productName}". A ideia base é: "${userIdea}". Me entregue ganchos diferentes para postar ao longo da semana.`
+                    `Quero criar a continuação (Parte 2 e Parte 3) da novelinha do ${currentMascot.name} para o episódio "${episodeTitle}". O enredo base foi: "${userIdea}" com clímax: "${plotTwist}". Me entregue o roteiro completo de novelinha viral para bombar de seguidores.`
                   );
                 }
               }}
               className="flex items-center justify-center gap-2 rounded-xl bg-[var(--mvz-gold)] px-6 py-3 text-[12px] font-black uppercase tracking-wider text-black shadow-lg hover:brightness-110 transition"
             >
               <Zap size={14} className="fill-black" />
-              <span>Gerar Mais 5 Variações com IA</span>
+              <span>Gerar Continuação com IA</span>
             </button>
           </div>
         </div>

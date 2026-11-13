@@ -149,8 +149,8 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
   };
 
   return (
-    <div className="relative flex h-screen w-screen overflow-hidden bg-[#000000] text-white select-none">
-      {/* Filtro SVG de Nitidez HD (Unsharp Mask suave) para aumentar a definição sem escurecer */}
+    <div className="relative flex h-screen w-screen overflow-hidden bg-[#070401] text-white select-none">
+      {/* Filtro SVG de Nitidez HD (Unsharp Mask suave) + Animações de Partículas Flutuantes */}
       <svg className="pointer-events-none absolute h-0 w-0" aria-hidden="true">
         <defs>
           <filter id="orbiex-hd-sharpen" colorInterpolationFilters="sRGB">
@@ -163,26 +163,152 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
         </defs>
       </svg>
 
+      <style>{`
+        @keyframes orbiexFloatSlow {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.45; }
+          50% { transform: translate3d(14px, -22px, 0) scale(1.12); opacity: 0.85; }
+        }
+        @keyframes orbiexFloatMedium {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.35; }
+          50% { transform: translate3d(-18px, -28px, 0) scale(1.18); opacity: 0.75; }
+        }
+        @keyframes orbiexPulseGlow {
+          0%, 100% { opacity: 0.28; transform: scale(1); }
+          50% { opacity: 0.48; transform: scale(1.06); }
+        }
+      `}</style>
+
       {/* ────────────────────────────────────────────────────────────
-          BACKGROUND PARA DISPOSITIVOS MÓVEIS (< MD)
+          CAMADA GLOBAL DE ATMOSFERA DOURADA (CONECTA O VÍDEO À PÁGINA INTEIRA)
       ──────────────────────────────────────────────────────────── */}
-      <div className="md:hidden absolute inset-0 -z-10 overflow-hidden bg-black pointer-events-none">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Projeção difusa do próprio vídeo espalhando a mesma cor âmbar/dourada para o centro e direita */}
         <video
           src="/assets/login-animation-orbiex.mp4"
           autoPlay
           loop
           muted
           playsInline
-          className="h-full w-full object-cover object-[center_top] opacity-35 select-none pointer-events-none [filter:saturate(0.84)_contrast(1.06)_brightness(0.96)]"
+          className="hidden md:block absolute left-[18%] top-0 h-full w-[70%] object-cover object-center opacity-25 blur-[95px] scale-125"
         />
-        <div className="absolute inset-0 bg-black/15" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/55" />
+
+        {/* Luz atmosférica contínua interligando o personagem ao lado direito */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 68% 72% at 36% 45%, rgba(212, 152, 30, 0.22) 0%, rgba(161, 92, 12, 0.13) 42%, rgba(45, 23, 3, 0.35) 72%, rgba(7, 4, 1, 0.96) 100%)',
+          }}
+        />
+
+        {/* Auras douradas quentes atrás e ao redor do formulário na direita */}
+        <div
+          className="absolute right-[10%] top-[14%] h-[460px] w-[460px] rounded-full bg-[#f59e0b]/15 blur-[130px]"
+          style={{ animation: 'orbiexPulseGlow 7s ease-in-out infinite' }}
+        />
+        <div
+          className="absolute right-[24%] bottom-[8%] h-[380px] w-[380px] rounded-full bg-[#d4af37]/12 blur-[120px]"
+          style={{ animation: 'orbiexPulseGlow 9s ease-in-out infinite 2s' }}
+        />
+        <div className="absolute left-[38%] top-[28%] h-[420px] w-[420px] rounded-full bg-[#fbbf24]/12 blur-[125px]" />
+
+        {/* Filamentos sutis de energia neural dourada no lado direito (ecoando os feixes do corpo) */}
+        <svg
+          className="hidden md:block absolute right-0 top-0 h-full w-[62%] opacity-25"
+          viewBox="0 0 800 900"
+          fill="none"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <defs>
+            <linearGradient id="orbiexVein1" x1="0%" y1="30%" x2="100%" y2="70%">
+              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.55" />
+              <stop offset="50%" stopColor="#d97706" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#78350f" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="orbiexVein2" x1="0%" y1="60%" x2="100%" y2="20%">
+              <stop offset="0%" stopColor="#fde68a" stopOpacity="0.4" />
+              <stop offset="55%" stopColor="#b45309" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="#451a03" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M -40 310 C 140 280, 260 420, 460 360 C 620 310, 710 190, 840 210"
+            stroke="url(#orbiexVein1)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M -20 520 C 160 470, 310 590, 520 490 C 660 420, 740 510, 860 460"
+            stroke="url(#orbiexVein2)"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 40 180 C 210 240, 340 150, 540 230 C 670 280, 750 240, 830 290"
+            stroke="url(#orbiexVein2)"
+            strokeWidth="1"
+            strokeLinecap="round"
+          />
+        </svg>
+
+        {/* Bokehs e Partículas Douradas Flutuando pela Direita e Centro (mesma estética do vídeo) */}
+        <div
+          className="hidden md:block absolute left-[43%] top-[18%] h-7 w-7 rounded-full bg-[#fbbf24]/35 blur-[6px]"
+          style={{ animation: 'orbiexFloatSlow 6s ease-in-out infinite' }}
+        />
+        <div
+          className="hidden md:block absolute left-[47%] top-[62%] h-10 w-10 rounded-full bg-[#f59e0b]/30 blur-[9px]"
+          style={{ animation: 'orbiexFloatMedium 8s ease-in-out infinite 1s' }}
+        />
+        <div
+          className="hidden md:block absolute left-[52%] top-[34%] h-3.5 w-3.5 rounded-full bg-[#fde68a]/65 blur-[2px] shadow-[0_0_12px_#fbbf24]"
+          style={{ animation: 'orbiexFloatSlow 5.5s ease-in-out infinite 0.5s' }}
+        />
+        <div
+          className="hidden md:block absolute left-[56%] top-[78%] h-5 w-5 rounded-full bg-[#fbbf24]/45 blur-[4px]"
+          style={{ animation: 'orbiexFloatMedium 7s ease-in-out infinite 2s' }}
+        />
+        <div
+          className="hidden md:block absolute right-[36%] top-[12%] h-4 w-4 rounded-full bg-[#fde047]/55 blur-[2px] shadow-[0_0_10px_#f59e0b]"
+          style={{ animation: 'orbiexFloatSlow 6.5s ease-in-out infinite 1.5s' }}
+        />
+        <div
+          className="hidden md:block absolute right-[14%] top-[22%] h-8 w-8 rounded-full bg-[#d97706]/30 blur-[7px]"
+          style={{ animation: 'orbiexFloatMedium 9s ease-in-out infinite 0.8s' }}
+        />
+        <div
+          className="hidden md:block absolute right-[8%] top-[48%] h-3 w-3 rounded-full bg-[#fef08a]/60 blur-[1.5px] shadow-[0_0_10px_#fbbf24]"
+          style={{ animation: 'orbiexFloatSlow 5s ease-in-out infinite 2.4s' }}
+        />
+        <div
+          className="hidden md:block absolute right-[18%] bottom-[16%] h-6 w-6 rounded-full bg-[#f59e0b]/35 blur-[5px]"
+          style={{ animation: 'orbiexFloatMedium 7.5s ease-in-out infinite 1.2s' }}
+        />
+        <div
+          className="hidden md:block absolute right-[32%] bottom-[12%] h-2.5 w-2.5 rounded-full bg-[#fde68a]/70 blur-[1px] shadow-[0_0_8px_#fbbf24]"
+          style={{ animation: 'orbiexFloatSlow 6s ease-in-out infinite 3s' }}
+        />
       </div>
 
       {/* ────────────────────────────────────────────────────────────
-          COLUNA ESQUERDA: VÍDEO ANIMADO DO PERSONAGEM DOURADO (MENOS ZOOM + NITIDEZ HD + BRILHO PRESERVADO)
+          BACKGROUND PARA DISPOSITIVOS MÓVEIS (< MD)
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative hidden h-full w-full md:block md:w-[45%] lg:w-[44%] overflow-hidden bg-black">
+      <div className="md:hidden absolute inset-0 -z-10 overflow-hidden bg-[#070401] pointer-events-none">
+        <video
+          src="/assets/login-animation-orbiex.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="h-full w-full object-cover object-[center_top] opacity-40 select-none pointer-events-none [filter:saturate(0.84)_contrast(1.06)_brightness(0.96)]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070401] via-[#070401]/80 to-black/45" />
+      </div>
+
+      {/* ────────────────────────────────────────────────────────────
+          COLUNA ESQUERDA: PERSONAGEM FLUTUANDO (PUXADO PARA BAIXO PARA NÃO CORTAR A CABEÇA, CORTANDO MAIS A PERNA EMBAIXO)
+      ──────────────────────────────────────────────────────────── */}
+      <div className="relative hidden h-full w-full md:block md:w-[46%] lg:w-[45%] overflow-hidden">
         {/* Slot da Imagem / Logo no Canto Superior Esquerdo */}
         <div className="absolute left-8 top-8 z-30 flex items-center gap-3">
           {topLeftImage ? (
@@ -192,7 +318,7 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
               className="h-10 w-auto max-w-[180px] object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]"
             />
           ) : (
-            <div className="flex items-center gap-2.5 rounded-2xl border border-white/15 bg-black/75 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl transition hover:border-[var(--mvz-gold)]/40">
+            <div className="flex items-center gap-2.5 rounded-2xl border border-[#d4af37]/25 bg-black/70 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl transition hover:border-[var(--mvz-gold)]/50">
               <Logo size={26} />
               <span className="text-[13px] font-black uppercase tracking-[0.18em] text-white">
                 ORBIEX
@@ -201,32 +327,46 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           )}
         </div>
 
-        {/* Vídeo com menos zoom (largura calibrada próxima à resolução nativa), filtro de nitidez HD e brilho claro preservado */}
+        {/* Camada de preenchimento superior difusa (garante que o espaço acima da cabeça tenha o mesmo brilho dourado sem linha de corte) */}
         <video
           src="/assets/login-animation-orbiex.mp4"
           autoPlay
           loop
           muted
           playsInline
-          className="h-full w-full object-cover object-top select-none pointer-events-none [filter:url(#orbiex-hd-sharpen)_saturate(0.84)_contrast(1.06)_brightness(0.97)]"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top blur-xl opacity-65 scale-105 [filter:saturate(0.84)_brightness(0.9)]"
         />
 
-        {/* Película preta bem fraquinha (apenas 12% de opacidade, sem blur e sem escurecer a cena) */}
-        <div className="pointer-events-none absolute inset-0 bg-black/12" />
+        {/* Vídeo principal deslocado para baixo (top-9 / +36px) e estendido embaixo (h-[calc(100%+48px)]):
+            - Desce a cabeça do personagem para ficar 100% visível com folga no topo
+            - Empurra a parte das pernas para baixo da borda inferior (cortando a perna em vez da cabeça)
+            - Máscara suave no topo e na direita para fundir o personagem flutuando na página */}
+        <video
+          src="/assets/login-animation-orbiex.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="pointer-events-none relative top-9 h-[calc(100%+48px)] w-full object-cover object-top select-none [filter:url(#orbiex-hd-sharpen)_saturate(0.85)_contrast(1.06)_brightness(0.97)]"
+          style={{
+            WebkitMaskImage:
+              'linear-gradient(to bottom, transparent 0px, black 28px, black 88%, transparent 100%), linear-gradient(to right, black 62%, rgba(0,0,0,0.55) 82%, transparent 100%)',
+            WebkitMaskComposite: 'source-in',
+            maskImage:
+              'linear-gradient(to bottom, transparent 0px, black 28px, black 88%, transparent 100%), linear-gradient(to right, black 62%, rgba(0,0,0,0.55) 82%, transparent 100%)',
+            maskComposite: 'intersect',
+          }}
+        />
 
-        {/* Gradientes de Fusão Invisível com o Fundo Preto */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-r from-transparent via-black/45 to-black" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/35 to-transparent" />
+        {/* Película preta bem fraquinha (10%) apenas para dar acabamento fosco */}
+        <div className="pointer-events-none absolute inset-0 bg-black/10" />
       </div>
 
       {/* ────────────────────────────────────────────────────────────
-          COLUNA DIREITA: FORMULÁRIO DE LOGIN / CADASTRO
+          COLUNA DIREITA: FORMULÁRIO INTEGRADO AO AMBIENTE DOURADO DO PERSONAGEM
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative flex h-full w-full items-center justify-center bg-black px-6 sm:px-10 md:w-[55%] lg:w-[56%] lg:px-14">
-        {/* Glow de fundo sutil */}
-        <div className="pointer-events-none absolute h-96 w-96 rounded-full bg-[var(--mvz-gold)]/5 blur-[120px]" />
-
-        <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-white/10 bg-[#0d0c0e]/85 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:p-9">
+      <div className="relative flex h-full w-full items-center justify-center bg-transparent px-6 sm:px-10 md:w-[54%] lg:w-[55%] lg:px-14">
+        <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-[#d4af37]/20 bg-[#110c05]/70 p-8 shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_50px_rgba(212,175,55,0.08)] backdrop-blur-2xl sm:p-9">
           {/* Cabeçalho */}
           <div className="mb-7">
             <div className="mb-3.5 inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/35 bg-[var(--mvz-gold)]/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[var(--mvz-gold-light)] shadow-[0_0_15px_rgba(212,175,55,0.15)]">

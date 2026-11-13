@@ -216,6 +216,42 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [seed, setSeed] = useState(1);
+  const [aiHeadlines, setAiHeadlines] = useState<HeadlineItem[] | null>(null);
+
+  const requestBackendHeadlines = (nameTarget: string, typeTarget: PieceType, imgTarget: string, nextSeed: number) => {
+    fetch('/api/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'headlines',
+        clothingName: nameTarget,
+        pieceType: typeTarget,
+        seed: nextSeed,
+        imageDataUrl: imgTarget?.startsWith('data:image/') ? imgTarget : undefined,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const json = await res.json();
+        if (Array.isArray(json?.headlines) && json.headlines.length >= 6) {
+          setAiHeadlines(
+            json.headlines.map((item: any, idx: number) => ({
+              id: `hl-ai-${nextSeed}-${idx}`,
+              category: String(item.category || 'Caimento & Elegância'),
+              headline: String(item.headline || '').trim(),
+              overlayText: String(item.overlayText || 'POV: CAIMENTO IMPECÁVEL'),
+              visualAction: String(item.visualAction || 'Girar no espelho mostrando o caimento.'),
+              retentionScore: Number(item.retentionScore) || 98,
+              viralScore: Number(item.viralScore) || 9.9,
+              whyItWorks: String(item.whyItWorks || 'Gatilho orgânico de retenção para TikTok Shop.'),
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        // Fallback automático para a engine local
+      });
+  };
 
   // Integração com a esteira de produtos
   const { products, addProduct, deleteProduct } = useProducts();
@@ -243,7 +279,8 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
     setPieceType(inferred);
     setClothingName(product.name);
     setClothingImage(product.image);
-    triggerAiGeneration();
+    setAiHeadlines(null);
+    triggerAiGeneration(product.name, inferred, product.image);
   };
 
   const handleSaveExternalProduct = (e: React.FormEvent) => {
@@ -269,13 +306,14 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
     setClothingName(saved.name);
     setClothingImage(saved.image);
     setPieceType(extPieceType);
+    setAiHeadlines(null);
 
     setExtName('');
     setExtImage('');
     setExtAngle('');
     setShowAddExternalModal(false);
 
-    triggerAiGeneration();
+    triggerAiGeneration(saved.name, extPieceType, saved.image);
   };
 
   const handleExtImageUpload = (file: File) => {
@@ -288,12 +326,21 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
     reader.readAsDataURL(file);
   };
 
-  // Simulação realista de análise neural profunda (~3.8s)
-  const triggerAiGeneration = () => {
+  // Simulação realista de análise neural profunda (~3.8s) + Chamada Real à API
+  const triggerAiGeneration = (
+    overrideName?: string | React.MouseEvent,
+    overrideType?: PieceType,
+    overrideImg?: string
+  ) => {
+    const targetName = typeof overrideName === 'string' ? overrideName : clothingName;
+    const targetType = overrideType ?? pieceType;
+    const targetImg = overrideImg ?? clothingImage;
+
     setIsAnalyzing(true);
     setScanProgress(0);
     setScanPhaseText('Escaneando textura e silhueta da peça...');
     setScanTags(['Modelagem Detectada', 'Scanner Ativo']);
+    requestBackendHeadlines(targetName, targetType, targetImg, seed);
 
     const startTime = Date.now();
     const totalDuration = 3800; // 3.8s para transmitir análise autêntica
@@ -331,6 +378,9 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
   // Headlines geradas dinamicamente com formato POV e personalizadas pela peça (100% orgânico, sem preço, sem venda, sem frete grátis)
   // Cada clique em "Gerar Mais Variações" avança o seed e entrega um lote 100% novo de headlines
   const headlinesList = useMemo<HeadlineItem[]>(() => {
+    if (aiHeadlines && aiHeadlines.length > 0) {
+      return aiHeadlines;
+    }
     const g = extractPieceGrammar(clothingName, pieceType);
 
     const nounPhrase = `${g.article} ${g.noun} do momento`;
@@ -791,6 +841,9 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
   };
 
   const handleGenerateMore = () => {
+    const nextSeed = seed + 1;
+    setAiHeadlines(null);
+    requestBackendHeadlines(clothingName, pieceType, clothingImage, nextSeed);
     setIsAnalyzing(true);
     setScanProgress(0);
     setScanPhaseText('Gerando novo lote de variações virais...');

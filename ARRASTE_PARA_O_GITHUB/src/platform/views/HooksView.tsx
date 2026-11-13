@@ -190,6 +190,55 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [generationSeed, setGenerationSeed] = useState(1);
+  const [aiHooks, setAiHooks] = useState<ViralHook[] | null>(null);
+
+  const requestBackendHooks = (
+    nameTarget: string,
+    catTarget: ClothingCategory,
+    imgTarget: string,
+    seedTarget: number
+  ) => {
+    fetch('/api/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'hooks',
+        productName: nameTarget,
+        clothingCategory: catTarget,
+        seed: seedTarget,
+        imageDataUrl: imgTarget?.startsWith('data:image/') ? imgTarget : undefined,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const json = await res.json();
+        if (Array.isArray(json?.hooks) && json.hooks.length >= 4) {
+          const validCats: ViralHook['category'][] = [
+            'Quebra de Objeção',
+            'Efeito Visual',
+            'Padrão de Grife',
+            'Curiosidade Extrema',
+            'Composição de Estilo',
+            'Modelagem & Caimento',
+          ];
+          setAiHooks(
+            json.hooks.map((h: any, idx: number) => ({
+              id: `hook-ai-${seedTarget}-${idx}`,
+              category: validCats.includes(h.category)
+                ? h.category
+                : validCats[idx % validCats.length],
+              spokenHook: String(h.spokenHook || '').trim(),
+              overlayText: String(h.overlayText || '').trim(),
+              visualAction: String(h.visualAction || '').trim(),
+              whyItWorks: String(h.whyItWorks || '').trim(),
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        // Fallback automático para a engine local
+      });
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const catalogScrollRef = useRef<HTMLDivElement>(null);
@@ -272,10 +321,12 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
 
   // Selecionar produto do catálogo
   const handleSelectCatalogProduct = (p: WinningProduct) => {
+    const inferred = inferCategoryFromName(p.name);
     setProductName(p.name);
     setProductImage(p.image);
-    setClothingCategory(inferCategoryFromName(p.name));
-    startScanAnalysis();
+    setClothingCategory(inferred);
+    setAiHooks(null);
+    startScanAnalysis(p.name, inferred, p.image);
   };
 
   // Selecionar produto rápido de demonstração
@@ -283,14 +334,24 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
     setProductName(sample.name);
     setProductImage(sample.image);
     setClothingCategory(sample.category);
+    setAiHooks(null);
   };
 
-  // Disparo da Análise Neural Realista (~3.8s)
-  const startScanAnalysis = () => {
+  // Disparo da Análise Neural Realista (~3.8s) + Chamada Real à API
+  const startScanAnalysis = (
+    overrideName?: string | React.MouseEvent,
+    overrideCat?: ClothingCategory,
+    overrideImg?: string
+  ) => {
+    const targetName = typeof overrideName === 'string' ? overrideName : productName;
+    const targetCat = overrideCat ?? clothingCategory;
+    const targetImg = overrideImg ?? productImage;
+
     setViewStep('analyzing');
     setScanProgress(0);
     setScanPhaseText('Dissecando modelagem, silhueta e corte da peça...');
     setScanTags(['Modelagem Identificada', 'IA Vision Ativa']);
+    requestBackendHooks(targetName, targetCat, targetImg, generationSeed);
 
     const startTime = Date.now();
     const totalDuration = 3800;
@@ -326,6 +387,9 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
 
   // Gerador de Hooks Virais ultra-especializados com base no produto analisado (100% focado no nome da peça, ZERO menção a preço)
   const hooksList = useMemo<ViralHook[]>(() => {
+    if (aiHooks && aiHooks.length > 0) {
+      return aiHooks;
+    }
     const g = extractPieceGrammar(productName);
     const cycle = (generationSeed - 1) % 3;
 
@@ -520,7 +584,10 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
   };
 
   const handleRegenerate = () => {
-    setGenerationSeed((s) => s + 1);
+    const nextSeed = generationSeed + 1;
+    setGenerationSeed(nextSeed);
+    setAiHooks(null);
+    requestBackendHooks(productName, clothingCategory, productImage, nextSeed);
   };
 
   return (

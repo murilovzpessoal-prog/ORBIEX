@@ -337,12 +337,55 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
     if (file) handleFileUpload(file);
   };
 
-  // Disparo da Analise de Visao Computacional (~3.8s)
+  // Disparo da Analise de Visao Computacional (~3.8s) + Chamada ao Backend IA
   const handleStartExtraction = () => {
     setStatus('analyzing');
     setProgress(0);
     setScanMessage('Detectando 33 keypoints anatomicos (BlazePose)...');
     setScanTag('Keypoints Corporais');
+
+    if (activePreset.id.startsWith('custom-')) {
+      fetch('/api/generate-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'motion',
+          videoName: activeVideoName,
+          engineName: currentEngine.name,
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok) return;
+          const json = await res.json();
+          const data = json?.data;
+          if (data && data.promptEnglish) {
+            setActivePreset((prev) => ({
+              ...prev,
+              promptEnglish: String(data.promptEnglish),
+              timeline:
+                Array.isArray(data.timeline) && data.timeline.length >= 3
+                  ? data.timeline.map((t: any) => ({
+                      time: String(t.time || '00:00 - 00:02'),
+                      title: String(t.title || 'Movimento Detectado'),
+                      desc: String(t.desc || ''),
+                    }))
+                  : prev.timeline,
+              cameraDetails: data.cameraDetails
+                ? {
+                    framing: String(data.cameraDetails.framing || prev.cameraDetails.framing),
+                    motion: String(data.cameraDetails.motion || prev.cameraDetails.motion),
+                    lens: String(data.cameraDetails.lens || prev.cameraDetails.lens),
+                    lighting: String(data.cameraDetails.lighting || prev.cameraDetails.lighting),
+                    fps: String(data.cameraDetails.fps || prev.cameraDetails.fps),
+                  }
+                : prev.cameraDetails,
+            }));
+          }
+        })
+        .catch(() => {
+          // Fallback automático para a síntese local
+        });
+    }
 
     const startTime = Date.now();
     const duration = 3600;

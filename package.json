@@ -1,7 +1,7 @@
 {
-  "name": "alpine-project",
+  "name": "orbiex",
   "version": "1.0.0",
-  "description": "Alpine Project - Área de Membros Oficial",
+  "description": "Orbiex - Ecossistema de IA e TikTok Shop",
   "main": "index.js",
   "scripts": {
     "dev": "vite",

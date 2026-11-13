@@ -248,6 +248,55 @@ const MASCOTS: Mascot[] = [
   },
 ];
 
+interface GeneratedTurboPack {
+  promptMotionEnglish: string;
+  promptMotionPortuguese: string;
+  hookSpeech: string;
+  hookAction: string;
+  bodySpeech: string;
+  bodyAction: string;
+  climaxSpeech: string;
+  climaxAction: string;
+  ctaSpeech: string;
+}
+
+function buildDynamicTurboPack(
+  mascot: Mascot,
+  userIdea: string,
+  episodeTitle: string,
+  plotTwist: string,
+  ctaType: 'follow' | 'comment' | 'share'
+): GeneratedTurboPack {
+  const cleanIdea = userIdea.trim() || mascot.defaultIdea;
+  const cleanEpisode = episodeTitle.trim() || mascot.defaultEpisode;
+  const cleanTwist = plotTwist.trim() || mascot.defaultClimax;
+
+  const baseVisual = mascot.promptMotionEnglish.replace(/\.$/, '');
+
+  const promptMotionEnglish = `${baseVisual}. CUSTOM STORY SCENE ("${cleanEpisode}"): The character is acting out the exact user story: "${cleanIdea}", reacting with intense 3D Pixar emotional facial expressions, dramatic hand gestures, dynamic eyebrows, and synchronized lip-sync speech, building tension toward the climax: "${cleanTwist}". Vertical 9:16 TikTok soap-opera framing, cinematic warm rim lighting, shallow depth of field (35mm f/1.8), smooth handheld camera push-in to an extreme close-up on the character's shocked face, ultra-detailed 4K 60fps animation.`;
+
+  const promptMotionPortuguese = `Animação 3D hiper-realista estilo Pixar/Disney em formato vertical 9:16 do personagem ${mascot.name} (${mascot.fruit}). CENA BASEADA NA SUA IDEIA ("${cleanEpisode}"): O ${mascot.name} atua intensamente vivendo a seguinte cena: "${cleanIdea}", com expressões faciais dramáticas, gesticulação expressiva de braços e mãos, olhos vivos e sincronia labial perfeita (lip-sync) enquanto narra o acontecimento até o clímax: "${cleanTwist}". Iluminação cinematográfica dramática com luz de recorte dourada, câmera aproximando lentamente (push-in) até fechar no rosto chocado do ${mascot.name} no gancho final, altíssima definição 4K.`;
+
+  const ctaSpeech =
+    ctaType === 'follow'
+      ? `Clica agora no botão de seguir aqui do lado para não perder a Parte 2 de "${cleanEpisode}", onde toda a verdade sobre isso vai aparecer!`
+      : ctaType === 'comment'
+      ? `Comenta aqui embaixo quem você acha que tá certo nessa história antes de eu soltar a Parte 2!`
+      : `Compartilha esse vídeo agora com aquele amigo que ama uma fofoca pesada e já segue o perfil para ver o desfecho!`;
+
+  return {
+    promptMotionEnglish,
+    promptMotionPortuguese,
+    hookSpeech: `Para tudo o que você tá fazendo agora! ${mascot.catchphrase} Olha o que acabou de acontecer comigo em "${cleanEpisode}"!`,
+    hookAction: `Zoom in rápido no rosto do ${mascot.name} já inserido no contexto da cena ("${cleanIdea.slice(0, 65)}..."), com expressão de choque imediato e corte seco.`,
+    bodySpeech: cleanIdea,
+    bodyAction: `O ${mascot.name} gesticula intensamente encenando cada detalhe de "${cleanIdea}", alternando entre indignação, emoção e sincronia labial 3D expressiva.`,
+    climaxSpeech: `${cleanTwist}! E se você achou isso inacreditável, você não faz ideia do que aconteceu logo depois...`,
+    climaxAction: `Câmera faz um zoom dramático no rosto do ${mascot.name} no exato momento da revelação ("${cleanTwist}"), cortando no auge do suspense.`,
+    ctaSpeech,
+  };
+}
+
 export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
   // Mascote selecionado (padrão Abacatudo)
   const [selectedId, setSelectedId] = useState<string>('abacatudo');
@@ -268,6 +317,10 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
 
+  // Pacote gerado dinamicamente com base na ideia do usuário + idioma selecionado para o prompt
+  const [generatedPack, setGeneratedPack] = useState<GeneratedTurboPack | null>(null);
+  const [promptLang, setPromptLang] = useState<'pt' | 'en'>('pt');
+
   // Estados de cópia e feedback
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -277,6 +330,12 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
   const currentMascot = useMemo(() => {
     return MASCOTS.find((m) => m.id === selectedId) || MASCOTS[0];
   }, [selectedId]);
+
+  // Pacote ativo (usa o gerado pela IA ou sintetiza em tempo real com base na ideia do usuário)
+  const activePack = useMemo<GeneratedTurboPack>(() => {
+    if (generatedPack) return generatedPack;
+    return buildDynamicTurboPack(currentMascot, userIdea, episodeTitle, plotTwist, ctaType);
+  }, [generatedPack, currentMascot, userIdea, episodeTitle, plotTwist, ctaType]);
 
   // Lista filtrada na etapa 1
   const filteredMascots = useMemo(() => {
@@ -296,6 +355,7 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
     setUserIdea(m.defaultIdea);
     setEpisodeTitle(m.defaultEpisode);
     setPlotTwist(m.defaultClimax);
+    setGeneratedPack(null);
   };
 
   // Copiar com feedback
@@ -399,20 +459,86 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
     }
   };
 
-  // Disparar o Carregamento Profissional para a Etapa 3
-  const handleGenerateScript = () => {
+  // Disparar o Carregamento Profissional para a Etapa 3 + Geração Real com IA
+  const handleGenerateScript = async () => {
     setIsGenerating(true);
     setLoadingStage(1);
+    setGeneratedPack(null);
 
-    setTimeout(() => setLoadingStage(2), 700);
-    setTimeout(() => setLoadingStage(3), 1500);
-    setTimeout(() => setLoadingStage(4), 2200);
+    const t1 = setTimeout(() => setLoadingStage(2), 650);
+    const t2 = setTimeout(() => setLoadingStage(3), 1350);
+    const t3 = setTimeout(() => setLoadingStage(4), 2050);
 
-    setTimeout(() => {
-      setIsGenerating(false);
-      setStep(3);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 2800);
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 2600));
+
+    const aiRequest = fetch('/api/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'turbo',
+        mascotName: currentMascot.name,
+        mascotFruit: currentMascot.fruit,
+        mascotVoice: currentMascot.voiceStyle,
+        mascotCatchphrase: currentMascot.catchphrase,
+        mascotBasePrompt: currentMascot.promptMotionEnglish,
+        userIdea,
+        episodeTitle,
+        plotTwist,
+        ctaType,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const json = await res.json();
+        return json?.data || null;
+      })
+      .catch(() => null);
+
+    const [aiData] = await Promise.all([aiRequest, minDelay]);
+
+    clearTimeout(t1);
+    clearTimeout(t2);
+    clearTimeout(t3);
+
+    if (aiData && aiData.promptMotionEnglish) {
+      setGeneratedPack({
+        promptMotionEnglish: aiData.promptMotionEnglish,
+        promptMotionPortuguese:
+          aiData.promptMotionPortuguese ||
+          buildDynamicTurboPack(currentMascot, userIdea, episodeTitle, plotTwist, ctaType)
+            .promptMotionPortuguese,
+        hookSpeech:
+          aiData.hookSpeech || `Para tudo o que você tá fazendo agora! ${currentMascot.catchphrase}`,
+        hookAction:
+          aiData.hookAction ||
+          `Zoom in rápido no rosto do ${currentMascot.name} com expressão de choque na cena de "${episodeTitle}", seguido de corte seco.`,
+        bodySpeech: aiData.bodySpeech || userIdea,
+        bodyAction:
+          aiData.bodyAction ||
+          `O ${currentMascot.name} atua intensamente na cena ("${userIdea.slice(0, 90)}") com sincronia labial 3D e gestos dramáticos.`,
+        climaxSpeech:
+          aiData.climaxSpeech ||
+          `${plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir...`,
+        climaxAction:
+          aiData.climaxAction ||
+          `Câmera faz um zoom dramático rápido no rosto do ${currentMascot.name} exatamente no momento de "${plotTwist}" antes do corte final.`,
+        ctaSpeech:
+          aiData.ctaSpeech ||
+          (ctaType === 'follow'
+            ? 'Clica no botão de seguir aqui do lado para não perder a Parte 2 onde a verdade vai aparecer!'
+            : ctaType === 'comment'
+            ? 'Comenta aqui embaixo quem você acha que tá certo antes de ver a continuação!'
+            : 'Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver o desfecho!'),
+      });
+    } else {
+      setGeneratedPack(
+        buildDynamicTurboPack(currentMascot, userIdea, episodeTitle, plotTwist, ctaType)
+      );
+    }
+
+    setIsGenerating(false);
+    setStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -917,17 +1043,15 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                     `Personagem: ${currentMascot.name} (${currentMascot.fruit})\n` +
                     `Episódio: ${episodeTitle}\n` +
                     `Clímax / Gancho: ${plotTwist}\n\n` +
-                    `[0s - 3s HOOK DE CHOQUE]: "Para tudo o que você tá fazendo agora! ${currentMascot.catchphrase}"\n\n` +
-                    `[3s - 15s ENREDO & DRAMA]: "${userIdea}"\n\n` +
-                    `[15s - 25s CLÍMAX & REVIRAVOLTA]: "${plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir!"\n\n` +
-                    `[25s - 30s CTA TURBO DE SEGUIDORES]: "${
-                      ctaType === 'follow'
-                        ? 'Clica agora no botão de seguir aqui do lado para não perder a Parte 2 amanhã!'
-                        : ctaType === 'comment'
-                        ? 'Comenta aqui embaixo quem você acha que tá certo nessa história!'
-                        : 'Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver a Parte 2!'
-                    }"\n\n` +
-                    `PROMPT DE ANIMAÇÃO DE VÍDEO (IMAGE-TO-VIDEO):\n${currentMascot.promptMotionEnglish}`;
+                    `[0s - 3s HOOK DE CHOQUE]: "${activePack.hookSpeech}"\n` +
+                    `Ação: ${activePack.hookAction}\n\n` +
+                    `[3s - 15s ENREDO & DRAMA]: "${activePack.bodySpeech}"\n` +
+                    `Ação: ${activePack.bodyAction}\n\n` +
+                    `[15s - 25s CLÍMAX & REVIRAVOLTA]: "${activePack.climaxSpeech}"\n` +
+                    `Ação: ${activePack.climaxAction}\n\n` +
+                    `[25s - 30s CTA TURBO DE SEGUIDORES]: "${activePack.ctaSpeech}"\n\n` +
+                    `PROMPT DE ANIMAÇÃO DE VÍDEO (PORTUGUÊS):\n${activePack.promptMotionPortuguese}\n\n` +
+                    `PROMPT DE ANIMAÇÃO DE VÍDEO (INGLÊS - KLING / HAILUO / LUMA):\n${activePack.promptMotionEnglish}`;
 
                   copyToClipboard(fullScript, 'full-production-pack');
                 }}
@@ -998,36 +1122,72 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
               {/* Prompt de Animação de Vídeo */}
               <div className="lg:col-span-8 space-y-3.5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="text-[16px] font-black text-white">2. Prompt Mestre de Animação (Cole na IA)</h3>
+                    <h3 className="text-[16px] font-black text-white">2. Prompt Mestre de Animação (Gerado para Sua Ideia)</h3>
                     <p className="text-[11.5px] text-white/60">
-                      Otimizado com movimentos de câmera, sincronia labial e iluminação para{' '}
-                      <strong>Kling AI, Hailuo MiniMax, Luma Dream Machine e Runway</strong>.
+                      Criado sob medida a partir do seu roteiro com movimentos de câmera, expressão e sincronia labial para{' '}
+                      <strong>Kling AI, Hailuo MiniMax, Luma Dream Machine, Veo 3 e Sora</strong>.
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => copyToClipboard(currentMascot.promptMotionEnglish, 'anim-prompt')}
-                    className="flex h-10 items-center gap-1.5 rounded-xl border border-[var(--mvz-gold)] bg-[var(--mvz-gold)]/15 px-4 text-[12px] font-extrabold text-[var(--mvz-gold)] hover:bg-[var(--mvz-gold)] hover:text-black transition"
-                  >
-                    {copiedId === 'anim-prompt' ? <Check size={13} /> : <Copy size={13} />}
-                    <span>{copiedId === 'anim-prompt' ? 'Copiado!' : 'Copiar Prompt'}</span>
-                  </button>
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <div className="flex rounded-xl border border-white/10 bg-black/60 p-0.5 text-[11px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setPromptLang('pt')}
+                        className={`rounded-lg px-2.5 py-1.5 transition ${
+                          promptLang === 'pt'
+                            ? 'bg-[var(--mvz-gold)] text-black font-extrabold'
+                            : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        PT-BR
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPromptLang('en')}
+                        className={`rounded-lg px-2.5 py-1.5 transition ${
+                          promptLang === 'en'
+                            ? 'bg-[var(--mvz-gold)] text-black font-extrabold'
+                            : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        EN (Kling/Hailuo)
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        copyToClipboard(
+                          promptLang === 'pt'
+                            ? activePack.promptMotionPortuguese
+                            : activePack.promptMotionEnglish,
+                          'anim-prompt'
+                        )
+                      }
+                      className="flex h-10 items-center gap-1.5 rounded-xl border border-[var(--mvz-gold)] bg-[var(--mvz-gold)]/15 px-4 text-[12px] font-extrabold text-[var(--mvz-gold)] hover:bg-[var(--mvz-gold)] hover:text-black transition"
+                    >
+                      {copiedId === 'anim-prompt' ? <Check size={13} /> : <Copy size={13} />}
+                      <span>{copiedId === 'anim-prompt' ? 'Copiado!' : 'Copiar Prompt'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="relative rounded-2xl border border-white/10 bg-black/80 p-4 font-mono text-[12px] leading-relaxed text-white/90">
-                  {currentMascot.promptMotionEnglish}
+                  {promptLang === 'pt'
+                    ? activePack.promptMotionPortuguese
+                    : activePack.promptMotionEnglish}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-white/70">
                   <span className="flex items-center gap-1 text-[#22c55e] font-semibold">
-                    <Check size={13} /> Formato 9:16 Vertical Nativo
+                    <Check size={13} /> Prompt Personalizado com a Sua Ideia
                   </span>
                   <span>•</span>
                   <span>Modo: Image to Video (Start Frame)</span>
                   <span>•</span>
-                  <span>Duração recomendada: 5s em loop</span>
+                  <span>Formato 9:16 Vertical Nativo</span>
                 </div>
               </div>
             </div>
@@ -1054,20 +1214,16 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                     0s - 3s • GANCHO HIPNÓTICO
                   </span>
                   <p className="text-[14.5px] font-bold text-white leading-relaxed">
-                    "Para tudo o que você tá fazendo agora! {currentMascot.catchphrase}"
+                    "{activePack.hookSpeech}"
                   </p>
                   <p className="text-[11.5px] text-white/60">
-                    <strong>Ação de Vídeo:</strong> Zoom in rápido no rosto do {currentMascot.name} com expressão de
-                    choque, seguido de corte seco.
+                    <strong>Ação de Vídeo:</strong> {activePack.hookAction}
                   </p>
                 </div>
 
                 <button
                   onClick={() =>
-                    copyToClipboard(
-                      `"Para tudo o que você tá fazendo agora! ${currentMascot.catchphrase}"`,
-                      'script-hook'
-                    )
+                    copyToClipboard(`"${activePack.hookSpeech}"`, 'script-hook')
                   }
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >
@@ -1084,15 +1240,15 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                     3s - 15s • ENREDO & DRAMA DA CENA
                   </span>
                   <p className="text-[14px] font-semibold text-white leading-relaxed">
-                    "{userIdea}"
+                    "{activePack.bodySpeech}"
                   </p>
                   <p className="text-[11.5px] text-white/60">
-                    <strong>Ação de Vídeo:</strong> O {currentMascot.name} gesticula intensamente expressando a emoção da cena com sincronia labial e animação 3D expressiva.
+                    <strong>Ação de Vídeo:</strong> {activePack.bodyAction}
                   </p>
                 </div>
 
                 <button
-                  onClick={() => copyToClipboard(`"${userIdea}"`, 'script-body')}
+                  onClick={() => copyToClipboard(`"${activePack.bodySpeech}"`, 'script-body')}
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >
                   {copiedId === 'script-body' ? 'Copiado!' : 'Copiar'}
@@ -1108,19 +1264,16 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                     15s - 25s • CLÍMAX & GANCHO DO SUSPENSE
                   </span>
                   <p className="text-[14px] font-bold text-white leading-relaxed">
-                    "{plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir..."
+                    "{activePack.climaxSpeech}"
                   </p>
                   <p className="text-[11.5px] text-white/60">
-                    <strong>Ação de Vídeo:</strong> Câmera faz um zoom dramático rápido no rosto do {currentMascot.name} com expressão de choque antes do corte final.
+                    <strong>Ação de Vídeo:</strong> {activePack.climaxAction}
                   </p>
                 </div>
 
                 <button
                   onClick={() =>
-                    copyToClipboard(
-                      `"${plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir..."`,
-                      'script-offer'
-                    )
+                    copyToClipboard(`"${activePack.climaxSpeech}"`, 'script-offer')
                   }
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >
@@ -1137,24 +1290,13 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                     25s - 30s • CHAMADA DE AÇÃO (CTA TURBO DE SEGUIDORES)
                   </span>
                   <p className="text-[14px] font-bold text-white leading-relaxed">
-                    {ctaType === 'follow'
-                      ? `"Clica no botão de seguir aqui do lado para não perder a Parte 2 onde a verdade vai aparecer!"`
-                      : ctaType === 'comment'
-                      ? `"Comenta aqui embaixo quem você acha que tá certo antes de ver a continuação!"`
-                      : `"Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver o desfecho!"`}
+                    "{activePack.ctaSpeech}"
                   </p>
                 </div>
 
                 <button
                   onClick={() =>
-                    copyToClipboard(
-                      ctaType === 'follow'
-                        ? `"Clica no botão de seguir aqui do lado para não perder a Parte 2 onde a verdade vai aparecer!"`
-                        : ctaType === 'comment'
-                        ? `"Comenta aqui embaixo quem você acha que tá certo antes de ver a continuação!"`
-                        : `"Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver o desfecho!"`,
-                      'script-cta'
-                    )
+                    copyToClipboard(`"${activePack.ctaSpeech}"`, 'script-cta')
                   }
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >

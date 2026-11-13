@@ -876,15 +876,15 @@ export function MembersView({ onNavigate }: MembersViewProps) {
         <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#d4af37]/15 blur-[120px]" />
         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-80 w-80 rounded-full bg-[#38bdf8]/10 blur-[140px]" />
 
-        {/* Mentor / Founder Photo overlay on desktop */}
-        <div className="pointer-events-none absolute right-0 top-0 hidden h-full w-[45%] overflow-hidden lg:block">
+        {/* Mentor / Founder Photo overlay on desktop com mais nitidez e leve blur */}
+        <div className="pointer-events-none absolute right-0 top-0 hidden h-full w-[48%] overflow-hidden lg:block">
           <img
             src="/assets/login-orbix-man.jpg"
             alt="Murilo Vaz • Orbiex Founder"
-            className="h-full w-full object-cover object-[center_30%] opacity-35 filter contrast-125"
+            className="h-full w-full object-cover object-[center_25%] opacity-65 filter contrast-115 brightness-95 blur-[1px]"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#121216] via-[#121216]/70 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#121216] via-[#121216]/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-2xl">
@@ -901,19 +901,19 @@ export function MembersView({ onNavigate }: MembersViewProps) {
             O método prático para construir e escalar operações lucrativas de afiliado no TikTok Shop com Inteligência Artificial, mineração preditiva e blindagem algorítmica.
           </p>
 
-          {/* Student Progress Bar */}
-          <div className="mt-8 rounded-2xl border border-white/10 bg-black/60 p-4 backdrop-blur-md max-w-lg">
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="font-bold text-white">Seu Progresso no Treinamento</span>
+          {/* Student Progress Bar (Mais compacto, menos largo e proporcional) */}
+          <div className="mt-7 w-full max-w-[340px] rounded-2xl border border-white/10 bg-black/60 p-3.5 backdrop-blur-md">
+            <div className="flex items-center justify-between text-[11.5px]">
+              <span className="font-bold text-white/90">Seu Progresso</span>
               <span className="font-extrabold text-[#d4af37]">{progressPercentage}% Concluído</span>
             </div>
-            <div className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5df93] to-[#aa7b1e] transition-all duration-500 shadow-[0_0_12px_rgba(212,175,55,0.4)]"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
-            <div className="mt-2.5 flex items-center justify-between text-[11px] text-[#70707a]">
+            <div className="mt-2 flex items-center justify-between text-[10.5px] text-[#70707a]">
               <span>{completedLessons.length} de {totalLessons} aulas concluídas</span>
               {completedLessons.length > 0 && (
                 <button
@@ -924,10 +924,10 @@ export function MembersView({ onNavigate }: MembersViewProps) {
                       localStorage.setItem('orbiex_completed_lessons_v2', JSON.stringify([]));
                     } catch {}
                   }}
-                  className="inline-flex items-center gap-1 text-[10.5px] text-white/40 hover:text-white/80 transition"
+                  className="inline-flex items-center gap-1 text-[10px] text-white/40 hover:text-white/80 transition"
                   title="Resetar progresso das aulas"
                 >
-                  <RotateCcw size={11} />
+                  <RotateCcw size={10} />
                   <span>Zerar</span>
                 </button>
               )}

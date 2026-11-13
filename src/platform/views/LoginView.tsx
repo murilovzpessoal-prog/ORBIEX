@@ -160,8 +160,9 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           loop
           muted
           playsInline
-          className="h-full w-full object-cover object-[center_top] opacity-35 select-none pointer-events-none scale-105"
+          className="h-full w-full object-cover object-[center_top] opacity-30 select-none pointer-events-none scale-105 [filter:saturate(0.7)_contrast(1.12)_brightness(0.8)]"
         />
+        <div className="absolute inset-0 bg-black/35 backdrop-blur-[1.5px]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/60" />
       </div>
 
@@ -187,19 +188,34 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           )}
         </div>
 
-        {/* Vídeo preenchendo toda a coluna esquerda (sem bordas quadradas) e ancorado no topo (object-top) para mostrar a cabeça e o peitoral */}
+        {/* Vídeo com tratamento de cor cinematográfico (saturação reduzida para ouro champagne + contraste profundo que elimina blocos de compressão nos tons escuros) */}
         <video
           src="/assets/login-animation-orbiex.mp4"
           autoPlay
           loop
           muted
           playsInline
-          className="h-full w-full object-cover object-top select-none pointer-events-none"
+          className="h-full w-full object-cover object-top select-none pointer-events-none [filter:saturate(0.7)_contrast(1.14)_brightness(0.8)]"
+        />
+
+        {/* Camada 1: Película Fosca Escura Suave (suaviza os pixels do vídeo e aplica acabamento fosco escuro de cinema) */}
+        <div className="pointer-events-none absolute inset-0 bg-black/30 backdrop-blur-[1.2px]" />
+
+        {/* Camada 2: Vinheta Óptica Suave (foca a luz no rosto e peitoral e escurece bordas com baixa resolução) */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_45%_32%,transparent_25%,rgba(0,0,0,0.65)_100%)]" />
+
+        {/* Camada 3: Micro-Textura de Película 4K (engana o olho substituindo o serrilhado por granulação fina nativa da tela) */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-overlay"
+          style={{
+            backgroundImage: 'radial-gradient(rgba(255,255,255,0.18) 1px, transparent 0)',
+            backgroundSize: '3px 3px',
+          }}
         />
 
         {/* Gradientes de Fusão Invisível com o Fundo Preto */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-72 bg-gradient-to-r from-transparent via-black/55 to-black" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black via-black/45 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-72 bg-gradient-to-r from-transparent via-black/60 to-black" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black via-black/50 to-transparent" />
       </div>
 
       {/* ────────────────────────────────────────────────────────────

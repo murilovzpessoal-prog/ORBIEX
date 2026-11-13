@@ -869,65 +869,69 @@ export function MembersView({ onNavigate }: MembersViewProps) {
   return (
     <div className="mvz-fade-up pb-24 space-y-8 max-w-7xl mx-auto">
       {/* ────────────────────────────────────────────────────────────
-          1. HERO BANNER: ORBIEX ACADEMY • TREINAMENTO OFICIAL DAS FERRAMENTAS
+          CINEMATIC HERO BANNER: ORBIEX ACADEMY (BANNER ORIGINAL)
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[28px] border border-[var(--mvz-gold)]/25 bg-[#070605] p-8 sm:p-12 lg:p-14 shadow-[0_24px_70px_rgba(0,0,0,0.95)]">
-        {/* Ambient Glows */}
-        <div className="pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full bg-[radial-gradient(circle,_rgba(212,175,55,0.18)_0%,_transparent_70%)] blur-3xl" />
-        <div className="pointer-events-none absolute -right-20 -bottom-20 h-96 w-96 rounded-full bg-[radial-gradient(circle,_rgba(34,197,94,0.12)_0%,_transparent_70%)] blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#121216] via-[#09090b] to-black p-6 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+        {/* Glow ambient background */}
+        <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#d4af37]/15 blur-[120px]" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/3 h-80 w-80 rounded-full bg-[#38bdf8]/10 blur-[140px]" />
 
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/30 bg-[var(--mvz-gold)]/10 px-4 py-1.5 backdrop-blur-md mb-5">
-            <GraduationCap size={15} className="text-[var(--mvz-gold)]" />
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--mvz-gold-light)]">
-              Área de Membros • Treinamento Oficial
-            </span>
+        {/* Mentor / Founder Photo overlay on desktop */}
+        <div className="pointer-events-none absolute right-0 top-0 hidden h-full w-[45%] overflow-hidden lg:block">
+          <img
+            src="/assets/login-orbix-man.jpg"
+            alt="Murilo Vaz • Orbiex Founder"
+            className="h-full w-full object-cover object-[center_30%] opacity-35 filter contrast-125"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#121216] via-[#121216]/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+        </div>
+
+        <div className="relative z-10 max-w-2xl">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/10 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-widest text-[#f5df93]">
+            <GraduationCap size={13} className="text-[#d4af37]" />
+            <span>Área de Membros • Formação Oficial</span>
           </div>
 
-          <h1 className="text-[32px] sm:text-[44px] lg:text-[50px] font-black tracking-tight text-white leading-[1.08]">
-            DOMINE CADA FUNÇÃO DO SEU <br />
-            <span className="mvz-grad-text drop-shadow-[0_2px_20px_rgba(212,175,55,0.4)]">
-              AGENTE DE VENDAS
-            </span>
+          <h1 className="mt-4 text-[28px] font-black leading-tight tracking-tight text-white sm:text-[38px]">
+            Orbiex <span className="bg-gradient-to-r from-[#fffdf0] via-[#d4af37] to-[#a37418] bg-clip-text text-transparent">Academy</span>
           </h1>
-
-          <p className="mt-4 text-[14.5px] sm:text-[15.5px] leading-relaxed text-white/80 max-w-2xl">
-            Cada recurso da plataforma possui uma aula dedicada e prática. Aprenda a operar desde o Agente IA até as ferramentas de blindagem e escala no TikTok Shop.
+          <p className="mt-3 text-[14px] leading-relaxed text-[#9a9aa3] sm:text-[15px]">
+            O método prático para construir e escalar operações lucrativas de afiliado no TikTok Shop com Inteligência Artificial, mineração preditiva e blindagem algorítmica.
           </p>
 
-          {/* Barra de Progresso Geral */}
-          <div className="mt-7 flex flex-col sm:flex-row sm:items-center gap-5 rounded-2xl border border-white/10 bg-black/50 p-4 backdrop-blur-md max-w-xl">
-            <div className="flex-1">
-              <div className="flex items-center justify-between text-[11.5px] font-bold text-white/70 mb-2">
-                <span>Seu Progresso no Treinamento</span>
-                <span className="text-[var(--mvz-gold-light)]">
-                  {completedLessons.length} de {totalLessons} Aulas ({progressPercentage}%)
-                </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
-                <div
-                  style={{ width: `${progressPercentage}%` }}
-                  className="h-full rounded-full bg-gradient-to-r from-[var(--mvz-gold)] via-[var(--mvz-gold-light)] to-[#22c55e] transition-all duration-500 shadow-[0_0_12px_rgba(212,175,55,0.5)]"
-                />
-              </div>
+          {/* Student Progress Bar */}
+          <div className="mt-8 rounded-2xl border border-white/10 bg-black/60 p-4 backdrop-blur-md max-w-lg">
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="font-bold text-white">Seu Progresso no Treinamento</span>
+              <span className="font-extrabold text-[#d4af37]">{progressPercentage}% Concluído</span>
             </div>
-
-            {completedLessons.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCompletedLessons([]);
-                  try {
-                    localStorage.setItem('orbiex_completed_lessons_v2', JSON.stringify([]));
-                  } catch {}
-                }}
-                className="inline-flex items-center gap-1.5 text-[10.5px] text-white/40 hover:text-white/80 transition"
-                title="Resetar progresso das aulas"
-              >
-                <RotateCcw size={12} />
-                <span>Zerar Progresso</span>
-              </button>
-            )}
+            <div className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#d4af37] via-[#f5df93] to-[#aa7b1e] transition-all duration-500 shadow-[0_0_12px_rgba(212,175,55,0.4)]"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <div className="mt-2.5 flex items-center justify-between text-[11px] text-[#70707a]">
+              <span>{completedLessons.length} de {totalLessons} aulas concluídas</span>
+              {completedLessons.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompletedLessons([]);
+                    try {
+                      localStorage.setItem('orbiex_completed_lessons_v2', JSON.stringify([]));
+                    } catch {}
+                  }}
+                  className="inline-flex items-center gap-1 text-[10.5px] text-white/40 hover:text-white/80 transition"
+                  title="Resetar progresso das aulas"
+                >
+                  <RotateCcw size={11} />
+                  <span>Zerar</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

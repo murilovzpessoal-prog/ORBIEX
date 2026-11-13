@@ -804,6 +804,31 @@ export function SupportChatView({ onNavigate }: Props) {
   // Slash commands
   const [slashIdx, setSlashIdx] = useState(0);
 
+  // Estado discreto de Solicitação de Reembolso
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [refundEmail, setRefundEmail] = useState(() => {
+    try {
+      return localStorage.getItem('orbiex_user_email') || localStorage.getItem('orbix_user_email') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [refundReason, setRefundReason] = useState('Dificuldade técnica na plataforma');
+  const [refundNotes, setRefundNotes] = useState('');
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
+  const [refundProtocol, setRefundProtocol] = useState<string | null>(null);
+
+  const handleRefundSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!refundEmail.trim()) return;
+    setRefundSubmitting(true);
+    setTimeout(() => {
+      const code = `RBX-${Math.floor(100000 + Math.random() * 900000)}`;
+      setRefundProtocol(code);
+      setRefundSubmitting(false);
+    }, 900);
+  };
+
   const scroller = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -1213,6 +1238,20 @@ export function SupportChatView({ onNavigate }: Props) {
               </div>
             ))}
           </div>
+
+          {/* Link discreto de Reembolso no cantinho inferior */}
+          <div className="mt-2.5 flex justify-end border-t border-white/[0.04] pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setRefundProtocol(null);
+                setRefundOpen(true);
+              }}
+              className="text-[9.5px] font-normal text-white/25 hover:text-white/55 transition cursor-pointer"
+            >
+              Reembolso
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -1558,8 +1597,137 @@ export function SupportChatView({ onNavigate }: Props) {
                 </button>
               )}
             </div>
+
+            {/* Cantinho discreto de reembolso também visível no rodapé do console */}
+            <div className="mt-1.5 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setRefundProtocol(null);
+                  setRefundOpen(true);
+                }}
+                className="text-[9.5px] text-white/20 hover:text-white/45 transition cursor-pointer"
+              >
+                Solicitar reembolso
+              </button>
+            </div>
           </div>
         </section>
+
+        {/* Modal de Solicitação de Reembolso */}
+        {refundOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+            <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0c0a] p-6 shadow-2xl">
+              <button
+                type="button"
+                onClick={() => setRefundOpen(false)}
+                className="absolute right-4 top-4 rounded-lg p-1.5 text-white/40 hover:bg-white/5 hover:text-white transition cursor-pointer"
+                aria-label="Fechar"
+              >
+                <X size={16} />
+              </button>
+
+              {refundProtocol ? (
+                <div className="space-y-4 text-center py-2">
+                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]">
+                    <Check size={20} />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-[16px] font-bold text-white">
+                      Solicitação Registrada
+                    </h3>
+                    <p className="text-[12px] text-white/60 leading-relaxed">
+                      Seu pedido de reembolso foi encaminhado para análise financeira junto à Cakto. O retorno será enviado para o e-mail informado.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-[11.5px] text-white/80">
+                    Protocolo: <strong className="font-mono text-[var(--mvz-gold)]">{refundProtocol}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRefundOpen(false)}
+                    className="w-full rounded-xl border border-white/15 bg-white/10 py-2.5 text-[12px] font-bold text-white hover:bg-white/15 transition cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleRefundSubmit} className="space-y-4">
+                  <div>
+                    <h3 className="text-[15px] font-bold text-white">
+                      Solicitar Reembolso
+                    </h3>
+                    <p className="mt-1 text-[11.5px] text-white/50 leading-relaxed">
+                      Preencha os dados da sua compra realizada na Cakto para registrar a solicitação.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10.5px] font-bold uppercase tracking-wider text-white/60">
+                      E-mail utilizado na compra
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={refundEmail}
+                      onChange={(e) => setRefundEmail(e.target.value)}
+                      placeholder="seuemail@exemplo.com"
+                      className="h-10 w-full rounded-xl border border-white/10 bg-black/60 px-3.5 text-[12.5px] text-white placeholder-white/30 focus:border-[var(--mvz-gold)] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10.5px] font-bold uppercase tracking-wider text-white/60">
+                      Motivo da solicitação
+                    </label>
+                    <select
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-white/10 bg-black/60 px-3 text-[12.5px] text-white focus:border-[var(--mvz-gold)] focus:outline-none"
+                    >
+                      <option value="Dificuldade técnica na plataforma">Dificuldade técnica na plataforma</option>
+                      <option value="Não tive tempo para aplicar">Não tive tempo para aplicar</option>
+                      <option value="Não me adaptei ao formato">Não me adaptei ao formato</option>
+                      <option value="Comprei por engano">Comprei por engano</option>
+                      <option value="Outro motivo">Outro motivo</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10.5px] font-bold uppercase tracking-wider text-white/60">
+                      Observações (opcional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={refundNotes}
+                      onChange={(e) => setRefundNotes(e.target.value)}
+                      placeholder="Descreva brevemente o motivo..."
+                      className="w-full resize-none rounded-xl border border-white/10 bg-black/60 p-3 text-[12.5px] text-white placeholder-white/30 focus:border-[var(--mvz-gold)] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setRefundOpen(false)}
+                      className="rounded-xl border border-white/10 px-4 py-2 text-[11.5px] font-semibold text-white/60 hover:text-white transition cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={refundSubmitting || !refundEmail.trim()}
+                      className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-[11.5px] font-bold text-white hover:bg-white/20 disabled:opacity-40 transition cursor-pointer"
+                    >
+                      {refundSubmitting && <Loader2 size={13} className="animate-spin" />}
+                      <span>{refundSubmitting ? 'Enviando...' : 'Confirmar Solicitação'}</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

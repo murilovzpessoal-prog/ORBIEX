@@ -25,6 +25,7 @@ import { CommunityView, CreditsView, HelpView } from './views/MiscViews';
 import { SupportChatView } from './views/SupportChatView';
 import { AccessInstructionsView } from './views/AccessInstructionsView';
 import { MembersView } from './views/MembersView';
+import { LoginView } from './views/LoginView';
 
 const VALID: ViewId[] = [
   'home',
@@ -62,6 +63,23 @@ export default function PlatformApp() {
   const [startNew, setStartNew] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Controle oficial de autenticação na plataforma
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes('login') || hash.includes('entrar')) return false;
+      const loggedOut = localStorage.getItem('orbiex_logged_out') === 'true';
+      if (loggedOut) return false;
+      const isAuth =
+        localStorage.getItem('orbiex_auth') === 'true' ||
+        localStorage.getItem('orbix_auth') === 'true';
+      return isAuth;
+    } catch {
+      return false;
+    }
+  });
+
   const [showingInstructions, setShowingInstructions] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     const p = window.location.pathname.toLowerCase();
@@ -86,13 +104,46 @@ export default function PlatformApp() {
   }, []);
 
   const handleLogout = useCallback(() => {
-    navigate('members');
-  }, [navigate]);
+    try {
+      localStorage.removeItem('orbiex_auth');
+      localStorage.removeItem('orbix_auth');
+      localStorage.removeItem('projeto_member_authenticated');
+      localStorage.setItem('orbiex_logged_out', 'true');
+    } catch {}
+    setSettingsOpen(false);
+    setIsAuthenticated(false);
+    window.location.hash = '#/login';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleLogin = useCallback(
+    (email: string, name?: string) => {
+      try {
+        localStorage.setItem('orbiex_auth', 'true');
+        localStorage.setItem('orbix_auth', 'true');
+        if (email) {
+          localStorage.setItem('orbiex_user_email', email);
+          localStorage.setItem('orbix_user_email', email);
+        }
+        localStorage.removeItem('orbiex_logged_out');
+      } catch {}
+      setIsAuthenticated(true);
+      if (name) {
+        handleSaveProfile({ name, avatarUrl: profile.avatarUrl || null });
+      }
+      navigate('members');
+    },
+    [handleSaveProfile, navigate, profile.avatarUrl]
+  );
 
   useEffect(() => {
     const h = () => {
       const p = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
+      if (hash.includes('login') || hash.includes('entrar')) {
+        setIsAuthenticated(false);
+        return;
+      }
       if (
         p.includes('acesso') ||
         p.includes('instrucoes') ||
@@ -136,10 +187,15 @@ export default function PlatformApp() {
       <AccessInstructionsView
         onGoToLogin={() => {
           setShowingInstructions(false);
-          navigate('members');
+          setIsAuthenticated(false);
+          window.location.hash = '#/login';
         }}
       />
     );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginView onLogin={handleLogin} />;
   }
 
 

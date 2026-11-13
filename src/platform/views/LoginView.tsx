@@ -150,6 +150,19 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
 
   return (
     <div className="relative flex h-screen w-screen overflow-hidden bg-[#000000] text-white select-none">
+      {/* Filtro SVG de Nitidez HD (Unsharp Mask suave) para aumentar a definição sem escurecer */}
+      <svg className="pointer-events-none absolute h-0 w-0" aria-hidden="true">
+        <defs>
+          <filter id="orbiex-hd-sharpen" colorInterpolationFilters="sRGB">
+            <feConvolveMatrix
+              order="3"
+              kernelMatrix="0 -0.25 0 -0.25 2 -0.25 0 -0.25 0"
+              preserveAlpha="true"
+            />
+          </filter>
+        </defs>
+      </svg>
+
       {/* ────────────────────────────────────────────────────────────
           BACKGROUND PARA DISPOSITIVOS MÓVEIS (< MD)
       ──────────────────────────────────────────────────────────── */}
@@ -160,16 +173,16 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           loop
           muted
           playsInline
-          className="h-full w-full object-cover object-[center_top] opacity-30 select-none pointer-events-none scale-105 [filter:saturate(0.7)_contrast(1.12)_brightness(0.8)]"
+          className="h-full w-full object-cover object-[center_top] opacity-35 select-none pointer-events-none [filter:saturate(0.84)_contrast(1.06)_brightness(0.96)]"
         />
-        <div className="absolute inset-0 bg-black/35 backdrop-blur-[1.5px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/60" />
+        <div className="absolute inset-0 bg-black/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/55" />
       </div>
 
       {/* ────────────────────────────────────────────────────────────
-          COLUNA ESQUERDA: VÍDEO ANIMADO DO PERSONAGEM DOURADO (TELA CHEIA LATERAL + ENQUADRAMENTO NO ROSTO/TOPO)
+          COLUNA ESQUERDA: VÍDEO ANIMADO DO PERSONAGEM DOURADO (MENOS ZOOM + NITIDEZ HD + BRILHO PRESERVADO)
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative hidden h-full w-full md:block md:w-1/2 lg:w-[50%] overflow-hidden bg-black">
+      <div className="relative hidden h-full w-full md:block md:w-[45%] lg:w-[44%] overflow-hidden bg-black">
         {/* Slot da Imagem / Logo no Canto Superior Esquerdo */}
         <div className="absolute left-8 top-8 z-30 flex items-center gap-3">
           {topLeftImage ? (
@@ -188,40 +201,28 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           )}
         </div>
 
-        {/* Vídeo com tratamento de cor cinematográfico (saturação reduzida para ouro champagne + contraste profundo que elimina blocos de compressão nos tons escuros) */}
+        {/* Vídeo com menos zoom (largura calibrada próxima à resolução nativa), filtro de nitidez HD e brilho claro preservado */}
         <video
           src="/assets/login-animation-orbiex.mp4"
           autoPlay
           loop
           muted
           playsInline
-          className="h-full w-full object-cover object-top select-none pointer-events-none [filter:saturate(0.7)_contrast(1.14)_brightness(0.8)]"
+          className="h-full w-full object-cover object-top select-none pointer-events-none [filter:url(#orbiex-hd-sharpen)_saturate(0.84)_contrast(1.06)_brightness(0.97)]"
         />
 
-        {/* Camada 1: Película Fosca Escura Suave (suaviza os pixels do vídeo e aplica acabamento fosco escuro de cinema) */}
-        <div className="pointer-events-none absolute inset-0 bg-black/30 backdrop-blur-[1.2px]" />
-
-        {/* Camada 2: Vinheta Óptica Suave (foca a luz no rosto e peitoral e escurece bordas com baixa resolução) */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_45%_32%,transparent_25%,rgba(0,0,0,0.65)_100%)]" />
-
-        {/* Camada 3: Micro-Textura de Película 4K (engana o olho substituindo o serrilhado por granulação fina nativa da tela) */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-overlay"
-          style={{
-            backgroundImage: 'radial-gradient(rgba(255,255,255,0.18) 1px, transparent 0)',
-            backgroundSize: '3px 3px',
-          }}
-        />
+        {/* Película preta bem fraquinha (apenas 12% de opacidade, sem blur e sem escurecer a cena) */}
+        <div className="pointer-events-none absolute inset-0 bg-black/12" />
 
         {/* Gradientes de Fusão Invisível com o Fundo Preto */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-72 bg-gradient-to-r from-transparent via-black/60 to-black" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black via-black/50 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-r from-transparent via-black/45 to-black" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/35 to-transparent" />
       </div>
 
       {/* ────────────────────────────────────────────────────────────
           COLUNA DIREITA: FORMULÁRIO DE LOGIN / CADASTRO
       ──────────────────────────────────────────────────────────── */}
-      <div className="relative flex h-full w-full items-center justify-center bg-black px-6 sm:px-10 md:w-1/2 lg:w-[50%] lg:px-14">
+      <div className="relative flex h-full w-full items-center justify-center bg-black px-6 sm:px-10 md:w-[55%] lg:w-[56%] lg:px-14">
         {/* Glow de fundo sutil */}
         <div className="pointer-events-none absolute h-96 w-96 rounded-full bg-[var(--mvz-gold)]/5 blur-[120px]" />
 

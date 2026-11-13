@@ -154,16 +154,20 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           BACKGROUND PARA DISPOSITIVOS MÓVEIS (< MD)
       ──────────────────────────────────────────────────────────── */}
       <div className="md:hidden absolute inset-0 -z-10 overflow-hidden bg-black pointer-events-none">
-        <img
-          src="/assets/login-orbix-man.jpg"
-          alt="Orbiex Office"
-          className="h-full w-full object-cover object-center opacity-20"
+        <video
+          src="/assets/login-animation-orbiex.mp4"
+          poster="/assets/login-orbix-man.jpg"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="h-full w-full object-cover object-[center_35%] opacity-35 select-none pointer-events-none scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/60" />
       </div>
 
       {/* ────────────────────────────────────────────────────────────
-          COLUNA ESQUERDA: FOTO EXCLUSIVA DO ESCRITÓRIO ORBIEX + FUSÃO SUAVE
+          COLUNA ESQUERDA: VÍDEO EXCLUSIVO ANIMADO DO ESCRITÓRIO ORBIEX + FUSÃO SUAVE
       ──────────────────────────────────────────────────────────── */}
       <div className="relative hidden h-full w-full md:block md:w-1/2 lg:w-[55%] overflow-hidden bg-black">
         {/* Slot da Imagem / Logo no Canto Superior Esquerdo */}
@@ -175,31 +179,35 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
               className="h-10 w-auto max-w-[180px] object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]"
             />
           ) : (
-            <div className="flex items-center gap-3 rounded-2xl bg-black/60 px-4 py-2 border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.6)] backdrop-blur-md">
-              <Logo size={32} />
-              <div className="leading-tight text-left">
-                <div className="text-[15px] font-black tracking-tight text-white">
-                  Orbiex
-                </div>
-                <div className="text-[8.5px] font-extrabold uppercase tracking-[0.24em] mvz-grad-text">
-                  AI Agent
-                </div>
-              </div>
+            <div className="flex items-center gap-2.5 rounded-2xl border border-white/15 bg-black/70 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+              <Logo size={26} />
+              <span className="text-[13px] font-black uppercase tracking-[0.18em] text-white">
+                ORBIEX
+              </span>
             </div>
           )}
         </div>
 
-        {/* Foto do Ambiente Orbiex (Visão da Cidade, Camisa e Escritório Orbiex) */}
-        <img
-          src="/assets/login-orbix-man.jpg"
-          alt="Orbiex Executive Office"
-          className="h-full w-full object-cover object-[center_35%] select-none pointer-events-none"
-        />
+        {/* Vídeo Animado em Loop Cinematográfico */}
+        <div className="relative h-full w-full">
+          <video
+            src="/assets/login-animation-orbiex.mp4"
+            poster="/assets/login-orbix-man.jpg"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="h-full w-full object-cover object-[center_35%] select-none pointer-events-none"
+          />
 
-        {/* Gradientes de Fusão Limpa e Invisível com o Fundo Preto */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-72 bg-gradient-to-r from-transparent via-black/60 to-black" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black via-black/50 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent" />
+          {/* Gradientes de Fusão Ultra Profissionais com o Fundo Preto */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-80 bg-gradient-to-r from-transparent via-black/50 to-black" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black via-black/60 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 via-black/20 to-transparent" />
+          
+          {/* Brilho Dourado Sutil no Topo */}
+          <div className="pointer-events-none absolute -top-16 -left-16 h-72 w-72 rounded-full bg-[var(--mvz-gold)]/10 blur-[85px]" />
+        </div>
       </div>
 
       {/* ────────────────────────────────────────────────────────────

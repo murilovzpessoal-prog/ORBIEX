@@ -1,0 +1,33 @@
+{
+  "name": "alpine-project",
+  "version": "1.0.0",
+  "description": "Alpine Project - Área de Membros Oficial",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "hls.js": "^1.7.2",
+    "lucide-react": "^0.577.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vercel/node": "^30.0.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "isomorphic-git": "^1.44.13",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0"
+  }
+}

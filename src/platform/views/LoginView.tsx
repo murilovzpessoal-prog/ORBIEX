@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
-import { Logo } from '../ui';
 
 interface LoginViewProps {
   onLogin: (email: string, name?: string) => void;
   topLeftImage?: string | null;
 }
 
-export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
+export function LoginView({ onLogin }: LoginViewProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -197,24 +196,6 @@ export function LoginView({ onLogin, topLeftImage }: LoginViewProps) {
           COLUNA ESQUERDA: VÍDEO ÚNICO DO PERSONAGEM (SEM DUPLICAÇÃO, DESLOCADO +18PX PARA NÃO CORTAR A CABEÇA)
       ──────────────────────────────────────────────────────────── */}
       <div className="relative hidden h-full w-full md:block md:w-[46%] lg:w-[45%] overflow-hidden bg-[#080501]">
-        {/* Slot da Imagem / Logo no Canto Superior Esquerdo */}
-        <div className="absolute left-8 top-8 z-30 flex items-center gap-3">
-          {topLeftImage ? (
-            <img
-              src={topLeftImage}
-              alt="Logo"
-              className="h-10 w-auto max-w-[180px] object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]"
-            />
-          ) : (
-            <div className="flex items-center gap-2.5 rounded-2xl border border-[#d4af37]/25 bg-black/70 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl transition hover:border-[var(--mvz-gold)]/50">
-              <Logo size={26} />
-              <span className="text-[13px] font-black uppercase tracking-[0.18em] text-white">
-                ORBIEX
-              </span>
-            </div>
-          )}
-        </div>
-
         {/* Vídeo único do personagem:
             - Deslocado 18px para baixo (top-[18px]) com altura compensada (h-[calc(100%+24px)])
             - Garante folga acima da cabeça e corta um pouco mais a parte inferior das pernas

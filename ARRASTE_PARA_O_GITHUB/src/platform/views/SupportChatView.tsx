@@ -1632,16 +1632,24 @@ export function SupportChatView({ onNavigate }: Props) {
                   <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]">
                     <Check size={20} />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <h3 className="text-[16px] font-bold text-white">
-                      Solicitação Registrada
+                      Reembolso Solicitado
                     </h3>
-                    <p className="text-[12px] text-white/60 leading-relaxed">
-                      Seu pedido de reembolso foi encaminhado para análise financeira junto à Cakto. O retorno será enviado para o e-mail informado.
+                    <p className="text-[12px] text-white/70 leading-relaxed">
+                      O motivo da sua solicitação foi captado com sucesso e o seu reembolso foi solicitado.
+                    </p>
+                    <p className="text-[11.5px] text-white/55 leading-relaxed">
+                      A equipe da Orbiex analisará criteriosamente todos os fatores e tudo o que foi descrito na sua justificativa anterior. Como cada caso passa por análise detalhada do motivo informado, o prazo é de até <strong className="text-white/85">7 dias</strong> para conclusão e retorno com o resultado do reembolso no seu e-mail.
                     </p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-[11.5px] text-white/80">
-                    Protocolo: <strong className="font-mono text-[var(--mvz-gold)]">{refundProtocol}</strong>
+                  <div className="space-y-1 rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-[11.5px] text-white/80">
+                    <div>
+                      Status: <strong className="text-[#22c55e]">Solicitado • Em Análise (até 7 dias)</strong>
+                    </div>
+                    <div>
+                      Protocolo: <strong className="font-mono text-[var(--mvz-gold)]">{refundProtocol}</strong>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -1658,13 +1666,13 @@ export function SupportChatView({ onNavigate }: Props) {
                       Solicitar Reembolso
                     </h3>
                     <p className="mt-1 text-[11.5px] text-white/50 leading-relaxed">
-                      Preencha os dados da sua compra realizada na Cakto para registrar a solicitação.
+                      Preencha os dados da sua conta e descreva sua justificativa para análise da equipe da Orbiex.
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-[10.5px] font-bold uppercase tracking-wider text-white/60">
-                      E-mail utilizado na compra
+                      E-mail da conta
                     </label>
                     <input
                       type="email"
@@ -1678,7 +1686,7 @@ export function SupportChatView({ onNavigate }: Props) {
 
                   <div className="space-y-1.5">
                     <label className="block text-[10.5px] font-bold uppercase tracking-wider text-white/60">
-                      Motivo da solicitação
+                      Motivo principal
                     </label>
                     <select
                       value={refundReason}
@@ -1695,13 +1703,13 @@ export function SupportChatView({ onNavigate }: Props) {
 
                   <div className="space-y-1.5">
                     <label className="block text-[10.5px] font-bold uppercase tracking-wider text-white/60">
-                      Observações (opcional)
+                      Justificativa detalhada
                     </label>
                     <textarea
                       rows={3}
                       value={refundNotes}
                       onChange={(e) => setRefundNotes(e.target.value)}
-                      placeholder="Descreva brevemente o motivo..."
+                      placeholder="Explique detalhadamente o motivo da sua solicitação para análise da equipe..."
                       className="w-full resize-none rounded-xl border border-white/10 bg-black/60 p-3 text-[12.5px] text-white placeholder-white/30 focus:border-[var(--mvz-gold)] focus:outline-none"
                     />
                   </div>

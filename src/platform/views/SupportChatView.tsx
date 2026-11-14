@@ -804,19 +804,61 @@ export function SupportChatView({ onNavigate }: Props) {
   // Slash commands
   const [slashIdx, setSlashIdx] = useState(0);
 
-  // Estado discreto de Solicitação de Reembolso
+  // Estado persistente de Solicitação de Reembolso
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundEmail, setRefundEmail] = useState(() => {
     try {
+      const saved = localStorage.getItem('orbiex_refund_request');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) return parsed.email;
+      }
       return localStorage.getItem('orbiex_user_email') || localStorage.getItem('orbix_user_email') || '';
     } catch {
       return '';
     }
   });
-  const [refundReason, setRefundReason] = useState('Dificuldade técnica na plataforma');
-  const [refundNotes, setRefundNotes] = useState('');
+  const [refundReason, setRefundReason] = useState(() => {
+    try {
+      const saved = localStorage.getItem('orbiex_refund_request');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.reason) return parsed.reason;
+      }
+    } catch {}
+    return 'Dificuldade técnica na plataforma';
+  });
+  const [refundNotes, setRefundNotes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('orbiex_refund_request');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.notes) return parsed.notes;
+      }
+    } catch {}
+    return '';
+  });
   const [refundSubmitting, setRefundSubmitting] = useState(false);
-  const [refundProtocol, setRefundProtocol] = useState<string | null>(null);
+  const [refundProtocol, setRefundProtocol] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem('orbiex_refund_request');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.protocol) return parsed.protocol;
+      }
+    } catch {}
+    return null;
+  });
+  const [refundDate, setRefundDate] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem('orbiex_refund_request');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.requestedAt) return parsed.requestedAt;
+      }
+    } catch {}
+    return null;
+  });
 
   const handleRefundSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -824,7 +866,27 @@ export function SupportChatView({ onNavigate }: Props) {
     setRefundSubmitting(true);
     setTimeout(() => {
       const code = `RBX-${Math.floor(100000 + Math.random() * 900000)}`;
+      const nowStr = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      try {
+        localStorage.setItem(
+          'orbiex_refund_request',
+          JSON.stringify({
+            protocol: code,
+            email: refundEmail.trim(),
+            reason: refundReason,
+            notes: refundNotes.trim(),
+            requestedAt: nowStr,
+          })
+        );
+      } catch {}
       setRefundProtocol(code);
+      setRefundDate(nowStr);
       setRefundSubmitting(false);
     }, 900);
   };
@@ -1243,15 +1305,16 @@ export function SupportChatView({ onNavigate }: Props) {
           <div className="mt-3 border-t border-white/[0.08] pt-3">
             <button
               type="button"
-              onClick={() => {
-                setRefundProtocol(null);
-                setRefundOpen(true);
-              }}
+              onClick={() => setRefundOpen(true)}
               className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-[12px] font-bold text-white/90 hover:border-[var(--mvz-gold)]/50 hover:bg-white/[0.08] hover:text-white transition cursor-pointer"
             >
               <span className="flex items-center gap-2">
-                <RefreshCw size={13} className="text-[var(--mvz-gold)]" />
-                <span>Solicitar Reembolso</span>
+                {refundProtocol ? (
+                  <Check size={13} className="text-[#22c55e]" />
+                ) : (
+                  <RefreshCw size={13} className="text-[var(--mvz-gold)]" />
+                )}
+                <span>{refundProtocol ? 'Reembolso Solicitado' : 'Solicitar Reembolso'}</span>
               </span>
               <ChevronRight size={13} className="text-white/40" />
             </button>
@@ -1623,23 +1686,40 @@ export function SupportChatView({ onNavigate }: Props) {
                     <Check size={20} />
                   </div>
                   <div className="space-y-2">
+                    <span className="inline-block rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#22c55e]">
+                      Solicitação Já Registrada
+                    </span>
                     <h3 className="text-[16px] font-bold text-white">
-                      Reembolso Solicitado
+                      Você já solicitou o seu reembolso
                     </h3>
                     <p className="text-[12px] text-white/70 leading-relaxed">
-                      O motivo da sua solicitação foi captado com sucesso e o seu reembolso foi solicitado.
+                      O motivo da sua solicitação já foi captado pelo nosso sistema e o seu pedido de reembolso encontra-se em processamento.
                     </p>
                     <p className="text-[11.5px] text-white/55 leading-relaxed">
-                      A equipe da Orbiex analisará criteriosamente todos os fatores e tudo o que foi descrito na sua justificativa anterior. Como cada caso passa por análise detalhada do motivo informado, o prazo é de até <strong className="text-white/85">7 dias</strong> para conclusão e retorno com o resultado do reembolso no seu e-mail.
+                      A equipe da Orbiex está analisando criteriosamente todos os fatores e tudo o que foi descrito na sua justificativa anterior. Como cada caso passa por avaliação detalhada do motivo informado, o prazo é de até <strong className="text-white/85">7 dias</strong> para conclusão e retorno com o resultado do reembolso no seu e-mail.
                     </p>
                   </div>
-                  <div className="space-y-1 rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-[11.5px] text-white/80">
-                    <div>
-                      Status: <strong className="text-[#22c55e]">Solicitado • Em Análise (até 7 dias)</strong>
+                  <div className="space-y-1.5 rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-left text-[11.5px] text-white/80">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/50">Status:</span>
+                      <strong className="text-[#22c55e]">Solicitado • Em Análise (até 7 dias)</strong>
                     </div>
-                    <div>
-                      Protocolo: <strong className="font-mono text-[var(--mvz-gold)]">{refundProtocol}</strong>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/50">Protocolo:</span>
+                      <strong className="font-mono text-[var(--mvz-gold)]">{refundProtocol}</strong>
                     </div>
+                    {refundDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50">Data do pedido:</span>
+                        <span className="text-white/85">{refundDate}</span>
+                      </div>
+                    )}
+                    {refundReason && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-white/50 shrink-0">Motivo captado:</span>
+                        <span className="truncate text-right text-white/85">{refundReason}</span>
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"

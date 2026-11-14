@@ -41,7 +41,7 @@ export function HomeView({ go }: { go: (v: ViewId) => void }) {
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <button onClick={() => go('members')} className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-[#d4af37] to-[#aa7b1e] px-6 text-[13px] font-extrabold text-black transition hover:brightness-110 shadow-[0_4px_20px_rgba(212,175,55,0.3)]">
-              <GraduationCap size={15} /> Membros do Projeto
+              <GraduationCap size={15} /> Orbiex Academy
             </button>
             <button onClick={() => go('agent')} className="mvz-btn-white flex h-11 items-center gap-2 px-5 text-[13px]">
               <Play size={13} fill="currentColor" /> Agente IA

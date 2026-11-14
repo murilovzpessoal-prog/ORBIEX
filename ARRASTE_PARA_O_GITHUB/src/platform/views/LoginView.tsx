@@ -84,7 +84,26 @@ export function LoginView({ onLogin }: LoginViewProps) {
         isBuyerApproved = true;
       }
 
-      // Consulta na base de compras aprovadas da Cakto no Supabase (para puxar nome atualizado ou novos compradores)
+      // 1A. Tenta autenticar diretamente no Supabase Authentication (Authentication -> Users)
+      const authPassToTry = password.trim().length >= 6 ? password.trim() : `${password.trim()}123456`.slice(0, 6);
+      try {
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: password.trim(),
+        });
+        if (!signInErr && signInData?.user) {
+          isBuyerApproved = true;
+          const metaName =
+            signInData.user.user_metadata?.full_name ||
+            signInData.user.user_metadata?.display_name ||
+            signInData.user.user_metadata?.name;
+          if (metaName) {
+            buyerRecord = { email: cleanEmail, name: metaName, status: 'approved' };
+          }
+        }
+      } catch {}
+
+      // 1B. Consulta na base de compras aprovadas da Cakto no Supabase (authorized_buyers)
       try {
         const { data: buyers, error: buyerErr } = await supabase
           .from('authorized_buyers')
@@ -102,7 +121,22 @@ export function LoginView({ onLogin }: LoginViewProps) {
         console.warn('Aviso de consulta Supabase:', sbErr);
       }
 
-      // Fallback: consulta via endpoint /api/check-access
+      // 1C. Consulta também na tabela profiles (caso já tenha perfil criado)
+      if (!isBuyerApproved) {
+        try {
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('*')
+            .ilike('user_email', cleanEmail)
+            .limit(1);
+          if (profs && profs.length > 0) {
+            isBuyerApproved = true;
+            buyerRecord = { email: cleanEmail, name: profs[0].name, status: 'approved' };
+          }
+        } catch {}
+      }
+
+      // 1D. Fallback: consulta via endpoint /api/check-access
       if (!isBuyerApproved) {
         try {
           const res = await fetch(`/api/check-access?email=${encodeURIComponent(cleanEmail)}`);
@@ -116,7 +150,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
         } catch {}
       }
 
-      // Se não for admin, nem comprador aprovado e nem senha master autorizada
+      // Se não for admin, nem comprador aprovado e nem usuário do Supabase Auth
       if (!isBuyerApproved) {
         setLoading(false);
         setError(
@@ -128,6 +162,21 @@ export function LoginView({ onLogin }: LoginViewProps) {
       // Determina o melhor nome: digitado > cadastro da Cakto > prefixo do e-mail
       const fallbackName = buyerRecord?.name || cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
       const resolvedName = cleanName && cleanName.length >= 2 ? cleanName : fallbackName;
+
+      // 2. Garante que o comprador aprovado também seja registrado automaticamente em Authentication -> Users (supabase.auth)
+      try {
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password: authPassToTry,
+          options: {
+            data: {
+              full_name: resolvedName,
+              display_name: resolvedName,
+              name: resolvedName,
+            },
+          },
+        });
+      } catch {}
 
       // 2. Persiste o perfil com o nome completo no Supabase
       const { error: profileErr } = await supabase.from('profiles').upsert(

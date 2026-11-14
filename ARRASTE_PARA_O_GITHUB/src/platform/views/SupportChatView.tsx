@@ -1239,17 +1239,21 @@ export function SupportChatView({ onNavigate }: Props) {
             ))}
           </div>
 
-          {/* Link discreto de Reembolso no cantinho inferior */}
-          <div className="mt-2.5 flex justify-end border-t border-white/[0.04] pt-2">
+          {/* Botão de Reembolso visível no rodapé da barra lateral */}
+          <div className="mt-3 border-t border-white/[0.08] pt-3">
             <button
               type="button"
               onClick={() => {
                 setRefundProtocol(null);
                 setRefundOpen(true);
               }}
-              className="text-[9.5px] font-normal text-white/25 hover:text-white/55 transition cursor-pointer"
+              className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-[12px] font-bold text-white/90 hover:border-[var(--mvz-gold)]/50 hover:bg-white/[0.08] hover:text-white transition cursor-pointer"
             >
-              Reembolso
+              <span className="flex items-center gap-2">
+                <RefreshCw size={13} className="text-[var(--mvz-gold)]" />
+                <span>Solicitar Reembolso</span>
+              </span>
+              <ChevronRight size={13} className="text-white/40" />
             </button>
           </div>
         </div>
@@ -1266,21 +1270,35 @@ export function SupportChatView({ onNavigate }: Props) {
             </span>
           </div>
 
-          {/* Toggle de Modo: Especialista / Rápido */}
-          <div className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-black/40 p-0.5">
-            {MODELS.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setModel(m.id)}
-                className={`rounded-md px-2.5 py-1 text-[10.5px] font-medium transition cursor-pointer ${
-                  model === m.id
-                    ? 'bg-[var(--mvz-gold)] text-black font-bold'
-                    : 'text-white/50 hover:text-white'
-                }`}
-              >
-                {m.id === 'expert' ? 'Especialista' : 'Rapido'}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setRefundProtocol(null);
+                setRefundOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-white/90 hover:border-[var(--mvz-gold)]/50 hover:bg-white/[0.1] hover:text-white transition cursor-pointer"
+            >
+              <RefreshCw size={12} className="text-[var(--mvz-gold)]" />
+              <span>Reembolso</span>
+            </button>
+
+            {/* Toggle de Modo: Especialista / Rápido */}
+            <div className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-black/40 p-0.5">
+              {MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setModel(m.id)}
+                  className={`rounded-md px-2.5 py-1 text-[10.5px] font-medium transition cursor-pointer ${
+                    model === m.id
+                      ? 'bg-[var(--mvz-gold)] text-black font-bold'
+                      : 'text-white/50 hover:text-white'
+                  }`}
+                >
+                  {m.id === 'expert' ? 'Especialista' : 'Rapido'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1598,17 +1616,18 @@ export function SupportChatView({ onNavigate }: Props) {
               )}
             </div>
 
-            {/* Cantinho discreto de reembolso também visível no rodapé do console */}
-            <div className="mt-1.5 flex items-center justify-end">
+            {/* Botão de reembolso visível no rodapé do console */}
+            <div className="mt-2.5 flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => {
                   setRefundProtocol(null);
                   setRefundOpen(true);
                 }}
-                className="text-[9.5px] text-white/20 hover:text-white/45 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/75 hover:border-[var(--mvz-gold)]/50 hover:bg-white/[0.08] hover:text-white transition cursor-pointer"
               >
-                Solicitar reembolso
+                <RefreshCw size={11} className="text-[var(--mvz-gold)]" />
+                <span>Solicitar Reembolso</span>
               </button>
             </div>
           </div>
@@ -1725,10 +1744,10 @@ export function SupportChatView({ onNavigate }: Props) {
                     <button
                       type="submit"
                       disabled={refundSubmitting || !refundEmail.trim()}
-                      className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-[11.5px] font-bold text-white hover:bg-white/20 disabled:opacity-40 transition cursor-pointer"
+                      className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f3e2a4] to-[#eab308] px-4 py-2 text-[11.5px] font-extrabold text-black hover:brightness-110 disabled:opacity-40 transition cursor-pointer shadow-[0_0_15px_rgba(212,175,55,0.25)]"
                     >
-                      {refundSubmitting && <Loader2 size={13} className="animate-spin" />}
-                      <span>{refundSubmitting ? 'Enviando...' : 'Confirmar Solicitação'}</span>
+                      {refundSubmitting && <Loader2 size={13} className="animate-spin text-black" />}
+                      <span>{refundSubmitting ? 'Enviando...' : 'Solicitar Reembolso'}</span>
                     </button>
                   </div>
                 </form>

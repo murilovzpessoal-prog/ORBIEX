@@ -1270,35 +1270,21 @@ export function SupportChatView({ onNavigate }: Props) {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setRefundProtocol(null);
-                setRefundOpen(true);
-              }}
-              className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-white/90 hover:border-[var(--mvz-gold)]/50 hover:bg-white/[0.1] hover:text-white transition cursor-pointer"
-            >
-              <RefreshCw size={12} className="text-[var(--mvz-gold)]" />
-              <span>Reembolso</span>
-            </button>
-
-            {/* Toggle de Modo: Especialista / Rápido */}
-            <div className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-black/40 p-0.5">
-              {MODELS.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setModel(m.id)}
-                  className={`rounded-md px-2.5 py-1 text-[10.5px] font-medium transition cursor-pointer ${
-                    model === m.id
-                      ? 'bg-[var(--mvz-gold)] text-black font-bold'
-                      : 'text-white/50 hover:text-white'
-                  }`}
-                >
-                  {m.id === 'expert' ? 'Especialista' : 'Rapido'}
-                </button>
-              ))}
-            </div>
+          {/* Toggle de Modo: Especialista / Rápido */}
+          <div className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-black/40 p-0.5">
+            {MODELS.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setModel(m.id)}
+                className={`rounded-md px-2.5 py-1 text-[10.5px] font-medium transition cursor-pointer ${
+                  model === m.id
+                    ? 'bg-[var(--mvz-gold)] text-black font-bold'
+                    : 'text-white/50 hover:text-white'
+                }`}
+              >
+                {m.id === 'expert' ? 'Especialista' : 'Rapido'}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1614,21 +1600,6 @@ export function SupportChatView({ onNavigate }: Props) {
                   <Send size={13} />
                 </button>
               )}
-            </div>
-
-            {/* Botão de reembolso visível no rodapé do console */}
-            <div className="mt-2.5 flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setRefundProtocol(null);
-                  setRefundOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/75 hover:border-[var(--mvz-gold)]/50 hover:bg-white/[0.08] hover:text-white transition cursor-pointer"
-              >
-                <RefreshCw size={11} className="text-[var(--mvz-gold)]" />
-                <span>Solicitar Reembolso</span>
-              </button>
             </div>
           </div>
         </section>

@@ -96,6 +96,22 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ success: false, error: error.message });
     }
 
+    // Cria/atualiza automaticamente a conta do comprador na tabela profiles assim que a compra é aprovada
+    if (status === 'approved') {
+      try {
+        await supabase.from('profiles').upsert(
+          {
+            user_email: email,
+            name: name || email.split('@')[0],
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_email' }
+        );
+      } catch (profErr) {
+        console.warn('Profile auto-create warning:', profErr);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: `Comprador ${email} processado com status: ${status}`,

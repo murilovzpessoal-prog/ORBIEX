@@ -5,6 +5,19 @@ const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_yOFFv
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const VERIFIED_CAKTO_BUYERS = {
+  'brunoaraujo1915@gmail.com': 'Bruno Fontes Araujo',
+  'karolinefialho5@gmail.com': 'Anna Karoline Silva Fialho',
+  'sol.liandra@gmail.com': 'Maria do Socorro Leandro da Rocha Cardoso',
+  'valquiriaferres2014@gmail.com': 'Valquíria Inês Ferres',
+  'nilceliasantos.souza04@gmail.com': 'Nilcelia dos Santos Souza',
+  'mauriciocardoso0709@gmail.com': 'Maurício Cardoso da Silva',
+  'marcosgarcias13@hotmail.com': 'Marcos A C Garcias',
+  'direnepeixoto@gmail.com': 'Valdirene Santos Peixoto',
+  'diegorayn@gmail.com': 'Diego Ferreira da Silva',
+  'jannesfc@hotmail.com': 'Janne da Silva Freitas Coelho',
+};
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,6 +36,14 @@ module.exports = async function handler(req, res) {
 
   if (!email) {
     return res.status(400).json({ authorized: false, error: 'E-mail nao informado.' });
+  }
+
+  if (VERIFIED_CAKTO_BUYERS[email]) {
+    return res.status(200).json({
+      authorized: true,
+      name: VERIFIED_CAKTO_BUYERS[email],
+      email,
+    });
   }
 
   try {

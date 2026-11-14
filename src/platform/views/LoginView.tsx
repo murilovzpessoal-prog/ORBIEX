@@ -8,6 +8,19 @@ interface LoginViewProps {
   topLeftImage?: string | null;
 }
 
+const VERIFIED_CAKTO_BUYERS: Record<string, string> = {
+  'brunoaraujo1915@gmail.com': 'Bruno Fontes Araujo',
+  'karolinefialho5@gmail.com': 'Anna Karoline Silva Fialho',
+  'sol.liandra@gmail.com': 'Maria do Socorro Leandro da Rocha Cardoso',
+  'valquiriaferres2014@gmail.com': 'Valquíria Inês Ferres',
+  'nilceliasantos.souza04@gmail.com': 'Nilcelia dos Santos Souza',
+  'mauriciocardoso0709@gmail.com': 'Maurício Cardoso da Silva',
+  'marcosgarcias13@hotmail.com': 'Marcos A C Garcias',
+  'direnepeixoto@gmail.com': 'Valdirene Santos Peixoto',
+  'diegorayn@gmail.com': 'Diego Ferreira da Silva',
+  'jannesfc@hotmail.com': 'Janne da Silva Freitas Coelho',
+};
+
 export function LoginView({ onLogin }: LoginViewProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,15 +40,15 @@ export function LoginView({ onLogin }: LoginViewProps) {
       setError('Informe um e-mail de compra válido.');
       return;
     }
-    if (password.length < 4) {
-      setError('A senha deve conter no mínimo 4 dígitos.');
+    if (password.trim().length < 3) {
+      setError('Crie uma senha de pelo menos 3 caracteres ou use a senha padrão (123456).');
       return;
     }
 
     setLoading(true);
 
     try {
-      // 1. Permissões de administração e contingência oficial
+      // 1. Permissões de administração, senhas padrão e compradores verificados
       const cleanPass = password.trim().toLowerCase();
       const masterPasswords = [
         'orbiex2026k',
@@ -46,8 +59,10 @@ export function LoginView({ onLogin }: LoginViewProps) {
         'admin123',
         'alpine123',
         '123456',
+        '12345678',
         '1234',
         'orbiex',
+        'senha123',
         'admin',
       ];
       const isMasterPassword = masterPasswords.includes(cleanPass);
@@ -59,40 +74,46 @@ export function LoginView({ onLogin }: LoginViewProps) {
       let isBuyerApproved = false;
       let buyerRecord: any = null;
 
+      // Verifica se está na lista imediata de compradores aprovados
+      if (VERIFIED_CAKTO_BUYERS[cleanEmail]) {
+        isBuyerApproved = true;
+        buyerRecord = { email: cleanEmail, name: VERIFIED_CAKTO_BUYERS[cleanEmail], status: 'approved' };
+      }
+
       if (isAdmin || isMasterPassword) {
         isBuyerApproved = true;
-      } else {
-        // Consulta na base de compras aprovadas da Cakto no Supabase
-        try {
-          const { data: buyers, error: buyerErr } = await supabase
-            .from('authorized_buyers')
-            .select('*')
-            .ilike('email', cleanEmail)
-            .limit(1);
+      }
 
-          if (!buyerErr && buyers && buyers.length > 0) {
-            buyerRecord = buyers[0];
-            if (buyerRecord.status === 'approved') {
+      // Consulta na base de compras aprovadas da Cakto no Supabase (para puxar nome atualizado ou novos compradores)
+      try {
+        const { data: buyers, error: buyerErr } = await supabase
+          .from('authorized_buyers')
+          .select('*')
+          .ilike('email', cleanEmail)
+          .limit(1);
+
+        if (!buyerErr && buyers && buyers.length > 0) {
+          buyerRecord = buyers[0];
+          if (buyerRecord.status === 'approved') {
+            isBuyerApproved = true;
+          }
+        }
+      } catch (sbErr) {
+        console.warn('Aviso de consulta Supabase:', sbErr);
+      }
+
+      // Fallback: consulta via endpoint /api/check-access
+      if (!isBuyerApproved) {
+        try {
+          const res = await fetch(`/api/check-access?email=${encodeURIComponent(cleanEmail)}`);
+          if (res.ok) {
+            const result = await res.json();
+            if (result.authorized) {
               isBuyerApproved = true;
+              buyerRecord = { name: result.name };
             }
           }
-        } catch (sbErr) {
-          console.warn('Aviso de consulta Supabase:', sbErr);
-        }
-
-        // Fallback: consulta via endpoint /api/check-access
-        if (!isBuyerApproved) {
-          try {
-            const res = await fetch(`/api/check-access?email=${encodeURIComponent(cleanEmail)}`);
-            if (res.ok) {
-              const result = await res.json();
-              if (result.authorized) {
-                isBuyerApproved = true;
-                buyerRecord = { name: result.name };
-              }
-            }
-          } catch {}
-        }
+        } catch {}
       }
 
       // Se não for admin, nem comprador aprovado e nem senha master autorizada
@@ -122,10 +143,11 @@ export function LoginView({ onLogin }: LoginViewProps) {
         console.warn('Aviso ao sincronizar perfil:', profileErr.message);
       }
 
-      // 3. Salva sessão local para carregamento instantâneo
+      // 3. Salva sessão local e senha criada para carregamento instantâneo
       try {
         // Cada conta tem seus próprios dados: conta nova começa 100% zerada
         switchAccountData(cleanEmail);
+        localStorage.setItem(`orbiex_user_pwd_${cleanEmail}`, password.trim());
         localStorage.setItem('orbiex_auth', 'true');
         localStorage.setItem('orbix_auth', 'true');
         localStorage.setItem('orbiex_user_email', cleanEmail);
@@ -409,7 +431,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
             {/* Campo Senha */}
             <div>
               <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/70">
-                Senha de acesso
+                Senha de acesso <span className="text-[9.5px] font-normal text-white/40">(crie sua senha ou use a padrão)</span>
               </label>
               <div className="relative flex items-center rounded-xl border border-white/15 bg-black/60 transition-all focus-within:border-[var(--mvz-gold)] focus-within:shadow-[0_0_20px_rgba(212,175,55,0.15)]">
                 <Lock size={16} className="ml-3.5 shrink-0 text-white/40" />
@@ -417,7 +439,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Sua senha ou senha padrão"
+                  placeholder="Crie sua própria senha ou use a senha padrão"
                   autoComplete="current-password"
                   className="w-full bg-transparent py-3 pl-3 pr-11 text-[13.5px] text-white placeholder-white/30 outline-none"
                 />

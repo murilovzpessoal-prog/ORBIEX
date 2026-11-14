@@ -6,6 +6,9 @@ import { Topbar } from './Topbar';
 import { CommandPalette } from './CommandPalette';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
 import { useUserProfile, getStoredProfile } from './useUserProfile';
+import { ensureAccountTracked } from './accountStorage';
+
+ensureAccountTracked();
 import { HomeView } from './views/HomeView';
 import { AgentView } from './views/AgentView';
 import { WinningProductsView } from './views/WinningProductsView';

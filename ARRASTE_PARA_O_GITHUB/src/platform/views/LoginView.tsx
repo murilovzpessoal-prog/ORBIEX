@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { switchAccountData } from '../accountStorage';
 
 interface LoginViewProps {
   onLogin: (email: string, name?: string) => void;
@@ -123,6 +124,8 @@ export function LoginView({ onLogin }: LoginViewProps) {
 
       // 3. Salva sessão local para carregamento instantâneo
       try {
+        // Cada conta tem seus próprios dados: conta nova começa 100% zerada
+        switchAccountData(cleanEmail);
         localStorage.setItem('orbiex_auth', 'true');
         localStorage.setItem('orbix_auth', 'true');
         localStorage.setItem('orbiex_user_email', cleanEmail);

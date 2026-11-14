@@ -5,7 +5,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { CommandPalette } from './CommandPalette';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
-import { useUserProfile } from './useUserProfile';
+import { useUserProfile, getStoredProfile } from './useUserProfile';
 import { HomeView } from './views/HomeView';
 import { AgentView } from './views/AgentView';
 import { WinningProductsView } from './views/WinningProductsView';
@@ -129,11 +129,19 @@ export default function PlatformApp() {
       } catch {}
       setIsAuthenticated(true);
       if (name) {
-        handleSaveProfile({ name, avatarUrl: profile.avatarUrl || null });
+        // Recupera a foto já salva para este e-mail (não apaga a foto no login)
+        let savedAvatar: string | null = null;
+        try {
+          savedAvatar =
+            (email && localStorage.getItem(`orbiex_avatar_${email.trim().toLowerCase()}`)) ||
+            getStoredProfile().avatarUrl ||
+            null;
+        } catch {}
+        handleSaveProfile({ name, avatarUrl: savedAvatar });
       }
       navigate('members');
     },
-    [handleSaveProfile, navigate, profile.avatarUrl]
+    [handleSaveProfile, navigate]
   );
 
   useEffect(() => {

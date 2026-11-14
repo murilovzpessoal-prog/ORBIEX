@@ -12,6 +12,11 @@ export function getStoredProfile(): UserProfile {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed.name === 'string') {
+          if (!parsed.avatarUrl) {
+            const e = localStorage.getItem('orbiex_user_email') || localStorage.getItem('orbix_user_email');
+            const backup = e ? localStorage.getItem(`orbiex_avatar_${e.trim().toLowerCase()}`) : null;
+            if (backup) parsed.avatarUrl = backup;
+          }
           return parsed;
         }
       }
@@ -37,19 +42,44 @@ export function getUserDisplayName(): string {
   return formatUserGreetingName(p.name);
 }
 
-export function saveUserProfile(updated: UserProfile) {
+function getUserEmail(): string | null {
   try {
-    const serialized = JSON.stringify(updated);
-    for (const key of STORAGE_KEYS) {
+    const e = localStorage.getItem('orbiex_user_email') || localStorage.getItem('orbix_user_email');
+    return e ? e.trim().toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUserProfile(updated: UserProfile, syncRemote = true) {
+  const serialized = JSON.stringify(updated);
+  for (const key of STORAGE_KEYS) {
+    try {
       localStorage.setItem(key, serialized);
+    } catch (err) {
+      console.warn('Falha ao salvar perfil localmente:', err);
     }
+  }
+
+  // Backup da foto vinculada ao e-mail (sobrevive a logout/login)
+  const email = getUserEmail();
+  if (email) {
+    try {
+      if (updated.avatarUrl) {
+        localStorage.setItem(`orbiex_avatar_${email}`, updated.avatarUrl);
+      } else {
+        localStorage.removeItem(`orbiex_avatar_${email}`);
+      }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
     // Dispara evento customizado para sincronização reativa imediata na mesma aba
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent(PROFILE_EVENT, { detail: updated }));
-      
-      // Sincroniza em nuvem no Supabase em segundo plano
-      const email = localStorage.getItem('orbiex_user_email') || localStorage.getItem('orbix_user_email');
-      if (email) {
+    window.dispatchEvent(new CustomEvent(PROFILE_EVENT, { detail: updated }));
+
+    // Sincroniza em nuvem no Supabase em segundo plano
+    if (email && syncRemote) {
+      try {
         supabase
           .from('profiles')
           .upsert(
@@ -64,34 +94,34 @@ export function saveUserProfile(updated: UserProfile) {
           .then(({ error }) => {
             if (error) console.warn('Supabase sync notice:', error.message);
           });
-      }
+      } catch {}
     }
-  } catch {}
+  }
 }
 
 export function useUserProfile() {
   const [profile, setProfileState] = useState<UserProfile>(getStoredProfile);
 
   useEffect(() => {
-    // 1. Sincronização em nuvem ao montar
-    const email = localStorage.getItem('orbiex_user_email') || localStorage.getItem('orbix_user_email');
+    // 1. Sincronização em nuvem ao montar (a versão local sempre tem prioridade)
+    const email = getUserEmail();
     if (email) {
       supabase
         .from('profiles')
         .select('*')
-        .ilike('user_email', email.trim().toLowerCase())
+        .ilike('user_email', email)
         .limit(1)
         .then(({ data, error }) => {
           if (!error && data && data[0]) {
             const remote = data[0];
             const local = getStoredProfile();
-            if (remote.avatar_url || remote.name) {
-              const merged: UserProfile = {
-                name: remote.name || local.name,
-                avatarUrl: remote.avatar_url || local.avatarUrl,
-              };
+            const merged: UserProfile = {
+              name: local.name && local.name !== 'Membro Orbiex' ? local.name : remote.name || local.name,
+              avatarUrl: local.avatarUrl || remote.avatar_url || null,
+            };
+            if (merged.name !== local.name || merged.avatarUrl !== local.avatarUrl) {
               setProfileState(merged);
-              saveUserProfile(merged);
+              saveUserProfile(merged, false);
             }
           }
         });

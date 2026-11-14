@@ -32,9 +32,10 @@ export function ProfileSettingsModal({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync state whenever modal opens or profile changes
+  // Sincroniza o estado apenas quando o modal abre (não sobrescreve a foto escolhida)
   useEffect(() => {
     if (open) {
       setName(profile.name || 'Membro Orbiex');
@@ -42,7 +43,8 @@ export function ProfileSettingsModal({
       setSavedSuccess(false);
       setErrorMsg(null);
     }
-  }, [open, profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -57,60 +59,59 @@ export function ProfileSettingsModal({
 
   if (!open || typeof document === 'undefined') return null;
 
-  // Handle uploading and compressing image
+  // Upload + compressão da imagem (robusto: trata erros e formatos não suportados)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Permite escolher o mesmo arquivo novamente
+    e.target.value = '';
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(file.name);
+    if (!isImage) {
       setErrorMsg('Por favor, selecione um arquivo de imagem válido (JPG, PNG, WebP).');
       return;
     }
 
     setErrorMsg(null);
+    setProcessing(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // Optimize to max 320x320 to keep storage lightweight and lightning fast
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      try {
         const maxDim = 320;
-        let width = img.width;
-        let height = img.height;
-
-        // Crop/scale center square
-        const minSide = Math.min(width, height);
-        const startX = (width - minSide) / 2;
-        const startY = (height - minSide) / 2;
+        const minSide = Math.min(img.naturalWidth, img.naturalHeight);
+        const startX = (img.naturalWidth - minSide) / 2;
+        const startY = (img.naturalHeight - minSide) / 2;
 
         const canvas = document.createElement('canvas');
         canvas.width = Math.min(minSide, maxDim);
         canvas.height = Math.min(minSide, maxDim);
-
         const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(
-            img,
-            startX,
-            startY,
-            minSide,
-            minSide,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-          const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.88);
-          setAvatarUrl(optimizedBase64);
-        }
-      };
-      img.src = event.target?.result as string;
+        if (!ctx) throw new Error('canvas');
+        ctx.drawImage(img, startX, startY, minSide, minSide, 0, 0, canvas.width, canvas.height);
+        setAvatarUrl(canvas.toDataURL('image/jpeg', 0.85));
+      } catch {
+        setErrorMsg('Não foi possível processar essa imagem. Tente outra foto em JPG ou PNG.');
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+        setProcessing(false);
+      }
     };
-    reader.readAsDataURL(file);
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      setProcessing(false);
+      setErrorMsg('Formato de imagem não suportado pelo navegador (ex: HEIC). Envie a foto em JPG ou PNG.');
+    };
+
+    img.src = objectUrl;
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (processing) return;
     const cleanName = name.trim() || 'Membro Orbiex';
     onSave({
       name: cleanName,
@@ -275,7 +276,7 @@ export function ProfileSettingsModal({
 
             <button
               type="submit"
-              disabled={savedSuccess}
+              disabled={savedSuccess || processing}
               className="mvz-btn-grad flex h-11 flex-1 items-center justify-center gap-2 text-[12px] font-extrabold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               {savedSuccess ? (

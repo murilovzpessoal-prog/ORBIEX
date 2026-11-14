@@ -127,14 +127,11 @@ export function LoginView({ onLogin }: LoginViewProps) {
         localStorage.setItem('orbix_auth', 'true');
         localStorage.setItem('orbiex_user_email', cleanEmail);
         localStorage.setItem('orbix_user_email', cleanEmail);
-        localStorage.setItem(
-          'orbiex_user_profile',
-          JSON.stringify({ name: resolvedName, avatarUrl: null })
-        );
-        localStorage.setItem(
-          'orbix_user_profile',
-          JSON.stringify({ name: resolvedName, avatarUrl: null })
-        );
+        // Preserva a foto de perfil já salva para este e-mail
+        const savedAvatar = localStorage.getItem(`orbiex_avatar_${cleanEmail}`) || null;
+        const loginProfile = JSON.stringify({ name: resolvedName, avatarUrl: savedAvatar });
+        localStorage.setItem('orbiex_user_profile', loginProfile);
+        localStorage.setItem('orbix_user_profile', loginProfile);
       } catch {}
 
       setLoading(false);

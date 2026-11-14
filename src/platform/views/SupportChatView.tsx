@@ -170,6 +170,24 @@ function generateTicketCode(id: number) {
   return `TK-${code}`;
 }
 
+/* Reembolso: estado salvo individualmente por conta (e-mail) */
+function getRefundKey(): string {
+  try {
+    // Remove o registro antigo global (testes anteriores), que não era vinculado a nenhuma conta
+    localStorage.removeItem('orbiex_refund_request');
+    const email = (
+      localStorage.getItem('orbiex_user_email') ||
+      localStorage.getItem('orbix_user_email') ||
+      'anon'
+    )
+      .trim()
+      .toLowerCase();
+    return `orbiex_refund_request_v2_${email}`;
+  } catch {
+    return 'orbiex_refund_request_v2_anon';
+  }
+}
+
 function loadChats(): SupportChat[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('orbiex.support.agent.v1');
@@ -808,7 +826,7 @@ export function SupportChatView({ onNavigate }: Props) {
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundEmail, setRefundEmail] = useState(() => {
     try {
-      const saved = localStorage.getItem('orbiex_refund_request');
+      const saved = localStorage.getItem(getRefundKey());
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.email) return parsed.email;
@@ -820,7 +838,7 @@ export function SupportChatView({ onNavigate }: Props) {
   });
   const [refundReason, setRefundReason] = useState(() => {
     try {
-      const saved = localStorage.getItem('orbiex_refund_request');
+      const saved = localStorage.getItem(getRefundKey());
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.reason) return parsed.reason;
@@ -830,7 +848,7 @@ export function SupportChatView({ onNavigate }: Props) {
   });
   const [refundNotes, setRefundNotes] = useState(() => {
     try {
-      const saved = localStorage.getItem('orbiex_refund_request');
+      const saved = localStorage.getItem(getRefundKey());
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.notes) return parsed.notes;
@@ -841,7 +859,7 @@ export function SupportChatView({ onNavigate }: Props) {
   const [refundSubmitting, setRefundSubmitting] = useState(false);
   const [refundProtocol, setRefundProtocol] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem('orbiex_refund_request');
+      const saved = localStorage.getItem(getRefundKey());
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.protocol) return parsed.protocol;
@@ -851,7 +869,7 @@ export function SupportChatView({ onNavigate }: Props) {
   });
   const [refundDate, setRefundDate] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem('orbiex_refund_request');
+      const saved = localStorage.getItem(getRefundKey());
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.requestedAt) return parsed.requestedAt;
@@ -875,7 +893,7 @@ export function SupportChatView({ onNavigate }: Props) {
       });
       try {
         localStorage.setItem(
-          'orbiex_refund_request',
+          getRefundKey(),
           JSON.stringify({
             protocol: code,
             email: refundEmail.trim(),

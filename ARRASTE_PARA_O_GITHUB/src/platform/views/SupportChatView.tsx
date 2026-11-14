@@ -1301,22 +1301,15 @@ export function SupportChatView({ onNavigate }: Props) {
             ))}
           </div>
 
-          {/* Botão de Reembolso visível no rodapé da barra lateral */}
-          <div className="mt-3 border-t border-white/[0.08] pt-3">
+          {/* Rodapé discreto com botão compacto de Reembolso */}
+          <div className="mt-2.5 flex items-center justify-between border-t border-white/[0.04] pt-2">
+            <span className="text-[9.5px] text-white/20">Central de Atendimento</span>
             <button
               type="button"
               onClick={() => setRefundOpen(true)}
-              className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-[12px] font-bold text-white/90 hover:border-[var(--mvz-gold)]/50 hover:bg-white/[0.08] hover:text-white transition cursor-pointer"
+              className="rounded-md border border-white/[0.07] bg-white/[0.02] px-2 py-0.5 text-[10px] font-medium text-white/35 hover:border-white/15 hover:bg-white/[0.04] hover:text-white/65 transition cursor-pointer"
             >
-              <span className="flex items-center gap-2">
-                {refundProtocol ? (
-                  <Check size={13} className="text-[#22c55e]" />
-                ) : (
-                  <RefreshCw size={13} className="text-[var(--mvz-gold)]" />
-                )}
-                <span>{refundProtocol ? 'Reembolso Solicitado' : 'Solicitar Reembolso'}</span>
-              </span>
-              <ChevronRight size={13} className="text-white/40" />
+              {refundProtocol ? 'Reembolso solicitado' : 'Reembolso'}
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 const DEFAULT_PASSWORD = 'orbiex2026k';
 const SITE_URL = 'https://www.orbiex.io/';
-const SUBJECT = 'Bem-vindo à Orbiex — Seu acesso está liberado!';
+const SUBJECT = 'Bem-vindo(a) à Orbiex — Seu acesso está liberado!';
 
 function esc(s) {
   return String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -25,11 +25,7 @@ function step(num, title, text) {
     </tr>`;
 }
 
-function buildWelcomeEmailHtml(buyerName, buyerEmail) {
-  const first = esc((buyerName || '').trim().split(' ')[0] || '');
-  const email = esc(buyerEmail || 'seu e-mail da compra');
-  const greeting = first ? `Bem-vindo à Orbiex, ${first}!` : 'Bem-vindo à Orbiex!';
-
+function renderTemplate(greetingHtml, emailHtml) {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -57,10 +53,10 @@ function buildWelcomeEmailHtml(buyerName, buyerEmail) {
         <!-- Hero -->
         <tr><td align="center" style="padding:36px 28px 8px 28px;">
           <div style="display:inline-block;padding:6px 14px;border-radius:999px;background-color:#1d1608;border:1px solid #4a3a14;color:#f3e2a4;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;">&#10003; Acesso liberado</div>
-          <h1 style="margin:18px 0 10px 0;font-size:27px;line-height:1.25;font-weight:900;color:#ffffff;">${greeting}</h1>
+          <h1 style="margin:18px 0 10px 0;font-size:27px;line-height:1.25;font-weight:900;color:#ffffff;">${greetingHtml}</h1>
           <p style="margin:0;font-size:15px;line-height:1.6;color:#b9b1a3;">
             Sua compra foi confirmada e seu acesso à plataforma já está pronto para o e-mail
-            <strong style="color:#f3e2a4;">${email}</strong>.
+            <strong style="color:#f3e2a4;">${emailHtml}</strong>.
           </p>
         </td></tr>
 
@@ -120,4 +116,23 @@ function buildWelcomeEmailHtml(buyerName, buyerEmail) {
 </html>`;
 }
 
-module.exports = { buildWelcomeEmailHtml, SUBJECT, DEFAULT_PASSWORD };
+function buildWelcomeEmailHtml(buyerName, buyerEmail) {
+  const first = esc((buyerName || '').trim().split(/\s+/)[0] || '');
+  const email = esc(buyerEmail || 'seu e-mail da compra');
+  const greeting = first ? `Bem-vindo(a) à Orbiex, ${first}!` : 'Bem-vindo(a) à Orbiex!';
+  return renderTemplate(greeting, email);
+}
+
+function buildSupabaseDynamicTemplateHtml() {
+  const dynamicGreeting =
+    '{{ if .Data.first_name }}Bem-vindo(a) à Orbiex, {{ .Data.first_name }}!{{ else if .Data.full_name }}Bem-vindo(a) à Orbiex, {{ .Data.full_name }}!{{ else }}Bem-vindo(a) à Orbiex!{{ end }}';
+  const dynamicEmail = '{{ .Email }}';
+  return renderTemplate(dynamicGreeting, dynamicEmail);
+}
+
+module.exports = {
+  buildWelcomeEmailHtml,
+  buildSupabaseDynamicTemplateHtml,
+  SUBJECT,
+  DEFAULT_PASSWORD,
+};

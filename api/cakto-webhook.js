@@ -172,7 +172,8 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      // 3. Dispara o e-mail automatico de Boas-Vindas com as instrucoes de acesso e a senha padrao orbiex2026k
+      // 3. Dispara o e-mail automatico de Boas-Vindas puxando o NOME e o E-MAIL reais do comprador na Cakto
+      const firstName = displayName.trim().split(/\s+/)[0] || displayName;
       try {
         if (process.env.RESEND_API_KEY) {
           await fetch('https://api.resend.com/emails', {
@@ -189,12 +190,18 @@ module.exports = async function handler(req, res) {
             }),
           });
         } else {
-          // Dispara o template "Seja bem-vindo(a) à OrbiEx AI" configurado no Supabase Auth
+          // Dispara o template dinamico no Supabase Auth passando o nome real do comprador da Cakto
           await supabase.auth.signInWithOtp({
             email,
             options: {
-              shouldCreateUser: false,
+              shouldCreateUser: true,
               emailRedirectTo: 'https://www.orbiex.io/',
+              data: {
+                first_name: firstName,
+                full_name: displayName,
+                display_name: displayName,
+                name: displayName,
+              },
             },
           });
         }

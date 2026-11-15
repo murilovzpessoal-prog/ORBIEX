@@ -1084,8 +1084,68 @@ export function SupportChatView({ onNavigate }: Props) {
     stopSig.current = false;
     const t0 = performance.now();
 
-    // Consulta do conhecimento técnico
+    // Consulta do conhecimento técnico + Inteligência Artificial Ao Vivo
     const knowledge = getKnowledgeResponse(text, model);
+    const historyForAI = [...msgs.slice(-6), userMsg].map((m) => ({
+      role: m.role,
+      text: m.text,
+    }));
+
+    const aiReplyPromise = (async (): Promise<string | null> => {
+      try {
+        const res = await fetch('/api/ai-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: text,
+            messages: historyForAI,
+            mode: 'support',
+            supportStyle: model,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.reply && typeof data.reply === 'string' && data.reply.trim().length > 10) {
+            return data.reply.trim();
+          }
+        }
+      } catch {
+        // Fallback direto para gateway LLM se estiver em ambiente sem serverless
+      }
+
+      try {
+        const relayRes = await fetch('https://text.pollinations.ai/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'openai',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Você é a Especialista de Suporte Técnico e Operacional da plataforma ORBIEX (TikTok Shop com IA). Responda diretamente à dúvida ou pedido do usuário de forma clara, didática, acolhedora e prática em português. Domine todas as abas da Orbiex (Agente IA, Gerador de Prompts, Extrator de Movimentos, Hooks Virais, Gerador de Headlines, Turbo de Seguidores / Novelinha de Frutas, Score Produto/Lojista e Scanner), ferramentas de IA (Kling AI, Google Flow VEO 3, Midjourney, CapCut), configuração de TikTok Shop / carrinho amarelo e suporte de conta (senha padrão de segurança: orbiex2026k). Nunca use emojis.',
+              },
+              ...historyForAI.map((h) => ({
+                role: h.role === 'agent' ? 'assistant' : 'user',
+                content: h.text,
+              })),
+            ],
+            temperature: 0.35,
+          }),
+        });
+        if (relayRes.ok) {
+          const data = await relayRes.json();
+          const content = data?.choices?.[0]?.message?.content;
+          if (content && typeof content === 'string' && content.trim().length > 10) {
+            return content.trim();
+          }
+        }
+      } catch {
+        // Usa a base local estruturada
+      }
+
+      return null;
+    })();
 
     // Passo 1: Animação dos passos do suporte
     const stepsList: Step[] = knowledge.steps.map((label) => ({ label, done: false }));
@@ -1098,6 +1158,8 @@ export function SupportChatView({ onNavigate }: Props) {
       patch(activeId, agentMsgId, (m) => ({ ...m, steps: [...stepsList] }));
     }
 
+    const liveAIReply = await aiReplyPromise;
+
     if (stopSig.current) {
       setBusy(false);
       return;
@@ -1106,7 +1168,7 @@ export function SupportChatView({ onNavigate }: Props) {
     // Passo 2: Streaming suave da resposta técnica
     patch(activeId, agentMsgId, (m) => ({ ...m, status: 'streaming' }));
 
-    const fullText = knowledge.text;
+    const fullText = liveAIReply || knowledge.text;
     const chunkSize = model === 'expert' ? 8 : 16;
     let curr = '';
 

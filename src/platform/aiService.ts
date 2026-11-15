@@ -187,6 +187,8 @@ export async function generateAIReply(
     if (res.ok) {
       const data = await res.json();
       if (data.success && data.reply) {
+        const rawHist = history.map((h) => h.text);
+        const localCheck = nativeReply(prompt, rawHist, attItems);
         const suggestions = extractSuggestionsFromText(data.reply, prompt);
         const steps =
           mode === 'pro'
@@ -206,6 +208,7 @@ export async function generateAIReply(
         return {
           steps,
           text: data.reply,
+          card: localCheck.card,
           suggestions,
         };
       }
@@ -326,9 +329,53 @@ export async function generateAIReply(
     }
   }
 
-  // 3. Fallback cognitivo nativo se nenhuma API responder
+  // 3. Gateway Cloud LLM de Alta Disponibilidade (caso o endpoint local /api/ai-chat não esteja rodando)
   const rawHistory = history.map((h) => h.text);
-  return nativeReply(prompt, rawHistory, attItems);
+  const localReply = nativeReply(prompt, rawHistory, attItems);
+
+  try {
+    const relayRes = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...history.slice(-6).map((h) => ({
+            role: h.role === 'agent' ? 'assistant' : 'user',
+            content: h.text,
+          })),
+          { role: 'user', content: prompt },
+        ],
+        temperature: mode === 'pro' ? 0.45 : 0.35,
+      }),
+    });
+
+    if (relayRes.ok) {
+      const data = await relayRes.json();
+      const text = data?.choices?.[0]?.message?.content;
+      if (text && typeof text === 'string' && text.trim().length > 10) {
+        return {
+          steps:
+            mode === 'pro'
+              ? [
+                  'Ativando núcleo de raciocínio profundo Orbiex Pro...',
+                  'Analisando estratégia de TikTok Shop com IA...',
+                  'Concluído.',
+                ]
+              : ['Conectando ao núcleo de IA Orbiex...', 'Concluído.'],
+          text: text.trim(),
+          card: localReply.card,
+          suggestions: extractSuggestionsFromText(text, prompt),
+        };
+      }
+    }
+  } catch {
+    // Continua para o motor nativo local
+  }
+
+  // 4. Fallback cognitivo nativo se nenhuma API responder
+  return localReply;
 }
 
 function extractSuggestionsFromText(text: string, prompt: string): string[] {

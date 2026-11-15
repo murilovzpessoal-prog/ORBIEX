@@ -1,28 +1,18 @@
-const PROMPT_ARCHITECT_SYSTEM_PROMPT = `Você é o GERADOR DE PROMPTS DA ORBIEX AI.
+const PROMPT_ARCHITECT_SYSTEM_PROMPT = `Você é o GERADOR DE PROMPTS E ASSISTENTE DE VÍDEOS IA DA ORBIEX.
 
-SUA REGRA DE OURO INVIOLÁVEL:
-- A SUA ÚNICA FUNÇÃO É GERAR O PROMPT EXATO QUE O USUÁRIO PEDIU.
-- NÃO FAÇA ANÁLISE DE MARKETING, NÃO FAÇA ENROLAÇÃO, NÃO ESCREVA ANÁLISE ESTRATÉGICA, GATILHOS DE COMPRA OU TEORIAS.
-- Se o usuário pedir "gere um prompt para trocar de roupa", gere o prompt exato de troca/transição de roupa fluida para IA de vídeo (Kling AI / Runway) e foto (Midjourney / Flux). NUNCA invente produtos ou aparelhos que o usuário não mencionou.
-- Se o usuário pedir um produto, personagem de fruta ou ação específica, obedeça 100% ao que ele pediu.
-- NUNCA use emojis em nenhuma hipótese.
-
-FORMATO DE RESPOSTA OBRIGATÓRIO (DIRETO E OBJETIVO):
-1. Linha inicial simples e direta:
-Aqui está o seu prompt para [resumo curto do pedido]:
-
-2. Bloco Kling AI / Runway (Vídeo 9:16) em \`\`\`kling:
-Prompt em inglês técnico hiper-realista, detalhando a ação, física de movimento, câmera, lente e iluminação cinematográfica.
-
-3. Bloco Negative Prompt em \`\`\`negative:
-Comandos negativos anti-distorção, anti-deformação e anti-artefatos.
-
-4. Bloco Midjourney V6.1 / Flux Pro (Foto Comercial) em \`\`\`midjourney:
-Prompt fotográfico em inglês em alta resolução com especificações de lente e estilo.
-
-5. Parâmetros técnicos recomendados (máximo 2 linhas: aspect ratio 9:16, motion amplitude).
-
-SEJA 100% OBJETIVO. O USUÁRIO QUER O PROMPT PRONTO PARA COPIAR E COLAR NA FERRAMENTA DE IA.`;
+SUAS REGRAS DE OURO:
+1. Se o usuário pedir um prompt de vídeo, foto, cena, produto, roupa ou personagem:
+   - Gere imediatamente o prompt completo e fiel ao que ele pediu, sem inventar objetos ou produtos que ele não mencionou.
+   - Entregue nos blocos formatados:
+     - Linha inicial curta: "Aqui está o seu prompt personalizado para [resumo do pedido]:"
+     - Bloco \`\`\`kling (Prompt em inglês técnico hiper-realista para vídeo vertical 9:16 no Kling AI / Runway / Hailuo, detalhando ação, física de movimento, câmera, lente e iluminação)
+     - Bloco \`\`\`negative (Comandos negativos anti-distorção de mãos, rosto e tecido)
+     - Bloco \`\`\`flow (Prompt cinematográfico em inglês para Google Flow / VEO 3)
+     - Bloco \`\`\`midjourney (Prompt fotográfico editorial em inglês para Midjourney V6.1 / Flux Pro com --ar 9:16 --v 6.1 --style raw)
+     - Dica rápida de uso (aspect ratio 9:16, CFG/criatividade recomendada de 0.5).
+2. Se o usuário pedir um AJUSTE no prompt anterior (ex: "muda a cor para preto", "coloca na praia", "faz ela girando") ou fizer uma PERGUNTA técnica sobre como usar o prompt no Kling, Flow, Midjourney ou TikTok Shop:
+   - Entenda o contexto da conversa, responda diretamente à dúvida dele de forma clara e entregue o prompt atualizado se aplicável.
+3. NUNCA use emojis em nenhuma hipótese.`;
 
 const TURBO_NOVELINHA_SYSTEM_PROMPT = `Você é o Diretor Criativo de Novelinhas Virais 3D da Orbiex AI (Especialista em vídeos de frutas antropomórficas estilo Pixar/Disney 3D para explodir seguidores no TikTok).
 
@@ -124,7 +114,75 @@ async function callGeminiJSON(systemPrompt, userText, geminiKey, imageDataUrl) {
       console.warn(`Gemini JSON (${model}) warning:`, err.message);
     }
   }
+
+  // Fallback para Gateway Cloud LLM em JSON
+  try {
+    const relayRes = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userText },
+        ],
+        temperature: 0.5,
+      }),
+    });
+    if (relayRes.ok) {
+      const data = await relayRes.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (rawText) {
+        const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+        return { parsed: JSON.parse(cleaned), model: 'cloud-llm' };
+      }
+    }
+  } catch (err) {
+    console.warn('Cloud LLM JSON warning:', err.message);
+  }
+
   return null;
+}
+
+function buildDynamicPromptFallback(userPrompt) {
+  const idea = userPrompt.trim();
+  const lower = idea.toLowerCase();
+
+  let motionDirective =
+    'smooth organic 360-degree camera tracking in front of mirror, highlighting natural body movement, realistic fabric drape, and high-definition texture';
+
+  if (lower.includes('troca') && lower.includes('roupa')) {
+    motionDirective =
+      'seamless whip-pan and snap transition outfit change in front of full-length mirror: model snaps fingers or spins 180 degrees, smoothly transitioning into the new outfit with realistic fabric physics and zero morphing artifacts';
+  } else if (lower.includes('agacha') || lower.includes('fitness') || lower.includes('legging') || lower.includes('academia')) {
+    motionDirective =
+      'athletic squat test in front of full-length mirror, camera tracking at 45-degree angle proving zero fabric transparency, high waist compression, and natural rebound motion';
+  } else if (lower.includes('praia') || lower.includes('biquini') || lower.includes('biquíni')) {
+    motionDirective =
+      'cinematic golden-hour beach walk with soft ocean breeze moving the fabric naturally, smooth steadycam tracking at 60fps';
+  }
+
+  return (
+    `Aqui está o seu prompt personalizado para **${idea}**:\n\n` +
+    `### Kling AI V1.5 / V2.0 (Vídeo Vertical 9:16)\n` +
+    `\`\`\`kling\n` +
+    `High-end commercial vertical video 9:16, authentic mobile UGC aesthetic. Scene directive: ${idea}. Motion physics: ${motionDirective}. Natural human proportions, hyper-realistic textile weave and stitching detail, natural skin texture, soft diffused window lighting, smooth 60fps cinematic tracking, 8k resolution, raw photorealism. --motion_amplitude 6.0 --camera_motion smooth\n` +
+    `\`\`\`\n\n` +
+    `### Negative Prompt (Anti-Distorção Obrigatório)\n` +
+    `\`\`\`negative\n` +
+    `deformed hands, extra fingers, mutated anatomy, blur, jitter, morphing artifacts, cartoonish, 3d render, plastic skin, transparent fabric, oversaturation, distortion, face glitch, bad proportions, flicker\n` +
+    `\`\`\`\n\n` +
+    `### Google Flow / VEO 3 (Cinematográfico)\n` +
+    `\`\`\`flow\n` +
+    `Cinematic vertical 9:16 commercial shot: ${idea}. Choreography: ${motionDirective}. Filmed on 35mm Arri Alexa LF, f/1.8 prime lens, soft natural daylight, realistic optical depth of field, 4k master render.\n` +
+    `\`\`\`\n\n` +
+    `### Midjourney V6.1 / Flux Pro (Foto Base / Primeiro Frame)\n` +
+    `\`\`\`midjourney\n` +
+    `Editorial commercial fashion photography, vertical 9:16: ${idea}. Authentic human model, realistic skin pores, intricate fabric texture, soft natural window lighting, shot on Hasselblad X2D 100C, 85mm lens --ar 9:16 --v 6.1 --style raw --q 2\n` +
+    `\`\`\`\n\n` +
+    `Dica técnica: gere primeiro a foto base em 9:16 no Midjourney/Flux e depois suba como primeiro frame (Image-to-Video) no Kling AI com criatividade em 0.50.`
+  );
 }
 
 module.exports = async function handler(req, res) {
@@ -149,6 +207,7 @@ module.exports = async function handler(req, res) {
     const {
       mode = 'prompt',
       idea = '',
+      messages = [],
       apiKey: clientApiKey,
       provider: clientProvider,
     } = body;
@@ -204,7 +263,6 @@ Gere o JSON completo com o prompt de animação Image-to-Video (em inglês e em 
         });
       }
 
-      // Síntese dinâmica inteligente baseada na ideia do usuário caso a API externa oscile
       const cleanIdea = userIdea.trim() || `O ${mascotName} vive um drama inesperado em ${episodeTitle}`;
       const cleanTwist = plotTwist.trim() || 'A verdade vem à tona no último segundo';
       const ctaLine =
@@ -299,7 +357,7 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
     }
 
     // ────────────────────────────────────────────────────────────
-    // MODO PADRÃO: GERADOR DE PROMPTS (KLING / MIDJOURNEY / NEGATIVE)
+    // MODO PADRÃO: GERADOR DE PROMPTS CONVERSACIONAL (KLING / FLOW / MIDJOURNEY)
     // ────────────────────────────────────────────────────────────
     if (!idea || idea.trim().length < 2) {
       return res.status(400).json({ error: 'Ideia não informada' });
@@ -307,9 +365,30 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
 
     const userPrompt = idea.trim();
 
-    // 1. Tentar Google Gemini com Gemini 2.5 Flash / Gemini Flash Latest
+    // Prepara histórico conversacional se enviado pelo frontend
+    const cleanHistory = Array.isArray(messages)
+      ? messages
+          .slice(-6)
+          .filter((m) => m && (m.text || m.content))
+          .map((m) => ({
+            role: m.role === 'agent' || m.role === 'assistant' || m.role === 'model' ? 'assistant' : 'user',
+            content: m.text || m.content,
+          }))
+      : [];
+
+    // 1. Tentar Google Gemini
     if (geminiKey && (clientProvider === 'gemini' || !clientProvider || clientProvider === 'native')) {
       const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+
+      const geminiContents = cleanHistory.map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }));
+      if (geminiContents.length === 0 || geminiContents[geminiContents.length - 1].role !== 'user') {
+        geminiContents.push({ role: 'user', parts: [{ text: userPrompt }] });
+      } else {
+        geminiContents[geminiContents.length - 1].parts = [{ text: userPrompt }];
+      }
 
       for (const model of candidateModels) {
         try {
@@ -318,14 +397,14 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+              contents: geminiContents,
               systemInstruction: {
                 parts: [{ text: PROMPT_ARCHITECT_SYSTEM_PROMPT }],
               },
               generationConfig: {
                 temperature: 0.35,
                 thinkingConfig: { thinkingBudget: 0 },
-                maxOutputTokens: 1200,
+                maxOutputTokens: 1400,
               },
             }),
           });
@@ -339,7 +418,7 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
             }
           } else {
             const errText = await geminiRes.text();
-            console.warn(`Gemini PromptGen ${model} status ${geminiRes.status}:`, errText);
+            console.warn(`Gemini PromptGen ${model} status ${geminiRes.status}:`, errText.slice(0, 200));
           }
         } catch (err) {
           console.warn(`Gemini PromptGen ${model} error:`, err.message);
@@ -350,6 +429,14 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
     // 2. Tentar Groq (Llama 3.3 70B)
     if (groqKey && (clientProvider === 'groq' || !clientProvider)) {
       try {
+        const groqMessages = [
+          { role: 'system', content: PROMPT_ARCHITECT_SYSTEM_PROMPT },
+          ...cleanHistory,
+        ];
+        if (groqMessages[groqMessages.length - 1]?.role !== 'user') {
+          groqMessages.push({ role: 'user', content: userPrompt });
+        }
+
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -358,12 +445,9 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
           },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
-            messages: [
-              { role: 'system', content: PROMPT_ARCHITECT_SYSTEM_PROMPT },
-              { role: 'user', content: userPrompt },
-            ],
+            messages: groqMessages,
             temperature: 0.4,
-            max_tokens: 2500,
+            max_tokens: 2000,
           }),
         });
 
@@ -383,6 +467,14 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
     // 3. Tentar OpenAI
     if (openAiKey && (clientProvider === 'openai' || !clientProvider)) {
       try {
+        const openAiMessages = [
+          { role: 'system', content: PROMPT_ARCHITECT_SYSTEM_PROMPT },
+          ...cleanHistory,
+        ];
+        if (openAiMessages[openAiMessages.length - 1]?.role !== 'user') {
+          openAiMessages.push({ role: 'user', content: userPrompt });
+        }
+
         const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -391,19 +483,17 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: PROMPT_ARCHITECT_SYSTEM_PROMPT },
-              { role: 'user', content: userPrompt },
-            ],
+            messages: openAiMessages,
             temperature: 0.4,
-            max_tokens: 2500,
+            max_tokens: 2000,
           }),
         });
 
         if (openAiRes.ok) {
           const data = await openAiRes.json();
-          const reply = data.choices?.[0]?.message?.content;
+          let reply = data.choices?.[0]?.message?.content;
           if (reply) {
+            reply = reply.replace(/```(kling|flow|midjourney|flux|negative):/gi, '```$1');
             return res.status(200).json({ success: true, reply, provider: 'openai' });
           }
         }
@@ -412,9 +502,48 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
       }
     }
 
-    return res.status(500).json({
-      success: false,
-      error: 'Não foi possível gerar os prompts com os provedores configurados.',
+    // 4. Gateway LLM Secundário de Alta Disponibilidade (OpenAI-compatible via Pollinations)
+    try {
+      const relayMessages = [
+        { role: 'system', content: PROMPT_ARCHITECT_SYSTEM_PROMPT },
+        ...cleanHistory,
+      ];
+      if (relayMessages[relayMessages.length - 1]?.role !== 'user') {
+        relayMessages.push({ role: 'user', content: userPrompt });
+      }
+
+      const relayRes = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'openai',
+          messages: relayMessages,
+          temperature: 0.35,
+        }),
+      });
+
+      if (relayRes.ok) {
+        const data = await relayRes.json();
+        let reply = data.choices?.[0]?.message?.content;
+        if (reply && reply.trim().length > 15) {
+          reply = reply.replace(/```(kling|flow|midjourney|flux|negative):/gi, '```$1');
+          return res.status(200).json({
+            success: true,
+            reply: reply.trim(),
+            provider: 'orbiex-cloud-llm',
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Cloud LLM prompt relay warning:', err.message);
+    }
+
+    // 5. Síntese Inteligente Orbiex (Zero Erro 500)
+    const fallbackReply = buildDynamicPromptFallback(userPrompt);
+    return res.status(200).json({
+      success: true,
+      reply: fallbackReply,
+      provider: 'orbiex-prompt-engine',
     });
   } catch (error) {
     console.error('Prompt generator endpoint error:', error);

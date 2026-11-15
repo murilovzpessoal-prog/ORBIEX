@@ -135,6 +135,14 @@ function greeting() {
 /* ─────────────────────────── assistente inteligente estilo ChatGPT ─────────────────────────── */
 
 async function generatePromptAssistantReply(userIdea: string, history: PromptMessage[]): Promise<string> {
+  const cleanHistory = history
+    .slice(-6)
+    .filter((m) => m && m.text)
+    .map((m) => ({
+      role: m.role === 'agent' ? 'assistant' : 'user',
+      text: m.text,
+    }));
+
   try {
     const cfg = getAIConfig();
     const res = await fetch('/api/generate-prompt', {
@@ -142,6 +150,7 @@ async function generatePromptAssistantReply(userIdea: string, history: PromptMes
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         idea: userIdea,
+        messages: cleanHistory,
         apiKey: cfg.apiKey || undefined,
         provider: cfg.provider !== 'native' ? cfg.provider : undefined,
       }),
@@ -151,8 +160,42 @@ async function generatePromptAssistantReply(userIdea: string, history: PromptMes
       if (data.reply) return data.reply;
     }
   } catch (e) {
-    console.warn('API de geração de prompt indisponível, usando motor local:', e);
+    console.warn('API de geração de prompt indisponível, tentando gateway secundário:', e);
   }
+
+  try {
+    const relayRes = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Você é o GERADOR DE PROMPTS E ASSISTENTE DE VÍDEOS IA DA ORBIEX. Se o usuário pedir um prompt de vídeo, foto, cena, produto, roupa ou personagem, gere o prompt exato e fiel ao pedido dele nos blocos ```kling (vídeo 9:16 em inglês hiper-realista), ```negative (anti-distorção), ```flow (Google Flow VEO 3 em inglês) e ```midjourney (foto 9:16 em inglês com --ar 9:16 --v 6.1 --style raw). Se o usuário fizer uma pergunta técnica sobre Kling, Flow, Midjourney ou pedir um ajuste no prompt anterior, responda diretamente à dúvida dele e entregue o prompt ajustado. Nunca use emojis.',
+          },
+          ...cleanHistory.map((m) => ({
+            role: m.role,
+            content: m.text,
+          })),
+          { role: 'user', content: userIdea },
+        ],
+        temperature: 0.35,
+      }),
+    });
+    if (relayRes.ok) {
+      const data = await relayRes.json();
+      let reply = data?.choices?.[0]?.message?.content;
+      if (reply && typeof reply === 'string' && reply.trim().length > 15) {
+        reply = reply.replace(/```(kling|flow|midjourney|flux|negative):/gi, '```$1');
+        return reply.trim();
+      }
+    }
+  } catch {
+    // Fallback local
+  }
+
   return generateLocalPromptReply(userIdea, history);
 }
 

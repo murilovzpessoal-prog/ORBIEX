@@ -41,17 +41,14 @@ export function LoginView({ onLogin }: LoginViewProps) {
       return;
     }
     if (password.trim().length < 3) {
-      setError('Crie uma senha de pelo menos 3 caracteres ou use a senha padrão (123456).');
+      setError('Crie uma senha de pelo menos 3 caracteres ou use a senha padrão (2026k).');
       return;
     }
 
     setLoading(true);
 
     try {
-      const authPassToTry =
-        password.trim().length >= 6
-          ? password.trim()
-          : `${password.trim()}000000`.slice(0, 6);
+      const authPassToTry = password.trim();
 
       let resolvedName =
         cleanName && cleanName.length >= 2

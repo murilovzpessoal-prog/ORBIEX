@@ -4,100 +4,7 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://ywmhjdcuztfwhlatv
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_yOFFvnPP5ZH2-SwMHF_JLw_tM9VRGXS';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-function buildWelcomeEmailHtml(buyerName, buyerEmail) {
-  const firstName = buyerName ? buyerName.split(' ')[0] : 'Membro';
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seja bem-vindo(a) à OrbiEx AI</title>
-</head>
-<body style="margin:0;padding:0;background-color:#080501;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#ffffff;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#080501;padding:32px 16px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#110c05;border:1px solid rgba(212,175,55,0.3);border-radius:20px;padding:36px 28px;box-shadow:0 20px 50px rgba(0,0,0,0.85);">
-          <tr>
-            <td align="center" style="padding-bottom:16px;">
-              <span style="display:inline-block;padding:6px 14px;border-radius:999px;background-color:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.35);color:#f3e2a4;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;">
-                ACESSO LIBERADO • ORBIEX AI
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" style="padding-bottom:12px;">
-              <h1 style="margin:0;font-size:28px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">
-                Seja bem-vindo(a) à <span style="color:#d4af37;">OrbiEx</span>, ${firstName}!
-              </h1>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" style="padding-bottom:28px;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.75);">
-                Parabéns pela sua decisão! Sua inscrição foi confirmada e o seu acesso à plataforma oficial da <strong>OrbiEx AI</strong> já está liberado para o e-mail <strong>${buyerEmail}</strong>.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" style="padding-bottom:30px;">
-              <a href="https://www.orbiex.io/" target="_blank" style="display:inline-block;background:linear-gradient(90deg,#d4af37,#f3e2a4,#eab308);color:#000000;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:1px;text-decoration:none;padding:16px 32px;border-radius:12px;">
-                Acessar a OrbiEx Agora →
-              </a>
-              <p style="margin:10px 0 0 0;font-size:12px;color:rgba(255,255,255,0.5);">
-                Link oficial: <a href="https://www.orbiex.io/" style="color:#d4af37;text-decoration:underline;">https://www.orbiex.io/</a>
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color:#181107;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;margin-bottom:20px;">
-              <h2 style="margin:0 0 16px 0;font-size:16px;font-weight:800;color:#f3e2a4;text-transform:uppercase;letter-spacing:0.8px;">
-                📋 Instruções de Como Acessar:
-              </h2>
-              <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:rgba(255,255,255,0.85);">
-                <strong>1. Acesse o site oficial:</strong><br/>
-                Entre em <a href="https://www.orbiex.io/" style="color:#d4af37;font-weight:bold;">www.orbiex.io</a> pelo seu celular ou computador.
-              </p>
-              <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:rgba(255,255,255,0.85);">
-                <strong>2. Preencha seus dados:</strong><br/>
-                Coloque o seu <strong>Nome</strong> e o seu <strong>E-mail da compra</strong> (${buyerEmail}).
-              </p>
-              <p style="margin:0;font-size:14px;line-height:1.6;color:rgba(255,255,255,0.85);">
-                <strong>3. Digite a sua primeira senha:</strong><br/>
-                No campo de senha, <strong>digite a primeira senha que você deseja criar</strong> para a sua conta e clique em <strong>"Entrar na Plataforma"</strong>.
-              </p>
-            </td>
-          </tr>
-          <tr><td style="height:16px;"></td></tr>
-          <tr>
-            <td style="background-color:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.4);border-radius:16px;padding:20px 24px;">
-              <p style="margin:0 0 8px 0;font-size:13px;font-weight:800;color:#f3e2a4;text-transform:uppercase;letter-spacing:0.8px;">
-                🔑 Senha Padrão de Acesso Imediato
-              </p>
-              <p style="margin:0 0 12px 0;font-size:13.5px;line-height:1.6;color:rgba(255,255,255,0.85);">
-                Se por qualquer motivo você não conseguir entrar com a senha que tentar criar, você pode entrar imediatamente utilizando a <strong>senha padrão oficial</strong>:
-              </p>
-              <div style="background-color:#080501;border:1px dashed #d4af37;border-radius:10px;padding:12px;text-align:center;">
-                <span style="font-family:monospace;font-size:20px;font-weight:900;letter-spacing:2px;color:#f3e2a4;">orbiex2026k</span>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" style="padding-top:28px;">
-              <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;">
-                © 2026 OrbiEx AI — Ecossistema de Inteligência Artificial.<br/>
-                Este é um e-mail automático enviado após a confirmação da sua compra.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
+const { buildWelcomeEmailHtml, SUBJECT: WELCOME_SUBJECT } = require('./_welcome-email.js');
 
 module.exports = async function handler(req, res) {
   // CORS Headers
@@ -275,9 +182,9 @@ module.exports = async function handler(req, res) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: process.env.RESEND_FROM_EMAIL || 'OrbiEx AI <acesso@orbiex.io>',
+              from: process.env.RESEND_FROM_EMAIL || 'Orbiex <acesso@orbiex.io>',
               to: [email],
-              subject: 'Seja bem-vindo(a) à OrbiEx AI — Seu acesso está liberado!',
+              subject: WELCOME_SUBJECT,
               html: buildWelcomeEmailHtml(displayName, email),
             }),
           });

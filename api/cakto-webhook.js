@@ -121,11 +121,11 @@ module.exports = async function handler(req, res) {
     if (status === 'approved') {
       const displayName = name || email.split('@')[0];
 
-      // 1. Executa a RPC atomica que insere/atualiza direto em auth.users (ja confirmado com senha padrao 2026k), authorized_buyers e profiles
+      // 1. Executa a RPC atomica que insere/atualiza direto em auth.users (ja confirmado com senha padrao orbiex2026k), authorized_buyers e profiles
       try {
         const { data: rpcData, error: rpcErr } = await supabase.rpc('orbiex_sync_user_account', {
           p_email: email,
-          p_password: process.env.DEFAULT_BUYER_PASSWORD || '2026k',
+          p_password: process.env.DEFAULT_BUYER_PASSWORD || 'orbiex2026k',
           p_name: displayName,
         });
         if (!rpcErr && rpcData?.ok) {
@@ -140,7 +140,7 @@ module.exports = async function handler(req, res) {
         try {
           const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
             email,
-            password: process.env.DEFAULT_BUYER_PASSWORD || '2026k',
+            password: process.env.DEFAULT_BUYER_PASSWORD || 'orbiex2026k',
             options: {
               data: {
                 full_name: displayName,

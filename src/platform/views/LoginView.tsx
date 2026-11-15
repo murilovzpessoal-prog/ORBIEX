@@ -41,7 +41,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
       return;
     }
     if (password.trim().length < 3) {
-      setError('Crie uma senha de pelo menos 3 caracteres ou use a senha padrão (2026k).');
+      setError('Crie uma senha de pelo menos 3 caracteres ou use a senha padrão (orbiex2026k).');
       return;
     }
 

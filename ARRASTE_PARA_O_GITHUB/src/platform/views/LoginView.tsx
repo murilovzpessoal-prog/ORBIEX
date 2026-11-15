@@ -48,149 +48,89 @@ export function LoginView({ onLogin }: LoginViewProps) {
     setLoading(true);
 
     try {
-      // 1. Permissões de administração, senhas padrão e compradores verificados
-      const cleanPass = password.trim().toLowerCase();
-      const masterPasswords = [
-        'orbiex2026k',
-        'tst123',
-        'orbiex2026',
-        'orbiex123',
-        'alpine2026',
-        'admin123',
-        'alpine123',
-        '123456',
-        '12345678',
-        '1234',
-        'orbiex',
-        'senha123',
-        'admin',
-      ];
-      const isMasterPassword = masterPasswords.includes(cleanPass);
+      const authPassToTry =
+        password.trim().length >= 6
+          ? password.trim()
+          : `${password.trim()}000000`.slice(0, 6);
 
-      const isAdmin =
-        cleanEmail.endsWith('@orbiex.ai') ||
-        cleanEmail.endsWith('@orbiex.io');
+      let resolvedName =
+        cleanName && cleanName.length >= 2
+          ? cleanName
+          : VERIFIED_CAKTO_BUYERS[cleanEmail] ||
+            cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
 
-      let isBuyerApproved = false;
-      let buyerRecord: any = null;
-
-      // Verifica se está na lista imediata de compradores aprovados
-      if (VERIFIED_CAKTO_BUYERS[cleanEmail]) {
-        isBuyerApproved = true;
-        buyerRecord = { email: cleanEmail, name: VERIFIED_CAKTO_BUYERS[cleanEmail], status: 'approved' };
-      }
-
-      if (isAdmin || isMasterPassword) {
-        isBuyerApproved = true;
-      }
-
-      // 1A. Tenta autenticar diretamente no Supabase Authentication (Authentication -> Users)
-      const authPassToTry = password.trim().length >= 6 ? password.trim() : `${password.trim()}123456`.slice(0, 6);
+      // 1. Executa a função RPC no Supabase que cria/atualiza o usuário instantaneamente em:
+      //    - Authentication -> Users (auth.users + auth.identities, já confirmado)
+      //    - public.authorized_buyers (status = 'approved')
+      //    - public.profiles
       try {
-        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password: password.trim(),
-        });
-        if (!signInErr && signInData?.user) {
-          isBuyerApproved = true;
+        const { data: syncData, error: syncErr } = await supabase.rpc(
+          'orbiex_sync_user_account',
+          {
+            p_email: cleanEmail,
+            p_password: authPassToTry,
+            p_name: cleanName.length >= 2 ? cleanName : null,
+          }
+        );
+
+        if (!syncErr && syncData) {
+          if (syncData.refunded) {
+            setLoading(false);
+            setError(
+              'Acesso bloqueado: consta um reembolso/estorno para este e-mail.'
+            );
+            return;
+          }
+          if (syncData.name) {
+            resolvedName = syncData.name;
+          }
+        }
+      } catch (rpcErr) {
+        console.warn('Aviso ao sincronizar via RPC:', rpcErr);
+      }
+
+      // 2. Autentica a sessão no Supabase Auth (ou cria via signUp caso necessário)
+      try {
+        const { data: signInData, error: signInErr } =
+          await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: authPassToTry,
+          });
+
+        if (signInErr) {
+          await supabase.auth.signUp({
+            email: cleanEmail,
+            password: authPassToTry,
+            options: {
+              data: {
+                full_name: resolvedName,
+                display_name: resolvedName,
+                name: resolvedName,
+              },
+            },
+          });
+        } else if (signInData?.user) {
           const metaName =
             signInData.user.user_metadata?.full_name ||
             signInData.user.user_metadata?.display_name ||
             signInData.user.user_metadata?.name;
-          if (metaName) {
-            buyerRecord = { email: cleanEmail, name: metaName, status: 'approved' };
+          if (!cleanName && metaName) {
+            resolvedName = metaName;
           }
         }
       } catch {}
 
-      // 1B. Consulta na base de compras aprovadas da Cakto no Supabase (authorized_buyers)
+      // 3. Garante que o perfil esteja salvo na tabela profiles
       try {
-        const { data: buyers, error: buyerErr } = await supabase
-          .from('authorized_buyers')
-          .select('*')
-          .ilike('email', cleanEmail)
-          .limit(1);
-
-        if (!buyerErr && buyers && buyers.length > 0) {
-          buyerRecord = buyers[0];
-          if (buyerRecord.status === 'approved') {
-            isBuyerApproved = true;
-          }
-        }
-      } catch (sbErr) {
-        console.warn('Aviso de consulta Supabase:', sbErr);
-      }
-
-      // 1C. Consulta também na tabela profiles (caso já tenha perfil criado)
-      if (!isBuyerApproved) {
-        try {
-          const { data: profs } = await supabase
-            .from('profiles')
-            .select('*')
-            .ilike('user_email', cleanEmail)
-            .limit(1);
-          if (profs && profs.length > 0) {
-            isBuyerApproved = true;
-            buyerRecord = { email: cleanEmail, name: profs[0].name, status: 'approved' };
-          }
-        } catch {}
-      }
-
-      // 1D. Fallback: consulta via endpoint /api/check-access
-      if (!isBuyerApproved) {
-        try {
-          const res = await fetch(`/api/check-access?email=${encodeURIComponent(cleanEmail)}`);
-          if (res.ok) {
-            const result = await res.json();
-            if (result.authorized) {
-              isBuyerApproved = true;
-              buyerRecord = { name: result.name };
-            }
-          }
-        } catch {}
-      }
-
-      // Se não for admin, nem comprador aprovado e nem usuário do Supabase Auth
-      if (!isBuyerApproved) {
-        setLoading(false);
-        setError(
-          'Acesso não liberado: Este e-mail não consta como compra aprovada na Cakto. Utilize o mesmo e-mail informado no checkout ou aguarde a confirmação do pagamento.'
-        );
-        return;
-      }
-
-      // Determina o melhor nome: digitado > cadastro da Cakto > prefixo do e-mail
-      const fallbackName = buyerRecord?.name || cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
-      const resolvedName = cleanName && cleanName.length >= 2 ? cleanName : fallbackName;
-
-      // 2. Garante que o comprador aprovado também seja registrado automaticamente em Authentication -> Users (supabase.auth)
-      try {
-        await supabase.auth.signUp({
-          email: cleanEmail,
-          password: authPassToTry,
-          options: {
-            data: {
-              full_name: resolvedName,
-              display_name: resolvedName,
-              name: resolvedName,
-            },
+        await supabase.from('profiles').upsert(
+          {
+            user_email: cleanEmail,
+            name: resolvedName,
+            updated_at: new Date().toISOString(),
           },
-        });
+          { onConflict: 'user_email' }
+        );
       } catch {}
-
-      // 2. Persiste o perfil com o nome completo no Supabase
-      const { error: profileErr } = await supabase.from('profiles').upsert(
-        {
-          user_email: cleanEmail,
-          name: resolvedName,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_email' }
-      );
-
-      if (profileErr) {
-        console.warn('Aviso ao sincronizar perfil:', profileErr.message);
-      }
 
       // 3. Salva sessão local e senha criada para carregamento instantâneo
       try {

@@ -116,44 +116,59 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ success: false, error: error.message });
     }
 
-    // Cria automaticamente o usuario no Supabase Authentication (Authentication -> Users) e em profiles
+    // Cria automaticamente o usuario no Supabase Authentication (Authentication -> Users), authorized_buyers e profiles via RPC atomica
     let authUserCreated = false;
     if (status === 'approved') {
       const displayName = name || email.split('@')[0];
 
-      // 1. Cria automaticamente em Authentication -> Users (supabase.auth) com senha padrao inicial
+      // 1. Executa a RPC atomica que insere/atualiza direto em auth.users (ja confirmado), authorized_buyers e profiles
       try {
-        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-          email,
-          password: process.env.DEFAULT_BUYER_PASSWORD || '123456',
-          options: {
-            data: {
-              full_name: displayName,
-              display_name: displayName,
-              name: displayName,
-              platform: 'cakto',
-            },
-          },
+        const { data: rpcData, error: rpcErr } = await supabase.rpc('orbiex_sync_user_account', {
+          p_email: email,
+          p_password: process.env.DEFAULT_BUYER_PASSWORD || '123456',
+          p_name: displayName,
         });
-        if (!signUpErr && signUpData?.user) {
+        if (!rpcErr && rpcData?.ok) {
           authUserCreated = true;
         }
-      } catch (authErr) {
-        console.warn('Supabase Auth auto-signup warning:', authErr);
+      } catch (rpcCatchErr) {
+        console.warn('RPC sync warning:', rpcCatchErr);
       }
 
-      // 2. Cria/atualiza automaticamente o perfil na tabela profiles
-      try {
-        await supabase.from('profiles').upsert(
-          {
-            user_email: email,
-            name: displayName,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_email' }
-        );
-      } catch (profErr) {
-        console.warn('Profile auto-create warning:', profErr);
+      // 2. Fallback caso a RPC nao tenha rodado: cria via signUp + profiles
+      if (!authUserCreated) {
+        try {
+          const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+            email,
+            password: process.env.DEFAULT_BUYER_PASSWORD || '123456',
+            options: {
+              data: {
+                full_name: displayName,
+                display_name: displayName,
+                name: displayName,
+                platform: 'cakto',
+              },
+            },
+          });
+          if (!signUpErr && signUpData?.user) {
+            authUserCreated = true;
+          }
+        } catch (authErr) {
+          console.warn('Supabase Auth auto-signup warning:', authErr);
+        }
+
+        try {
+          await supabase.from('profiles').upsert(
+            {
+              user_email: email,
+              name: displayName,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_email' }
+          );
+        } catch (profErr) {
+          console.warn('Profile auto-create warning:', profErr);
+        }
       }
     }
 

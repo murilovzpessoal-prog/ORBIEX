@@ -58,7 +58,7 @@ REGRAS DE RESPOSTA DO SUPORTE:
 - NUNCA use emojis. Seja profissional, ágil e resolutivo.`;
 
 const ACTIVE_GEMINI_KEY = Buffer.from(
-  'QVEuQWI4Uk42Si1wTmN4ckRRQlU0dzRjbDNxNHgzUGI4aWgwSVRudUFrei1RdXhCYXlsZ1E=',
+  'QVEuQWI4Uk42S0JKUzU4emtnQ2ctQURUZDV4cHNyUFpyVkZzQ2YzRElvbWRPeEJ1T2dySmc=',
   'base64'
 ).toString('utf8');
 
@@ -250,9 +250,9 @@ module.exports = async function handler(req, res) {
 
     const geminiKey =
       clientApiKey ||
+      ACTIVE_GEMINI_KEY ||
       process.env.GEMINI_API_KEY ||
-      process.env.VITE_GEMINI_API_KEY ||
-      ACTIVE_GEMINI_KEY;
+      process.env.VITE_GEMINI_API_KEY;
     const groqKey = clientApiKey || process.env.GROQ_API_KEY;
     const openAiKey = clientApiKey || process.env.OPENAI_API_KEY;
 

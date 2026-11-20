@@ -67,6 +67,16 @@ const PRO_SYSTEM_ADDON = `
 MODO ORBIEX 1 PRO ATIVADO (ANÁLISE ESTRATÉGICA AVANÇADA & MENTORIA DE ELITE):
 - Entregue uma resposta mais aprofundada, completa, estratégica e detalhada, com passo a passo prático, indicação de ferramentas e dicas de retenção/conversão para o carrinho do TikTok Shop.`;
 
+const VOICE_SYSTEM_ADDON = `
+
+MODO VOZ AO VIVO ATIVADO (CONVERSA FALADA EM TEMPO REAL):
+- Você está conversando por VOZ com o usuário. Sua resposta será lida em voz alta.
+- Personalidade: assistente de inteligência artificial sofisticado, calmo, confiante, preciso e cordial, com um leve toque de humor elegante (estilo mordomo digital de alta tecnologia).
+- Responda como fala natural e fluida em português do Brasil, em 1 a 4 frases curtas (no máximo uns 60 palavras), indo direto ao ponto da pergunta.
+- PROIBIDO usar markdown, asteriscos, hashtags, listas numeradas, tópicos, tabelas, links, emojis ou blocos de código.
+- Se o pedido exigir conteúdo longo (roteiro completo, prompt técnico), dê um resumo falado curto e diga que o material completo pode ser gerado no chat de texto.
+- Se não entender o que foi dito, peça gentilmente para repetir.`;
+
 const FAST_SYSTEM_ADDON = `
 
 MODO ORBIEX 1 FAST ATIVADO (RESPOSTA ÁGIL, CONCISA E DIRETA):
@@ -227,14 +237,17 @@ module.exports = async function handler(req, res) {
       attachments = [],
       mode = 'fast',
       supportStyle = 'expert',
+      voice = false,
       apiKey: clientApiKey,
       provider: clientProvider,
     } = req.body || {};
 
     const isSupport = mode === 'support';
-    const isPro = mode === 'pro' || (isSupport && supportStyle === 'expert');
+    const isPro = !voice && (mode === 'pro' || (isSupport && supportStyle === 'expert'));
 
-    const effectiveSystemPrompt = isSupport
+    const effectiveSystemPrompt = voice
+      ? DEFAULT_SYSTEM_PROMPT + VOICE_SYSTEM_ADDON
+      : isSupport
       ? SUPPORT_SYSTEM_PROMPT + (supportStyle === 'expert' ? PRO_SYSTEM_ADDON : FAST_SYSTEM_ADDON)
       : DEFAULT_SYSTEM_PROMPT + (isPro ? PRO_SYSTEM_ADDON : FAST_SYSTEM_ADDON);
 
@@ -258,7 +271,7 @@ module.exports = async function handler(req, res) {
 
     // 1. Tentar Google Gemini (gemini-2.5-flash / gemini-flash-latest / gemini-2.0-flash)
     if (geminiKey && (clientProvider === 'gemini' || !clientProvider || clientProvider === 'native')) {
-      const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+      const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash'];
 
       const geminiContents = [];
       const recent = messages.slice(-8);

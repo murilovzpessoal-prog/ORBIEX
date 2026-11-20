@@ -72,7 +72,7 @@ const ACTIVE_GEMINI_KEY = Buffer.from(
 ).toString('utf8');
 
 async function callGeminiJSON(systemPrompt, userText, geminiKey, imageDataUrl) {
-  const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+  const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash'];
   const parts = [];
 
   if (imageDataUrl && typeof imageDataUrl === 'string' && imageDataUrl.includes('base64,')) {
@@ -378,7 +378,7 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
 
     // 1. Tentar Google Gemini
     if (geminiKey && (clientProvider === 'gemini' || !clientProvider || clientProvider === 'native')) {
-      const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+      const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash'];
 
       const geminiContents = cleanHistory.map((m) => ({
         role: m.role === 'assistant' ? 'model' : 'user',

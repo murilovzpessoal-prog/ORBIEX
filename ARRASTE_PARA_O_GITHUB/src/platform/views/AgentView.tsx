@@ -28,6 +28,7 @@ import type { Card, AttachmentItem } from '../agentBrain';
 import { generateAIReply } from '../aiService';
 import { useUserProfile } from '../useUserProfile';
 import { ResultCard, Rich, copyText } from './ChatParts';
+import { VoiceMode, VoiceWaveIcon } from './VoiceMode';
 
 /* ─────────────────────────── types ─────────────────────────── */
 
@@ -534,6 +535,36 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
     }, 10);
   };
 
+  /* ───── modo voz ao vivo (Orbiex Voice) ───── */
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const voiceChatRef = useRef<number | null>(null);
+
+  const openVoice = () => {
+    if (busy) stop();
+    if (listening) recRef.current?.stop();
+    voiceChatRef.current = activeId;
+    setVoiceOpen(true);
+  };
+  const closeVoice = useCallback(() => setVoiceOpen(false), []);
+
+  const handleVoiceTurn = useCallback((userText: string, agentText: string) => {
+    const userMsg: Msg = { id: nextId(), role: 'user', text: userText };
+    const agentMsg: Msg = { id: nextId(), role: 'agent', text: agentText, status: 'done', prompt: userText };
+    const id = voiceChatRef.current;
+    if (id === null) {
+      const newId = nextId();
+      voiceChatRef.current = newId;
+      const title = userText.length > 40 ? `${userText.slice(0, 40)}…` : userText;
+      setChats((prev) => [{ id: newId, title, updatedAt: Date.now(), msgs: [userMsg, agentMsg] }, ...prev]);
+      setActiveId(newId);
+    } else {
+      setChats((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, updatedAt: Date.now(), msgs: [...c.msgs, userMsg, agentMsg] } : c)),
+      );
+    }
+    stick.current = true;
+  }, []);
+
   const toggleMic = () => {
     if (!SpeechRec) return;
     if (listening) {
@@ -1015,6 +1046,16 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
                   </button>
                 )}
                 <button
+                  type="button"
+                  onClick={openVoice}
+                  aria-label="Conversar por voz com o Orbiex"
+                  title="Conversar por voz (modo interativo)"
+                  className="group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f4d77a] via-[#d4af37] to-[#8a6a1c] text-black shadow-[0_0_14px_rgba(212,175,55,0.45)] transition hover:scale-105 hover:shadow-[0_0_22px_rgba(212,175,55,0.7)]"
+                >
+                  <span className="absolute inset-0 rounded-full bg-[rgba(212,175,55,0.35)] opacity-0 transition group-hover:animate-ping group-hover:opacity-100" />
+                  <VoiceWaveIcon size={16} />
+                </button>
+                <button
                   type="submit"
                   disabled={!busy && !input.trim()}
                   aria-label={busy ? 'Parar' : 'Enviar'}
@@ -1030,6 +1071,13 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
           </div>
         </div>
       </section>
+      <VoiceMode
+        open={voiceOpen}
+        onClose={closeVoice}
+        history={msgs.map((m) => ({ role: m.role, text: m.text }))}
+        onTurn={handleVoiceTurn}
+        userName={displayName?.split(' ')[0]}
+      />
     </div>
   );
 }

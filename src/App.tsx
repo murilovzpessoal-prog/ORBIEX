@@ -1,6 +1,7 @@
 import React, { Component, type ReactNode, useState, useEffect } from 'react';
 import PlatformApp from './platform/PlatformApp';
 import CourseMembersApp from './course-members/CourseMembersApp';
+import SelectedOnboardingApp from './selected/SelectedOnboardingApp';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -70,19 +71,53 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 export default function App() {
-  const [route, setRoute] = useState(() => (typeof window !== 'undefined' ? window.location.hash : ''));
+  const [routeState, setRouteState] = useState(() => ({
+    hash: typeof window !== 'undefined' ? window.location.hash : '',
+    pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+  }));
 
   useEffect(() => {
-    const handleHash = () => setRoute(window.location.hash);
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    const syncRoute = () =>
+      setRouteState({
+        hash: window.location.hash,
+        pathname: window.location.pathname,
+      });
+    window.addEventListener('hashchange', syncRoute);
+    window.addEventListener('popstate', syncRoute);
+    return () => {
+      window.removeEventListener('hashchange', syncRoute);
+      window.removeEventListener('popstate', syncRoute);
+    };
   }, []);
 
-  const isCourseStandalone = route.startsWith('#/curso') || route.startsWith('#/formacao');
+  const lowerHash = routeState.hash.toLowerCase();
+  const lowerPath = routeState.pathname.toLowerCase();
+
+  const isSelectedPage =
+    lowerPath.startsWith('/selecionado') ||
+    lowerPath.startsWith('/aprovado') ||
+    lowerPath.startsWith('/gerente') ||
+    lowerPath.startsWith('/convocacao') ||
+    lowerHash.startsWith('#/selecionado') ||
+    lowerHash.startsWith('#/aprovado') ||
+    lowerHash.startsWith('#/gerente') ||
+    lowerHash.startsWith('#/convocacao');
+
+  const isCourseStandalone =
+    lowerHash.startsWith('#/curso') ||
+    lowerHash.startsWith('#/formacao') ||
+    lowerPath.startsWith('/curso') ||
+    lowerPath.startsWith('/formacao');
 
   return (
     <ErrorBoundary>
-      {isCourseStandalone ? <CourseMembersApp /> : <PlatformApp />}
+      {isSelectedPage ? (
+        <SelectedOnboardingApp />
+      ) : isCourseStandalone ? (
+        <CourseMembersApp />
+      ) : (
+        <PlatformApp />
+      )}
     </ErrorBoundary>
   );
 }

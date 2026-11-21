@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ExternalLink, Mic, MicOff, Sparkles, X } from 'lucide-react';
+import { Check, Mic, MicOff, Sparkles, X } from 'lucide-react';
 import type { ViewId } from '../data';
 
 /* ───────────────────────────────────────────────────────────────
@@ -125,12 +125,15 @@ function resolveVoiceDestination(
     return { kind: 'internal', viewId: 'support', label: 'Suporte Orbiex' };
   }
 
-  // 2. Ferramentas Externas & Sites
+  // 2. Ferramentas Externas & Sites (com Deep Links diretos para criação quando disponível)
   if (t.includes('flow') || t.includes('veo')) {
     return { kind: 'external', url: 'https://labs.google/fx/pt/tools/flow', label: 'Google Flow (VEO)' };
   }
   if (t.includes('tiktok_shop') || t.includes('seller') || t.includes('tiktok shop')) {
     return { kind: 'external', url: 'https://seller-br.tiktok.com/', label: 'TikTok Shop Seller Center' };
+  }
+  if (t.includes('upload') || t.includes('postar')) {
+    return { kind: 'external', url: 'https://www.tiktok.com/tiktokstudio/upload', label: 'TikTok Studio Upload' };
   }
   if (t.includes('studio')) {
     return { kind: 'external', url: 'https://www.tiktok.com/tiktokstudio', label: 'TikTok Studio' };
@@ -140,22 +143,26 @@ function resolveVoiceDestination(
     return { kind: 'external', url, label: q ? `TikTok (${q})` : 'TikTok' };
   }
   if (t.includes('kling')) {
-    return { kind: 'external', url: 'https://app.klingai.com/', label: 'Kling AI' };
+    return {
+      kind: 'external',
+      url: 'https://app.klingai.com/global/image-to-video/frame-mode/new',
+      label: 'Kling AI (Novo Projeto)',
+    };
   }
   if (t.includes('midjourney')) {
-    return { kind: 'external', url: 'https://www.midjourney.com/', label: 'Midjourney' };
+    return { kind: 'external', url: 'https://www.midjourney.com/imagine', label: 'Midjourney' };
   }
   if (t.includes('hailuo') || t.includes('minimax')) {
-    return { kind: 'external', url: 'https://hailuoai.video/', label: 'Hailuo AI' };
+    return { kind: 'external', url: 'https://hailuoai.video/create', label: 'Hailuo AI' };
   }
   if (t.includes('luma')) {
-    return { kind: 'external', url: 'https://lumalabs.ai/dream-machine', label: 'Luma Dream Machine' };
+    return { kind: 'external', url: 'https://lumalabs.ai/dream-machine/creations', label: 'Luma Dream Machine' };
   }
   if (t.includes('runway')) {
     return { kind: 'external', url: 'https://app.runwayml.com/', label: 'Runway ML' };
   }
   if (t.includes('capcut')) {
-    return { kind: 'external', url: 'https://www.capcut.com/', label: 'CapCut' };
+    return { kind: 'external', url: 'https://www.capcut.com/editor', label: 'CapCut (Novo Projeto)' };
   }
   if (t.includes('canva')) {
     return { kind: 'external', url: 'https://www.canva.com/', label: 'Canva' };
@@ -375,6 +382,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const pendingInternalCloseRef = useRef(false);
+  const pendingExternalRedirectRef = useRef<string | null>(null);
   const historyRef = useRef(history);
   historyRef.current = history;
 
@@ -658,28 +666,36 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                 };
               }
 
-              let opened = false;
+              let openedNewTab = false;
               try {
                 const win = window.open(dest.url, '_blank');
-                opened = Boolean(win);
+                openedNewTab = Boolean(win);
               } catch {
-                opened = false;
+                openedNewTab = false;
               }
 
-              setActionBanner({ label: dest.label, url: dest.url, openedAuto: opened });
-              if (opened) {
+              setActionBanner({ label: dest.label, url: dest.url, openedAuto: true });
+
+              if (openedNewTab) {
                 window.setTimeout(() => {
-                  setActionBanner((curr) => (curr?.url === dest.url && curr.openedAuto ? null : curr));
-                }, 5000);
+                  setActionBanner((curr) => (curr?.url === dest.url ? null : curr));
+                }, 4000);
+              } else {
+                // Redirecionamento 100% automático garantido (nunca trava pedindo clique em botão!)
+                pendingExternalRedirectRef.current = dest.url;
+                window.setTimeout(() => {
+                  if (pendingExternalRedirectRef.current === dest.url) {
+                    pendingExternalRedirectRef.current = null;
+                    window.location.assign(dest.url);
+                  }
+                }, 2200);
               }
 
               return {
                 id: call.id,
                 name: call.name,
                 response: {
-                  result: opened
-                    ? `${dest.label} foi aberto automaticamente em uma nova aba do navegador.`
-                    : `Comando preparado para ${dest.label}. Informe que já está disponível na tela.`,
+                  result: `${dest.label} aberto e redirecionado automaticamente para o usuário. Confirme em uma frase curtíssima.`,
                 },
               };
             });
@@ -722,6 +738,19 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
           if (sc.turnComplete) {
             dropAudioRef.current = false;
             commitTurn();
+            if (pendingExternalRedirectRef.current) {
+              const targetUrl = pendingExternalRedirectRef.current;
+              const waitAudioMs = Math.max(
+                250,
+                (nextTimeRef.current - (outCtxRef.current?.currentTime || 0)) * 1000 + 200
+              );
+              window.setTimeout(() => {
+                if (pendingExternalRedirectRef.current === targetUrl) {
+                  pendingExternalRedirectRef.current = null;
+                  window.location.assign(targetUrl);
+                }
+              }, Math.min(waitAudioMs, 1800));
+            }
             if (pendingInternalCloseRef.current) {
               pendingInternalCloseRef.current = false;
               const waitAudioMs = Math.max(400, (nextTimeRef.current - (outCtxRef.current?.currentTime || 0)) * 1000 + 350);
@@ -993,23 +1022,10 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
           {actionBanner && (
             <div className="mt-4 flex justify-center">
-              {actionBanner.openedAuto ? (
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-4 py-2 text-[12px] font-bold text-emerald-300 shadow-lg">
-                  <Check size={14} />
-                  <span>Abrindo {actionBanner.label}...</span>
-                </div>
-              ) : (
-                <a
-                  href={actionBanner.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setActionBanner(null)}
-                  className="mvz-btn-grad inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-black uppercase tracking-wider text-black shadow-[0_0_25px_rgba(212,175,55,0.5)]"
-                >
-                  <ExternalLink size={14} />
-                  <span>Abrir {actionBanner.label} Agora</span>
-                </a>
-              )}
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-4 py-2 text-[12px] font-bold text-emerald-300 shadow-lg">
+                <Check size={14} />
+                <span>Abrindo {actionBanner.label}...</span>
+              </div>
             </div>
           )}
         </div>

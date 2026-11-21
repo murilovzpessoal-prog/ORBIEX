@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Mic, MicOff, Sparkles, X } from 'lucide-react';
+import { Check, Mic, MicOff, Puzzle, Sparkles, X } from 'lucide-react';
 import type { ViewId } from '../data';
+import {
+  copilotFocusOrbiex,
+  copilotInteractPage,
+  copilotOpenTab,
+  isCopilotInstalled,
+  useCopilotStatus,
+} from '../copilotBridge';
+import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
 
 /* ───────────────────────────────────────────────────────────────
    ORBIEX VOICE — Conversa por voz em TEMPO REAL (Gemini Live API)
@@ -60,6 +68,64 @@ const VOICE_TOOLS = [
             },
           },
           required: ['target'],
+        },
+      },
+      {
+        name: 'click_element_on_page',
+        description:
+          'Caça e clica em qualquer botão, link, aba ou opção visível dentro do site aberto no navegador do usuário (por exemplo: "Criar novo projeto" ou "Novo projeto" no Google Flow, "Gerar", "Entrar", "Baixar", "Publicar", etc.). Use sempre que o usuário pedir para clicar, apertar ou selecionar um botão na interface.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            buttonText: {
+              type: 'STRING',
+              description:
+                'Texto ou nome do botão que o usuário pediu para clicar (ex: "Criar novo projeto", "Novo projeto", "Gerar", "Entrar").',
+            },
+          },
+          required: ['buttonText'],
+        },
+      },
+      {
+        name: 'type_text_on_page',
+        description:
+          'Escreve ou cola um prompt/texto dentro de uma caixa de texto na página aberta (como o campo de prompt do Google Flow, Kling AI ou barra de busca) e opcionalmente clica em um botão em seguida.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            text: {
+              type: 'STRING',
+              description: 'Texto ou prompt completo a ser digitado no campo.',
+            },
+            fieldHint: {
+              type: 'STRING',
+              description: 'Dica opcional de qual campo procurar (ex: "prompt", "busca").',
+            },
+            clickButtonAfter: {
+              type: 'STRING',
+              description: 'Nome do botão para clicar logo após preencher o texto, se o usuário pediu (ex: "Gerar").',
+            },
+          },
+          required: ['text'],
+        },
+      },
+      {
+        name: 'scroll_or_control_page',
+        description:
+          'Rola a tela da página aberta para cima/baixo, lê quais botões estão visíveis na tela atual ou traz o foco de volta para a aba da Orbiex.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            action: {
+              type: 'STRING',
+              description: '"scroll" para rolar a página, "scan" para listar os botões da tela atual, ou "focus_orbiex" para voltar à aba da Orbiex.',
+            },
+            direction: {
+              type: 'STRING',
+              description: 'Direção da rolagem quando action="scroll": "down", "up", "top" ou "bottom".',
+            },
+          },
+          required: ['action'],
         },
       },
     ],
@@ -247,10 +313,13 @@ COMO CONVERSAR (MUITO IMPORTANTE):
 - Se não entender o áudio, peça com elegância para repetir.
 - Nunca leia símbolos, listas numeradas, markdown ou links. Nada de emojis.
 - Pode responder sobre qualquer assunto (perguntas gerais, contas, curiosidades), mas sua especialidade é TikTok Shop com IA.
-- COMANDOS DE AÇÃO E ABERTURA NO COMPUTADOR DO USUÁRIO (OBRIGATÓRIO):
-  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex para você abrir sites, ferramentas e abas no computador/navegador dele usando a função open_destination.
-  - PROIBIDO dizer que você "não tem acesso ao computador" ou "não pode abrir aplicativos". Você PODE e DEVE abrir!
-  - Sempre que o usuário disser frases como "abre o Flow", "abra o TikTok no meu computador", "abre o Kling pra mim", "abre Minha Jornada", "abre os Hooks", "entra no Seller Center", "abre o YouTube", chame IMEDIATAMENTE a função open_destination e responda com confiança (ex: "Pois não, senhor. Abrindo agora mesmo no seu navegador.").
+- COMANDOS DE AÇÃO, ABERTURA E INTERAÇÃO COM A INTERFACE (OBRIGATÓRIO):
+  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex e através da Extensão Orbiex Copilot para você abrir sites E clicar/digitar dentro das interfaces (como Google Flow, Kling AI, TikTok, Seller Center, etc.).
+  - PROIBIDO dizer que você "não tem acesso ao computador" ou "não pode clicar em botões de outros sites". Você PODE e DEVE fazer isso usando suas funções!
+  - Quando pedirem para abrir um site ou aba ("abre o Flow", "abre o TikTok"), chame open_destination.
+  - Quando pedirem para clicar em qualquer botão na tela ("clica em Criar novo projeto", "clica em Novo projeto", "aperta em Gerar"), chame IMEDIATAMENTE click_element_on_page.
+  - Quando pedirem para digitar ou colar um prompt/texto na página aberta, chame type_text_on_page.
+  - Quando pedirem para rolar a tela ou voltar para a Orbiex, chame scroll_or_control_page.
 
 ESPECIALIDADE:
 - TikTok Shop e afiliados (comissão pelo carrinho amarelo), começar do zero, liberar o carrinho, escolher produtos, roteiros de 15 a 30 segundos, ganchos dos primeiros 3 segundos, headlines POV, vídeos sem aparecer com IA (Kling, Google Flow VEO 3, Midjourney, Hailuo, CapCut), como evitar restrições e escalar postagens.
@@ -338,6 +407,7 @@ function makeImpulse(ctx: BaseAudioContext, seconds = 0.35, decay = 3.2): AudioB
 /* ───────── componente ───────── */
 
 export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName }: Props) {
+  const copilotConnected = useCopilotStatus();
   const [phase, setPhase] = useState<Phase>('connecting');
   const [userCaption, setUserCaption] = useState('');
   const [agentCaption, setAgentCaption] = useState('');
@@ -649,56 +719,166 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
             return;
           }
 
-          // Execução em tempo real de comandos de voz (abrir Flow, TikTok, Kling, abas internas, etc.)
+          // Execução em tempo real de comandos de voz (abrir sites, clicar em botões no Flow/TikTok, digitar prompts e rolar páginas!)
           if (msg.toolCall && Array.isArray(msg.toolCall.functionCalls)) {
-            const functionResponses = msg.toolCall.functionCalls.map((call: any) => {
-              const args = call?.args || {};
-              const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
+            const functionResponses = await Promise.all(
+              msg.toolCall.functionCalls.map(async (call: any) => {
+                const fnName = call?.name;
+                const args = call?.args || {};
 
-              if (dest.kind === 'internal') {
-                onNavigateRef.current?.(dest.viewId);
-                pendingInternalCloseRef.current = true;
-                setActionBanner({ label: dest.label, openedAuto: true });
+                // 1. Clicar em botão na interface da aba aberta (ex: "Criar novo projeto" no Google Flow)
+                if (fnName === 'click_element_on_page') {
+                  if (!isCopilotInstalled()) {
+                    openCopilotInstallModal();
+                    return {
+                      id: call.id,
+                      name: fnName,
+                      response: {
+                        result:
+                          'A Extensão Orbiex Copilot ainda não está ativa no navegador. Já abri a janela na tela para o usuário ativar a extensão gratuita em 20 segundos.',
+                      },
+                    };
+                  }
+                  const btnName = String(args.buttonText || '').trim();
+                  setActionBanner({ label: `Clicando em "${btnName}"...`, openedAuto: true });
+                  const res = await copilotInteractPage({ command: 'click', target: btnName });
+                  window.setTimeout(() => setActionBanner(null), 4000);
+                  return {
+                    id: call.id,
+                    name: fnName,
+                    response: res.ok
+                      ? { result: `Sucesso! Botão "${res.clickedLabel || btnName}" clicado na tela.` }
+                      : {
+                          result: `${res.error || 'Botão não localizado.'}${
+                            res.availableButtons?.length
+                              ? ` Botões visíveis na tela agora: ${res.availableButtons.join(', ')}`
+                              : ''
+                          }`,
+                        },
+                  };
+                }
+
+                // 2. Digitar prompt / texto em um campo da página aberta
+                if (fnName === 'type_text_on_page') {
+                  if (!isCopilotInstalled()) {
+                    openCopilotInstallModal();
+                    return {
+                      id: call.id,
+                      name: fnName,
+                      response: {
+                        result:
+                          'Para preencher campos dentro de sites externos, ative a Extensão Orbiex Copilot que acabei de exibir na tela.',
+                      },
+                    };
+                  }
+                  setActionBanner({ label: 'Preenchendo prompt na tela...', openedAuto: true });
+                  const res = await copilotInteractPage({
+                    command: 'type',
+                    text: args.text,
+                    target: args.fieldHint,
+                    clickAfter: args.clickButtonAfter,
+                  });
+                  window.setTimeout(() => setActionBanner(null), 4000);
+                  return {
+                    id: call.id,
+                    name: fnName,
+                    response: { result: res.ok ? res.message || 'Texto digitado com sucesso.' : res.error || 'Campo não encontrado.' },
+                  };
+                }
+
+                // 3. Rolar página, escanear tela ou voltar foco para a Orbiex
+                if (fnName === 'scroll_or_control_page') {
+                  const act = String(args.action || 'scroll').toLowerCase();
+                  if (!isCopilotInstalled()) {
+                    openCopilotInstallModal();
+                    return {
+                      id: call.id,
+                      name: fnName,
+                      response: { result: 'Extensão Orbiex Copilot necessária — janela de ativação aberta na tela.' },
+                    };
+                  }
+                  if (act === 'focus_orbiex') {
+                    await copilotFocusOrbiex();
+                    return { id: call.id, name: fnName, response: { result: 'De volta à aba da Orbiex.' } };
+                  }
+                  const res = await copilotInteractPage({
+                    command: act === 'scan' ? 'scan' : 'scroll',
+                    direction: args.direction || 'down',
+                  });
+                  return {
+                    id: call.id,
+                    name: fnName,
+                    response: {
+                      result: res.ok
+                        ? res.availableButtons || res.message || 'Ação executada.'
+                        : res.error || 'Não foi possível executar.',
+                    },
+                  };
+                }
+
+                // 4. Abrir destino (aba interna da Orbiex ou site externo)
+                const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
+
+                if (dest.kind === 'internal') {
+                  onNavigateRef.current?.(dest.viewId);
+                  pendingInternalCloseRef.current = true;
+                  setActionBanner({ label: `Abrindo ${dest.label}...`, openedAuto: true });
+                  return {
+                    id: call.id,
+                    name: fnName,
+                    response: { result: `Aba interna "${dest.label}" aberta na tela do usuário.` },
+                  };
+                }
+
+                setActionBanner({ label: `Abrindo ${dest.label}...`, url: dest.url, openedAuto: true });
+
+                // Se a Extensão Orbiex Copilot estiver ativa, abre via chrome.tabs.create mantendo o Agente de Voz vivo em segundo plano!
+                if (isCopilotInstalled()) {
+                  const extOpen = await copilotOpenTab(dest.url);
+                  window.setTimeout(() => setActionBanner(null), 4000);
+                  if (extOpen.ok) {
+                    return {
+                      id: call.id,
+                      name: fnName,
+                      response: {
+                        result: `${dest.label} aberto em nova aba e pronto para comandos de clique na interface!`,
+                      },
+                    };
+                  }
+                }
+
+                // Fallback sem extensão: tenta nova aba e, se o navegador segurar, redireciona automaticamente!
+                let openedNewTab = false;
+                try {
+                  const win = window.open(dest.url, '_blank');
+                  openedNewTab = Boolean(win);
+                } catch {
+                  openedNewTab = false;
+                }
+
+                if (openedNewTab) {
+                  window.setTimeout(() => {
+                    setActionBanner((curr) => (curr?.url === dest.url ? null : curr));
+                  }, 4000);
+                } else {
+                  pendingExternalRedirectRef.current = dest.url;
+                  window.setTimeout(() => {
+                    if (pendingExternalRedirectRef.current === dest.url) {
+                      pendingExternalRedirectRef.current = null;
+                      window.location.assign(dest.url);
+                    }
+                  }, 2200);
+                }
+
                 return {
                   id: call.id,
-                  name: call.name,
-                  response: { result: `Aba interna "${dest.label}" aberta na tela do usuário.` },
+                  name: fnName,
+                  response: {
+                    result: `${dest.label} aberto automaticamente para o usuário. Confirme em uma frase curtíssima.`,
+                  },
                 };
-              }
-
-              let openedNewTab = false;
-              try {
-                const win = window.open(dest.url, '_blank');
-                openedNewTab = Boolean(win);
-              } catch {
-                openedNewTab = false;
-              }
-
-              setActionBanner({ label: dest.label, url: dest.url, openedAuto: true });
-
-              if (openedNewTab) {
-                window.setTimeout(() => {
-                  setActionBanner((curr) => (curr?.url === dest.url ? null : curr));
-                }, 4000);
-              } else {
-                // Redirecionamento 100% automático garantido (nunca trava pedindo clique em botão!)
-                pendingExternalRedirectRef.current = dest.url;
-                window.setTimeout(() => {
-                  if (pendingExternalRedirectRef.current === dest.url) {
-                    pendingExternalRedirectRef.current = null;
-                    window.location.assign(dest.url);
-                  }
-                }, 2200);
-              }
-
-              return {
-                id: call.id,
-                name: call.name,
-                response: {
-                  result: `${dest.label} aberto e redirecionado automaticamente para o usuário. Confirme em uma frase curtíssima.`,
-                },
-              };
-            });
+              })
+            );
 
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ toolResponse: { functionResponses } }));
@@ -990,12 +1170,32 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
   return (
     <div className="mvz-fade-up fixed inset-0 z-[200] flex flex-col items-center justify-between bg-[#050505]/[0.97] px-6 py-8 backdrop-blur-xl">
-      <div className="flex w-full max-w-xl items-center justify-between">
+      <div className="flex w-full max-w-xl items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className={`h-2 w-2 rounded-full ${phase === 'error' || phase === 'paused' ? 'bg-white/30' : 'animate-pulse bg-[var(--mvz-gold)]'}`} />
           <span className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#f4d77a]">Orbiex Voice</span>
         </div>
-        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">{PHASE_LABEL[phase]}</span>
+
+        <div className="flex items-center gap-2.5">
+          {copilotConnected ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Copilot Ativo
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={openCopilotInstallModal}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#f4d77a] hover:bg-[var(--mvz-gold)]/20 transition"
+            >
+              <Puzzle size={11} />
+              <span>Ativar Extensão Copilot</span>
+            </button>
+          )}
+          <span className="hidden sm:inline text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
+            {PHASE_LABEL[phase]}
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center">
@@ -1024,7 +1224,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
             <div className="mt-4 flex justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-4 py-2 text-[12px] font-bold text-emerald-300 shadow-lg">
                 <Check size={14} />
-                <span>Abrindo {actionBanner.label}...</span>
+                <span>{actionBanner.label}</span>
               </div>
             </div>
           )}

@@ -11,6 +11,7 @@ import {
   Mic,
   Paperclip,
   Plus,
+  Puzzle,
   RefreshCw,
   Square,
   Store,
@@ -30,6 +31,8 @@ import { generateAIReply } from '../aiService';
 import { useUserProfile } from '../useUserProfile';
 import { ResultCard, Rich, copyText } from './ChatParts';
 import { VoiceMode, VoiceWaveIcon } from './VoiceMode';
+import { useCopilotStatus } from '../copilotBridge';
+import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
 
 /* ─────────────────────────── types ─────────────────────────── */
 
@@ -203,6 +206,7 @@ interface Props {
 
 export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }: Props) {
   const { displayName } = useUserProfile();
+  const copilotConnected = useCopilotStatus();
   const [chats, setChats] = useState<Chat[]>(loadChats);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [input, setInput] = useState('');
@@ -707,9 +711,27 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }:
 
           <span className="hidden min-w-0 flex-1 truncate text-center text-[12.5px] text-[var(--mvz-dim)] sm:block">{chat?.title ?? 'Nova conversa'}</span>
 
-          <div className="ml-auto flex items-center gap-2 text-[11px] font-semibold text-[var(--mvz-muted)]">
-            <span className={`h-1.5 w-1.5 rounded-full ${busy ? 'mvz-dot bg-[var(--mvz-gold)]' : 'bg-[var(--mvz-green)]'}`} />
-            {busy ? 'Trabalhando…' : 'Online'}
+          <div className="ml-auto flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={openCopilotInstallModal}
+              title={copilotConnected ? 'Extensão Orbiex Copilot Conectada' : 'Baixar e ativar Extensão Orbiex Copilot'}
+              className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold transition ${
+                copilotConnected
+                  ? 'border-emerald-500/35 bg-emerald-500/12 text-emerald-300'
+                  : 'border-[var(--mvz-gold)]/45 bg-[var(--mvz-gold)]/12 text-[var(--mvz-gold-light)] hover:bg-[var(--mvz-gold)]/20'
+              }`}
+            >
+              <Puzzle size={13} />
+              <span className="hidden md:inline">
+                {copilotConnected ? 'Copilot Conectado' : 'Extensão Copilot'}
+              </span>
+            </button>
+
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-[var(--mvz-muted)]">
+              <span className={`h-1.5 w-1.5 rounded-full ${busy ? 'mvz-dot bg-[var(--mvz-gold)]' : 'bg-[var(--mvz-green)]'}`} />
+              {busy ? 'Trabalhando…' : 'Online'}
+            </div>
           </div>
         </header>
         {busy && (

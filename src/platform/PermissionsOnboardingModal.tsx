@@ -1,6 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Mic, ExternalLink, ShieldCheck, Check, Sparkles, AlertCircle } from 'lucide-react';
+import {
+  Mic,
+  ExternalLink,
+  ShieldCheck,
+  Check,
+  Sparkles,
+  Download,
+  Puzzle,
+  Copy,
+  X,
+  MousePointerClick,
+} from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useCopilotStatus } from './copilotBridge';
+import { copyText } from './clipboard';
+
+const OPEN_COPILOT_EVENT = 'orbiex:open_copilot_modal';
+const CHROME_STORE_URL = (import.meta.env.VITE_CHROME_WEBSTORE_URL as string | undefined) || '';
+
+export function openCopilotInstallModal() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(OPEN_COPILOT_EVENT));
+  }
+}
 
 function getUserEmail(): string {
   try {
@@ -30,17 +52,28 @@ export function hasAcceptedVoiceTerms(): boolean {
 }
 
 export function PermissionsOnboardingModal() {
+  const copilotConnected = useCopilotStatus();
+
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<'terms' | 'extension'>('terms');
   const [agreed, setAgreed] = useState(true);
   const [activating, setActivating] = useState(false);
-  const [micStatus, setMicStatus] = useState<'idle' | 'granted' | 'denied'>('idle');
-  const [popupBlockedNotice, setPopupBlockedNotice] = useState(false);
+  const [downloadedZip, setDownloadedZip] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  useEffect(() => {
+    const onManualOpen = () => {
+      setStep('extension');
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_COPILOT_EVENT, onManualOpen);
+    return () => window.removeEventListener(OPEN_COPILOT_EVENT, onManualOpen);
+  }, []);
 
   useEffect(() => {
     const email = getUserEmail();
     if (hasAcceptedVoiceTerms()) return;
 
-    // Verifica se já aceitou anteriormente em outro dispositivo via Supabase Auth metadata
     let cancelled = false;
     (async () => {
       try {
@@ -53,6 +86,7 @@ export function PermissionsOnboardingModal() {
         /* ignore */
       }
       if (!cancelled && !hasAcceptedVoiceTerms()) {
+        setStep('terms');
         setOpen(true);
       }
     })();
@@ -62,7 +96,7 @@ export function PermissionsOnboardingModal() {
     };
   }, []);
 
-  const finishAcceptance = () => {
+  const saveTermsAccepted = () => {
     const email = getUserEmail();
     try {
       localStorage.setItem(getPermissionsKey(email), 'accepted');
@@ -74,46 +108,60 @@ export function PermissionsOnboardingModal() {
     } catch {
       /* ignore */
     }
-    setOpen(false);
   };
 
-  const handleActivate = async () => {
+  const handleAcceptTerms = async () => {
     if (!agreed || activating) return;
     setActivating(true);
 
-    // 1. Testa abertura automática de aba no mesmo gesto de clique do usuário
-    let popupAllowed = true;
+    // 1. Dispara verificação de abertura de nova aba no mesmo clique do usuário
     try {
       const testWin = window.open('about:blank', '_blank');
-      if (testWin) {
-        testWin.close();
-      } else {
-        popupAllowed = false;
-      }
+      if (testWin) testWin.close();
     } catch {
-      popupAllowed = false;
+      /* ignore */
     }
 
-    // 2. Solicita permissão real do microfone no navegador
+    // 2. Libera permissão de microfone no navegador
     try {
       if (navigator.mediaDevices?.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach((t) => t.stop());
-        setMicStatus('granted');
       }
     } catch {
-      setMicStatus('denied');
+      /* ignore */
     }
 
+    saveTermsAccepted();
     setActivating(false);
 
-    if (!popupAllowed) {
-      // Mostra aviso rápido de 1 clique ensinando a marcar "Sempre permitir" caso o navegador tenha bloqueado pop-up
-      setPopupBlockedNotice(true);
+    // Se já estiver com a extensão instalada (ou estiver no celular), finaliza direto; senão mostra o botão da extensão!
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (copilotConnected || isMobile) {
+      setOpen(false);
+    } else {
+      setStep('extension');
+    }
+  };
+
+  const handleDownloadExtension = () => {
+    if (CHROME_STORE_URL) {
+      window.open(CHROME_STORE_URL, '_blank', 'noopener,noreferrer');
       return;
     }
+    const a = document.createElement('a');
+    a.href = '/orbiex-copilot-extension.zip';
+    a.download = 'orbiex-copilot-extension.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setDownloadedZip(true);
+  };
 
-    finishAcceptance();
+  const handleCopyExtensionsUrl = async () => {
+    await copyText('chrome://extensions');
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2500);
   };
 
   if (!open) return null;
@@ -123,55 +171,64 @@ export function PermissionsOnboardingModal() {
       <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-[var(--mvz-gold)]/35 bg-gradient-to-b from-[#12100b] via-[#0b0a08] to-[#060605] p-6 sm:p-8 shadow-[0_30px_90px_rgba(0,0,0,0.95)]">
         <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[var(--mvz-gold)]/15 blur-[80px]" />
 
-        {/* Header */}
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)] shadow-[0_0_20px_rgba(212,175,55,0.25)]">
-            <Sparkles size={20} />
-          </div>
-          <div>
-            <span className="text-[10.5px] font-extrabold uppercase tracking-[0.22em] text-[var(--mvz-gold)]">
-              Configuração Inicial • Orbiex AI
-            </span>
-            <h2 className="text-[20px] sm:text-[22px] font-black tracking-tight text-white leading-tight">
-              Permissões do Agente Interativo
-            </h2>
-          </div>
-        </div>
+        {step === 'extension' && (
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Fechar"
+            className="absolute right-5 top-5 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:bg-white/15 hover:text-white"
+          >
+            <X size={15} />
+          </button>
+        )}
 
-        {!popupBlockedNotice ? (
+        {step === 'terms' ? (
           <>
+            {/* PASSO 1: TERMOS DE INTERATIVIDADE */}
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)] shadow-[0_0_20px_rgba(212,175,55,0.25)]">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <span className="text-[10.5px] font-extrabold uppercase tracking-[0.22em] text-[var(--mvz-gold)]">
+                  Passo 1 de 2 • Configuração Inicial
+                </span>
+                <h2 className="text-[20px] sm:text-[22px] font-black tracking-tight text-white leading-tight">
+                  Permissões do Agente Orbiex
+                </h2>
+              </div>
+            </div>
+
             <p className="relative z-10 mt-4 text-[13px] leading-relaxed text-white/75">
-              Para conversar por voz com o <strong className="text-white">Agente Orbiex</strong> e pedir para ele abrir ferramentas automaticamente no seu computador (como <strong className="text-[var(--mvz-gold-light)]">Google Flow, TikTok, Kling AI, Seller Center</strong> e abas da plataforma), confirme as permissões abaixo:
+              Para conversar por voz em tempo real com o <strong className="text-white">Agente Orbiex</strong> e permitir que ele abra e interaja com ferramentas no seu navegador (<strong className="text-[var(--mvz-gold-light)]">Google Flow, TikTok, Kling AI, Seller Center</strong>), aceite os termos abaixo:
             </p>
 
-            {/* Itens de Permissão */}
             <div className="relative z-10 mt-5 space-y-3">
               <div className="flex items-start gap-3.5 rounded-2xl border border-white/10 bg-black/50 p-3.5">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)]">
                   <Mic size={16} />
                 </div>
                 <div>
-                  <h4 className="text-[13px] font-bold text-white">1. Acesso ao Microfone (Voz em Tempo Real)</h4>
+                  <h4 className="text-[13px] font-bold text-white">1. Diálogo por Voz em Tempo Real</h4>
                   <p className="mt-0.5 text-[11.5px] leading-relaxed text-white/60">
-                    Permite conversar em voz alta com o Agente Orbiex e interrompê-lo naturalmente a qualquer momento.
+                    Libera seu microfone para falar naturalmente com o Agente Orbiex sem precisar digitar.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3.5 rounded-2xl border border-white/10 bg-black/50 p-3.5">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)]">
-                  <ExternalLink size={16} />
+                  <MousePointerClick size={16} />
                 </div>
                 <div>
-                  <h4 className="text-[13px] font-bold text-white">2. Abertura Automática de Sites & Ferramentas</h4>
+                  <h4 className="text-[13px] font-bold text-white">2. Abertura & Controle de Interface</h4>
                   <p className="mt-0.5 text-[11.5px] leading-relaxed text-white/60">
-                    Autoriza o Agente a abrir novas abas e redirecionar você imediatamente quando pedir por voz (ex: “Agente, abre o Flow para mim” ou “Abre o TikTok”).
+                    Autoriza abrir sites automaticamente e clicar em botões internos (como “Novo Projeto” no Flow) através da Extensão Orbiex Copilot.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Termo de Concordância */}
             <label className="relative z-10 mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3.5 transition hover:border-[var(--mvz-gold)]/40">
               <button
                 type="button"
@@ -185,46 +242,128 @@ export function PermissionsOnboardingModal() {
                 <Check size={13} strokeWidth={3} />
               </button>
               <span className="text-[12px] leading-relaxed text-white/80 select-none">
-                Li e concordo com os Termos de Interatividade da Orbiex e autorizo a execução de comandos por voz e abertura automática de ferramentas no meu navegador.
+                Li e concordo com os Termos de Interatividade da Orbiex e autorizo os comandos de voz e controle de navegação.
               </span>
             </label>
 
-            {/* Botões */}
-            <div className="relative z-10 mt-6 flex flex-col gap-2.5 sm:flex-row">
+            <div className="relative z-10 mt-6">
               <button
                 type="button"
                 disabled={!agreed || activating}
-                onClick={handleActivate}
-                className="mvz-btn-grad flex h-12 flex-1 items-center justify-center gap-2 rounded-xl text-[13px] font-black uppercase tracking-wider disabled:opacity-40"
+                onClick={handleAcceptTerms}
+                className="mvz-btn-grad flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-black uppercase tracking-wider disabled:opacity-40"
               >
                 <ShieldCheck size={17} />
-                <span>{activating ? 'Liberando Permissões...' : 'Concordar e Ativar Comandos'}</span>
+                <span>{activating ? 'Ativando Permissões...' : 'Concordar e Continuar'}</span>
               </button>
             </div>
           </>
         ) : (
-          /* Passo extra caso o navegador tenha bloqueado pop-ups no primeiro clique */
-          <div className="relative z-10 mt-5 space-y-4">
-            <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-amber-300 font-bold text-[13px]">
-                <AlertCircle size={16} />
-                <span>Último detalhe no navegador (Pop-ups)</span>
+          <>
+            {/* PASSO 2: ATIVAÇÃO DA EXTENSÃO ORBIEX COPILOT (100% GRÁTIS) */}
+            <div className="relative z-10 flex items-center gap-3 pr-8">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)] shadow-[0_0_20px_rgba(212,175,55,0.25)]">
+                <Puzzle size={20} />
               </div>
-              <p className="text-[12px] leading-relaxed text-white/80">
-                {micStatus === 'granted' && 'Microfone liberado com sucesso! '}
-                Para que o Agente abra o <strong>Flow</strong>, o <strong>TikTok</strong> e outras ferramentas sozinho sem bloquear a nova aba, clique no ícone de <strong>janela bloqueada no canto direito da barra de endereço lá em cima</strong> e marque <strong>“Sempre permitir pop-ups e redirecionamentos de orbiex.io”</strong>.
-              </p>
+              <div>
+                <span className="text-[10.5px] font-extrabold uppercase tracking-[0.22em] text-[var(--mvz-gold)]">
+                  100% Gratuito • Controle de Tela
+                </span>
+                <h2 className="text-[20px] sm:text-[22px] font-black tracking-tight text-white leading-tight">
+                  Extensão Orbiex Copilot
+                </h2>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={finishAcceptance}
-              className="mvz-btn-grad flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-black uppercase tracking-wider"
-            >
-              <Check size={17} />
-              <span>Tudo Certo, Entrar na Orbiex</span>
-            </button>
-          </div>
+            {copilotConnected ? (
+              <div className="relative z-10 mt-6 space-y-5">
+                <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/12 p-5 text-center space-y-2">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+                    <Check size={24} strokeWidth={2.8} />
+                  </div>
+                  <h3 className="text-[16px] font-black text-emerald-300">
+                    Extensão Conectada com Sucesso!
+                  </h3>
+                  <p className="text-[12.5px] leading-relaxed text-white/75">
+                    Tudo pronto! Agora você pode abrir o Agente de Voz e pedir: <strong className="text-white">“Abre o Google Flow”</strong> e depois <strong className="text-white">“Clica em Criar novo projeto”</strong>.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="mvz-btn-grad flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-black uppercase tracking-wider"
+                >
+                  <Check size={17} />
+                  <span>Começar a Usar Agora</span>
+                </button>
+              </div>
+            ) : (
+              <div className="relative z-10 mt-4 space-y-4">
+                <p className="text-[12.5px] leading-relaxed text-white/75">
+                  Ative a extensão oficial gratuita no seu navegador para o Agente Orbiex conseguir <strong className="text-white">abrir abas sem bloqueio e clicar sozinho nos botões</strong> dentro do Google Flow, Kling AI e TikTok:
+                </p>
+
+                {/* Botão Principal de Download / Loja */}
+                <button
+                  type="button"
+                  onClick={handleDownloadExtension}
+                  className="mvz-btn-grad flex h-12 w-full items-center justify-center gap-2.5 rounded-xl text-[13px] font-black uppercase tracking-wider shadow-[0_0_25px_rgba(212,175,55,0.3)]"
+                >
+                  {CHROME_STORE_URL ? <ExternalLink size={17} /> : <Download size={17} />}
+                  <span>
+                    {CHROME_STORE_URL
+                      ? 'Adicionar Extensão no Chrome (Grátis)'
+                      : downloadedZip
+                      ? 'Pacote Baixado! (Baixar Novamente)'
+                      : '1. Baixar Extensão Orbiex Copilot (Grátis)'}
+                  </span>
+                </button>
+
+                {!CHROME_STORE_URL && (
+                  <div className="rounded-2xl border border-white/10 bg-black/55 p-4 space-y-2.5 text-[12px] text-white/80">
+                    <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--mvz-gold-light)]">
+                      Ativação rápida em 20 segundos no Chrome / Edge / Brave:
+                    </div>
+                    <p>
+                      <strong className="text-white">1.</strong> Extraia (descompacte) o arquivo <code className="rounded bg-white/10 px-1.5 py-0.5 text-[11px] text-[#f4d77a]">orbiex-copilot-extension.zip</code> que acabou de baixar.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>
+                        <strong className="text-white">2.</strong> Abra a aba de extensões:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyExtensionsUrl}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/10 px-2.5 py-1 font-mono text-[11px] font-bold text-[#f4d77a] hover:bg-[var(--mvz-gold)]/20 transition"
+                      >
+                        {copiedUrl ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                        <span>{copiedUrl ? 'Copiado! Cole na barra acima' : 'Copiar chrome://extensions'}</span>
+                      </button>
+                    </div>
+                    <p>
+                      <strong className="text-white">3.</strong> Ative a chave <strong className="text-white">“Modo do desenvolvedor”</strong> (canto superior direito), clique em <strong className="text-white">“Carregar sem compactação”</strong> e selecione a pasta extraída.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="inline-flex items-center gap-2 text-[11px] text-white/45">
+                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                    Aguardando ativação automática...
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="text-[11.5px] font-semibold text-white/50 hover:text-white transition"
+                  >
+                    Ativar depois
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

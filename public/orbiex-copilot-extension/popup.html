@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Orbiex Copilot</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        width: 300px;
+        padding: 18px;
+        background: radial-gradient(circle at top right, #1c1608 0%, #090806 65%);
+        color: #f6f1e4;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.14);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        color: #4ade80;
+        font-size: 10.5px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 8px #22c55e;
+      }
+      h1 {
+        margin-top: 12px;
+        font-size: 17px;
+        font-weight: 900;
+        color: #ffffff;
+      }
+      h1 span {
+        color: #f4d77a;
+      }
+      p {
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.68);
+      }
+      .btn {
+        margin-top: 15px;
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f4d77a 0%, #d4af37 55%, #9d7619 100%);
+        color: #050505;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      .btn:hover { filter: brightness(1.08); }
+    </style>
+  </head>
+  <body>
+    <div class="badge"><span class="dot"></span> Conectado</div>
+    <h1>Orbiex <span>Copilot</span></h1>
+    <p>
+      Controle de voz ativo! Fale com o Agente Orbiex para abrir o Google Flow, TikTok ou Kling AI e clicar em botões automaticamente.
+    </p>
+    <button id="openOrbiex" class="btn">Ir para a Orbiex</button>
+    <script src="popup.js"></script>
+  </body>
+</html>

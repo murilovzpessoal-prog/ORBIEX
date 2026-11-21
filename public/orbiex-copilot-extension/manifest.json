@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Orbiex Copilot — Agente de Voz & Controle de Tela",
+  "short_name": "Orbiex Copilot",
+  "version": "1.0.0",
+  "description": "Conecta o Agente de Voz da Orbiex ao seu navegador para abrir ferramentas (Google Flow, TikTok, Kling AI) e clicar em botões por comando de voz.",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Orbiex Copilot Ativo",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.orbiex.io/*",
+        "https://orbiex.io/*",
+        "https://*.orbiex.io/*",
+        "http://localhost:*/*"
+      ],
+      "js": ["orbiex-bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "exclude_matches": [
+        "https://www.orbiex.io/*",
+        "https://orbiex.io/*",
+        "https://*.orbiex.io/*"
+      ],
+      "js": ["copilot-agent.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import { useCopilotStatus } from './copilotBridge';
 import { copyText } from './clipboard';
+import { downloadCopilotExtensionZip } from './extensionBundle';
 
 const OPEN_COPILOT_EVENT = 'orbiex:open_copilot_modal';
 const CHROME_STORE_URL = (import.meta.env.VITE_CHROME_WEBSTORE_URL as string | undefined) || '';
@@ -149,12 +150,7 @@ export function PermissionsOnboardingModal() {
       window.open(CHROME_STORE_URL, '_blank', 'noopener,noreferrer');
       return;
     }
-    const a = document.createElement('a');
-    a.href = '/orbiex-copilot-extension.zip';
-    a.download = 'orbiex-copilot-extension.zip';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    downloadCopilotExtensionZip();
     setDownloadedZip(true);
   };
 
@@ -323,14 +319,11 @@ export function PermissionsOnboardingModal() {
                 {!CHROME_STORE_URL && (
                   <div className="rounded-2xl border border-white/10 bg-black/55 p-4 space-y-2.5 text-[12px] text-white/80">
                     <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--mvz-gold-light)]">
-                      Ativação rápida em 20 segundos no Chrome / Edge / Brave:
+                      Ativação rápida em 15 segundos (Sem precisar descompactar!):
                     </div>
-                    <p>
-                      <strong className="text-white">1.</strong> Extraia (descompacte) o arquivo <code className="rounded bg-white/10 px-1.5 py-0.5 text-[11px] text-[#f4d77a]">orbiex-copilot-extension.zip</code> que acabou de baixar.
-                    </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <span>
-                        <strong className="text-white">2.</strong> Abra a aba de extensões:
+                        <strong className="text-white">1.</strong> Abra o painel de extensões do Chrome:
                       </span>
                       <button
                         type="button"
@@ -338,11 +331,14 @@ export function PermissionsOnboardingModal() {
                         className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/10 px-2.5 py-1 font-mono text-[11px] font-bold text-[#f4d77a] hover:bg-[var(--mvz-gold)]/20 transition"
                       >
                         {copiedUrl ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                        <span>{copiedUrl ? 'Copiado! Cole na barra acima' : 'Copiar chrome://extensions'}</span>
+                        <span>{copiedUrl ? 'Copiado! Cole na barra do Chrome' : 'Copiar chrome://extensions'}</span>
                       </button>
                     </div>
                     <p>
-                      <strong className="text-white">3.</strong> Ative a chave <strong className="text-white">“Modo do desenvolvedor”</strong> (canto superior direito), clique em <strong className="text-white">“Carregar sem compactação”</strong> e selecione a pasta extraída.
+                      <strong className="text-white">2.</strong> Ative a chave <strong className="text-white">“Modo do desenvolvedor”</strong> lá no canto superior direito.
+                    </p>
+                    <p>
+                      <strong className="text-white">3.</strong> Simplesmente <strong className="text-[#f4d77a]">arraste o arquivo <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code></strong> que baixou e solte no meio da página <code className="text-white">chrome://extensions</code>! <span className="text-white/55">(Ou dê 2 cliques no .zip para virar a pasta <strong>Orbiex-Copilot</strong> e selecione essa pasta em “Carregar sem compactação”).</span>
                     </p>
                   </div>
                 )}

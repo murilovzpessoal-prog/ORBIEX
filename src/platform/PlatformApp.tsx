@@ -237,7 +237,7 @@ export default function PlatformApp() {
             {view === 'home' && <HomeView go={navigate} />}
             {view === 'members' && <MembersView onNavigate={navigate} />}
             {view === 'agent' && <AgentView seed={seed} onSeedUsed={clearSeed} startNew={startNew} onStarted={clearStartNew} />}
-            {view === 'journey' && <JourneyView onUse={useInAgent} />}
+            {view === 'journey' && <JourneyView onUse={useInAgent} onNavigate={navigate} />}
             {view === 'products' && <WinningProductsView onUseInAgent={useInAgent} onNavigate={navigate} />}
             {view === 'product' && <ProductScoreView onUseInAgent={useInAgent} />}
             {view === 'store' && <StoreScoreView onUseInAgent={useInAgent} />}

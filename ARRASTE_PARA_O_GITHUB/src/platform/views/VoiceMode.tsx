@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Sparkles, X } from 'lucide-react';
+import { Check, ExternalLink, Mic, MicOff, Sparkles, X } from 'lucide-react';
+import type { ViewId } from '../data';
 
 /* ───────────────────────────────────────────────────────────────
    ORBIEX VOICE — Conversa por voz em TEMPO REAL (Gemini Live API)
@@ -22,7 +23,187 @@ interface Props {
   onClose: () => void;
   history: Turn[];
   onTurn: (userText: string, agentText: string) => void;
+  onNavigate?: (view: ViewId) => void;
   userName?: string;
+}
+
+interface ActionBannerState {
+  label: string;
+  url?: string;
+  openedAuto: boolean;
+}
+
+const VOICE_TOOLS = [
+  {
+    functionDeclarations: [
+      {
+        name: 'open_destination',
+        description:
+          'Abre imediatamente no computador/navegador do usuário qualquer site, ferramenta externa (Google Flow, TikTok, TikTok Shop, Seller Center, TikTok Studio, Kling AI, Midjourney, Hailuo, CapCut, Canva, YouTube, Google, Instagram, WhatsApp, Shopee, Mercado Livre, etc.) ou aba interna da plataforma Orbiex quando o usuário pedir para abrir ou acessar.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            target: {
+              type: 'STRING',
+              description:
+                'Identificador do destino pedido: flow, tiktok, tiktok_shop, tiktok_studio, kling, midjourney, hailuo, luma, runway, capcut, canva, elevenlabs, chatgpt, youtube, instagram, whatsapp, gmail, google, shopee, mercadolivre, amazon, cakto, ou abas internas da Orbiex: home, journey, products, product_score, store_score, scanner, hooks, headlines, prompt_gen, prompts, motion, turbo, antirestriction, members, support.',
+            },
+            customUrl: {
+              type: 'STRING',
+              description:
+                'URL https completa caso o usuário peça um site que não esteja listado nos identificadores padrão (ex: https://sitepedido.com).',
+            },
+            searchQuery: {
+              type: 'STRING',
+              description:
+                'Termo de pesquisa opcional caso o usuário peça para abrir pesquisando algo (ex: abrir o TikTok pesquisando vestido midi).',
+            },
+          },
+          required: ['target'],
+        },
+      },
+    ],
+  },
+];
+
+function resolveVoiceDestination(
+  rawTarget: string,
+  customUrl?: string,
+  searchQuery?: string
+): { kind: 'internal'; viewId: ViewId; label: string } | { kind: 'external'; url: string; label: string } {
+  const t = String(rawTarget || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  const q = String(searchQuery || '').trim();
+
+  // 1. Abas internas da Orbiex
+  if (t === 'home' || t === 'inicio' || t === 'dashboard') {
+    return { kind: 'internal', viewId: 'home', label: 'Início da Orbiex' };
+  }
+  if (t.includes('journey') || t.includes('jornada') || t.includes('meta')) {
+    return { kind: 'internal', viewId: 'journey', label: 'Minha Jornada' };
+  }
+  if (t === 'products' || t === 'catalogo' || t === 'produtos' || t.includes('campeoes')) {
+    return { kind: 'internal', viewId: 'products', label: 'Produtos Campeões' };
+  }
+  if (t.includes('product_score') || t === 'product' || t.includes('score produto')) {
+    return { kind: 'internal', viewId: 'product', label: 'Score Produto' };
+  }
+  if (t.includes('store_score') || t === 'store' || t.includes('score lojista') || t.includes('lojista')) {
+    return { kind: 'internal', viewId: 'store', label: 'Score Lojista' };
+  }
+  if (t.includes('scanner')) {
+    return { kind: 'internal', viewId: 'scanner', label: 'Scanner de Perfis' };
+  }
+  if (t.includes('hook')) {
+    return { kind: 'internal', viewId: 'hooks', label: 'Hooks Virais' };
+  }
+  if (t.includes('headline')) {
+    return { kind: 'internal', viewId: 'headlines', label: 'Gerador de Headlines' };
+  }
+  if (t === 'prompt_gen' || t === 'prompt-gen' || t.includes('gerador de prompt')) {
+    return { kind: 'internal', viewId: 'prompt-gen', label: 'Gerador de Prompts' };
+  }
+  if (t === 'prompts' || t.includes('biblioteca')) {
+    return { kind: 'internal', viewId: 'prompts', label: 'Biblioteca de Prompts' };
+  }
+  if (t.includes('motion') || t.includes('extrator') || t.includes('movimento')) {
+    return { kind: 'internal', viewId: 'motion', label: 'Extrator de Movimentos' };
+  }
+  if (t.includes('turbo') || t.includes('novelinha') || t.includes('seguidor')) {
+    return { kind: 'internal', viewId: 'turbo', label: 'Turbo de Seguidores' };
+  }
+  if (t.includes('anti') || t.includes('restric')) {
+    return { kind: 'internal', viewId: 'antirestriction', label: 'Scanner Antirrestrição' };
+  }
+  if (t.includes('member') || t.includes('aula') || t.includes('curso')) {
+    return { kind: 'internal', viewId: 'members', label: 'Área de Membros' };
+  }
+  if (t.includes('support') || t.includes('suporte')) {
+    return { kind: 'internal', viewId: 'support', label: 'Suporte Orbiex' };
+  }
+
+  // 2. Ferramentas Externas & Sites
+  if (t.includes('flow') || t.includes('veo')) {
+    return { kind: 'external', url: 'https://labs.google/fx/pt/tools/flow', label: 'Google Flow (VEO)' };
+  }
+  if (t.includes('tiktok_shop') || t.includes('seller') || t.includes('tiktok shop')) {
+    return { kind: 'external', url: 'https://seller-br.tiktok.com/', label: 'TikTok Shop Seller Center' };
+  }
+  if (t.includes('studio')) {
+    return { kind: 'external', url: 'https://www.tiktok.com/tiktokstudio', label: 'TikTok Studio' };
+  }
+  if (t.includes('tiktok')) {
+    const url = q ? `https://www.tiktok.com/search?q=${encodeURIComponent(q)}` : 'https://www.tiktok.com/';
+    return { kind: 'external', url, label: q ? `TikTok (${q})` : 'TikTok' };
+  }
+  if (t.includes('kling')) {
+    return { kind: 'external', url: 'https://app.klingai.com/', label: 'Kling AI' };
+  }
+  if (t.includes('midjourney')) {
+    return { kind: 'external', url: 'https://www.midjourney.com/', label: 'Midjourney' };
+  }
+  if (t.includes('hailuo') || t.includes('minimax')) {
+    return { kind: 'external', url: 'https://hailuoai.video/', label: 'Hailuo AI' };
+  }
+  if (t.includes('luma')) {
+    return { kind: 'external', url: 'https://lumalabs.ai/dream-machine', label: 'Luma Dream Machine' };
+  }
+  if (t.includes('runway')) {
+    return { kind: 'external', url: 'https://app.runwayml.com/', label: 'Runway ML' };
+  }
+  if (t.includes('capcut')) {
+    return { kind: 'external', url: 'https://www.capcut.com/', label: 'CapCut' };
+  }
+  if (t.includes('canva')) {
+    return { kind: 'external', url: 'https://www.canva.com/', label: 'Canva' };
+  }
+  if (t.includes('eleven')) {
+    return { kind: 'external', url: 'https://elevenlabs.io/', label: 'ElevenLabs' };
+  }
+  if (t.includes('chatgpt') || t.includes('openai')) {
+    return { kind: 'external', url: 'https://chatgpt.com/', label: 'ChatGPT' };
+  }
+  if (t.includes('youtube')) {
+    const url = q ? `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}` : 'https://www.youtube.com/';
+    return { kind: 'external', url, label: q ? `YouTube (${q})` : 'YouTube' };
+  }
+  if (t.includes('instagram')) {
+    return { kind: 'external', url: 'https://www.instagram.com/', label: 'Instagram' };
+  }
+  if (t.includes('whatsapp') || t.includes('zap')) {
+    return { kind: 'external', url: 'https://web.whatsapp.com/', label: 'WhatsApp Web' };
+  }
+  if (t.includes('gmail') || t.includes('email')) {
+    return { kind: 'external', url: 'https://mail.google.com/', label: 'Gmail' };
+  }
+  if (t.includes('shopee')) {
+    return { kind: 'external', url: 'https://shopee.com.br/', label: 'Shopee' };
+  }
+  if (t.includes('mercado')) {
+    return { kind: 'external', url: 'https://www.mercadolivre.com.br/', label: 'Mercado Livre' };
+  }
+  if (t.includes('amazon')) {
+    return { kind: 'external', url: 'https://www.amazon.com.br/', label: 'Amazon' };
+  }
+  if (t.includes('cakto') || t.includes('caktu')) {
+    return { kind: 'external', url: 'https://app.cakto.com.br/', label: 'Cakto' };
+  }
+  if (customUrl && /^https?:\/\//i.test(customUrl.trim())) {
+    return { kind: 'external', url: customUrl.trim(), label: rawTarget || 'Site solicitado' };
+  }
+  if (/^https?:\/\//i.test(rawTarget)) {
+    return { kind: 'external', url: rawTarget, label: 'Site solicitado' };
+  }
+
+  const searchFallback = q || rawTarget;
+  return {
+    kind: 'external',
+    url: `https://www.google.com/search?q=${encodeURIComponent(searchFallback)}`,
+    label: `Google (${searchFallback})`,
+  };
 }
 
 export const ORBIEX_VOICE_NAME = 'Charon';
@@ -59,6 +240,7 @@ COMO CONVERSAR (MUITO IMPORTANTE):
 - Se não entender o áudio, peça com elegância para repetir.
 - Nunca leia símbolos, listas numeradas, markdown ou links. Nada de emojis.
 - Pode responder sobre qualquer assunto (perguntas gerais, contas, curiosidades), mas sua especialidade é TikTok Shop com IA.
+- COMANDOS DE AÇÃO E ABERTURA: sempre que o usuário pedir para abrir qualquer ferramenta, site ou aba (ex: "abre o Flow para mim", "abre o TikTok", "abre o Kling", "abre Minha Jornada", "abre os Hooks Virais", "pesquisa tal coisa no TikTok/YouTube"), chame IMEDIATAMENTE a função open_destination passando o destino correto e confirme em 1 frase curta e elegante (ex: "Claro, senhor. Abrindo o Google Flow agora.").
 
 ESPECIALIDADE:
 - TikTok Shop e afiliados (comissão pelo carrinho amarelo), começar do zero, liberar o carrinho, escolher produtos, roteiros de 15 a 30 segundos, ganchos dos primeiros 3 segundos, headlines POV, vídeos sem aparecer com IA (Kling, Google Flow VEO 3, Midjourney, Hailuo, CapCut), como evitar restrições e escalar postagens.
@@ -145,11 +327,12 @@ function makeImpulse(ctx: BaseAudioContext, seconds = 0.35, decay = 3.2): AudioB
 
 /* ───────── componente ───────── */
 
-export function VoiceMode({ open, onClose, history, onTurn, userName }: Props) {
+export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName }: Props) {
   const [phase, setPhase] = useState<Phase>('connecting');
   const [userCaption, setUserCaption] = useState('');
   const [agentCaption, setAgentCaption] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [actionBanner, setActionBanner] = useState<ActionBannerState | null>(null);
   const [aiFx, setAiFx] = useState<boolean>(() => {
     try {
       return localStorage.getItem('orbiex_voice_fx') !== 'off';
@@ -184,6 +367,11 @@ export function VoiceMode({ open, onClose, history, onTurn, userName }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onTurnRef = useRef(onTurn);
   onTurnRef.current = onTurn;
+  const onNavigateRef = useRef(onNavigate);
+  onNavigateRef.current = onNavigate;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const pendingInternalCloseRef = useRef(false);
   const historyRef = useRef(history);
   historyRef.current = history;
 
@@ -417,6 +605,7 @@ export function VoiceMode({ open, onClose, history, onTurn, userName }: Props) {
             JSON.stringify({
               setup: {
                 model: `models/${model}`,
+                tools: VOICE_TOOLS,
                 generationConfig: {
                   responseModalities: ['AUDIO'],
                   temperature: 0.8,
@@ -446,6 +635,55 @@ export function VoiceMode({ open, onClose, history, onTurn, userName }: Props) {
             wsRef.current = ws;
             resolve(true);
             go(mutedRef.current ? 'paused' : 'listening');
+            return;
+          }
+
+          // Execução em tempo real de comandos de voz (abrir Flow, TikTok, Kling, abas internas, etc.)
+          if (msg.toolCall && Array.isArray(msg.toolCall.functionCalls)) {
+            const functionResponses = msg.toolCall.functionCalls.map((call: any) => {
+              const args = call?.args || {};
+              const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
+
+              if (dest.kind === 'internal') {
+                onNavigateRef.current?.(dest.viewId);
+                pendingInternalCloseRef.current = true;
+                setActionBanner({ label: dest.label, openedAuto: true });
+                return {
+                  id: call.id,
+                  name: call.name,
+                  response: { result: `Aba interna "${dest.label}" aberta na tela do usuário.` },
+                };
+              }
+
+              let opened = false;
+              try {
+                const win = window.open(dest.url, '_blank');
+                opened = Boolean(win);
+              } catch {
+                opened = false;
+              }
+
+              setActionBanner({ label: dest.label, url: dest.url, openedAuto: opened });
+              if (opened) {
+                window.setTimeout(() => {
+                  setActionBanner((curr) => (curr?.url === dest.url && curr.openedAuto ? null : curr));
+                }, 5000);
+              }
+
+              return {
+                id: call.id,
+                name: call.name,
+                response: {
+                  result: opened
+                    ? `${dest.label} foi aberto automaticamente em uma nova aba do navegador.`
+                    : `Comando preparado para ${dest.label}. Informe que já está disponível na tela.`,
+                },
+              };
+            });
+
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ toolResponse: { functionResponses } }));
+            }
             return;
           }
 
@@ -481,6 +719,13 @@ export function VoiceMode({ open, onClose, history, onTurn, userName }: Props) {
           if (sc.turnComplete) {
             dropAudioRef.current = false;
             commitTurn();
+            if (pendingInternalCloseRef.current) {
+              pendingInternalCloseRef.current = false;
+              const waitAudioMs = Math.max(400, (nextTimeRef.current - (outCtxRef.current?.currentTime || 0)) * 1000 + 350);
+              window.setTimeout(() => {
+                if (openRef.current) onCloseRef.current();
+              }, Math.min(waitAudioMs, 3200));
+            }
             if (sourcesRef.current.size === 0 && phaseRef.current !== 'paused') go('listening');
           }
         };
@@ -742,6 +987,28 @@ export function VoiceMode({ open, onClose, history, onTurn, userName }: Props) {
             <p className="text-[17px] text-white/70">{userName ? `Olá, ${userName}. ` : 'Olá. '}Pode falar, estou ouvindo.</p>
           ) : null}
           <p className="mt-3 text-[11.5px] text-white/35">{hint}</p>
+
+          {actionBanner && (
+            <div className="mt-4 flex justify-center">
+              {actionBanner.openedAuto ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-4 py-2 text-[12px] font-bold text-emerald-300 shadow-lg">
+                  <Check size={14} />
+                  <span>Abrindo {actionBanner.label}...</span>
+                </div>
+              ) : (
+                <a
+                  href={actionBanner.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setActionBanner(null)}
+                  className="mvz-btn-grad inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-black uppercase tracking-wider text-black shadow-[0_0_25px_rgba(212,175,55,0.5)]"
+                >
+                  <ExternalLink size={14} />
+                  <span>Abrir {actionBanner.label} Agora</span>
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

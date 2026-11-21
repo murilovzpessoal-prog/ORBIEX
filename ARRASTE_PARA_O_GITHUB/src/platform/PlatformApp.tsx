@@ -28,6 +28,7 @@ import { CommunityView, CreditsView, HelpView } from './views/MiscViews';
 import { SupportChatView } from './views/SupportChatView';
 import { AccessInstructionsView } from './views/AccessInstructionsView';
 import { MembersView } from './views/MembersView';
+import { PermissionsOnboardingModal } from './PermissionsOnboardingModal';
 import { LoginView } from './views/LoginView';
 
 const VALID: ViewId[] = [
@@ -236,7 +237,7 @@ export default function PlatformApp() {
           <div className="mx-auto w-full max-w-[1280px] p-4 md:p-6">
             {view === 'home' && <HomeView go={navigate} />}
             {view === 'members' && <MembersView onNavigate={navigate} />}
-            {view === 'agent' && <AgentView seed={seed} onSeedUsed={clearSeed} startNew={startNew} onStarted={clearStartNew} />}
+            {view === 'agent' && <AgentView seed={seed} onSeedUsed={clearSeed} startNew={startNew} onStarted={clearStartNew} onNavigate={navigate} />}
             {view === 'journey' && <JourneyView onUse={useInAgent} onNavigate={navigate} />}
             {view === 'products' && <WinningProductsView onUseInAgent={useInAgent} onNavigate={navigate} />}
             {view === 'product' && <ProductScoreView onUseInAgent={useInAgent} />}
@@ -259,6 +260,8 @@ export default function PlatformApp() {
       </div>
 
       <CommandPalette open={palette} onClose={() => setPalette(false)} onNavigate={navigate} onPrompt={useInAgent} />
+
+      <PermissionsOnboardingModal />
 
       <ProfileSettingsModal
         open={settingsOpen}

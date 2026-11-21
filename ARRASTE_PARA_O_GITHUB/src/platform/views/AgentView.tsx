@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Card, AttachmentItem } from '../agentBrain';
+import type { ViewId } from '../data';
 import { generateAIReply } from '../aiService';
 import { useUserProfile } from '../useUserProfile';
 import { ResultCard, Rich, copyText } from './ChatParts';
@@ -197,9 +198,10 @@ interface Props {
   onSeedUsed?: () => void;
   startNew?: boolean;
   onStarted?: () => void;
+  onNavigate?: (view: ViewId) => void;
 }
 
-export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
+export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }: Props) {
   const { displayName } = useUserProfile();
   const [chats, setChats] = useState<Chat[]>(loadChats);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -1076,6 +1078,7 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
         onClose={closeVoice}
         history={msgs.map((m) => ({ role: m.role, text: m.text }))}
         onTurn={handleVoiceTurn}
+        onNavigate={onNavigate}
         userName={displayName?.split(' ')[0]}
       />
     </div>

@@ -29,6 +29,7 @@ const EXCLUDED_PREFIXES = [
   'orbiex_avatar_', // já vinculado por e-mail
   'orbiex_refund_request_v2_', // já vinculado por e-mail
   'orbiex_journey_v5_', // já vinculado por e-mail e sincronizado no Supabase
+  'orbiex_voice_terms_v1_', // termos de comandos por voz já vinculados por e-mail
 ];
 
 const USER_DATA_PREFIXES = ['orbiex', 'orbix', 'projeto_'];

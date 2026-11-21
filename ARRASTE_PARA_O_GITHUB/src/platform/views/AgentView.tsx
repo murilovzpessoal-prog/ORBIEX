@@ -31,7 +31,7 @@ import { generateAIReply } from '../aiService';
 import { useUserProfile } from '../useUserProfile';
 import { ResultCard, Rich, copyText } from './ChatParts';
 import { VoiceMode, VoiceWaveIcon } from './VoiceMode';
-import { useCopilotStatus } from '../copilotBridge';
+import { useCopilotInfo } from '../copilotBridge';
 import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
 
 /* ─────────────────────────── types ─────────────────────────── */
@@ -206,7 +206,7 @@ interface Props {
 
 export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }: Props) {
   const { displayName } = useUserProfile();
-  const copilotConnected = useCopilotStatus();
+  const copilotInfo = useCopilotInfo();
   const [chats, setChats] = useState<Chat[]>(loadChats);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [input, setInput] = useState('');
@@ -715,16 +715,28 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }:
             <button
               type="button"
               onClick={openCopilotInstallModal}
-              title={copilotConnected ? 'Extensão Orbiex Copilot Conectada' : 'Baixar e ativar Extensão Orbiex Copilot'}
+              title={
+                copilotInfo.isLatest
+                  ? 'Copilot v2.0 (Visão IA) Conectado'
+                  : copilotInfo.installed
+                  ? 'Atualizar Extensão para Copilot v2.0 (Visão IA)'
+                  : 'Baixar e ativar Extensão Orbiex Copilot v2.0'
+              }
               className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold transition ${
-                copilotConnected
+                copilotInfo.isLatest
                   ? 'border-emerald-500/35 bg-emerald-500/12 text-emerald-300'
+                  : copilotInfo.installed
+                  ? 'border-amber-400/50 bg-amber-400/15 text-amber-200 hover:bg-amber-400/25'
                   : 'border-[var(--mvz-gold)]/45 bg-[var(--mvz-gold)]/12 text-[var(--mvz-gold-light)] hover:bg-[var(--mvz-gold)]/20'
               }`}
             >
               <Puzzle size={13} />
               <span className="hidden md:inline">
-                {copilotConnected ? 'Copilot Conectado' : 'Extensão Copilot'}
+                {copilotInfo.isLatest
+                  ? 'Copilot v2.0 Ativo'
+                  : copilotInfo.installed
+                  ? 'Atualizar Copilot v2.0'
+                  : 'Extensão Copilot'}
               </span>
             </button>
 

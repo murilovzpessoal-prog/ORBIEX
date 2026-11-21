@@ -69,6 +69,31 @@ function parseJSON(raw) {
   }
 }
 
+const VISION_SYSTEM = `Você é o motor de Visão Computacional e Leitura Espacial (Set-of-Marks UI Grounding) do Orbiex Copilot v2.0.
+Sua única missão é localizar COM PRECISÃO CIRÚRGICA o elemento ou coordenada exata na tela onde o usuário pediu para clicar ou digitar.
+
+COMO FUNCIONA O MAPA DA TELA:
+1. Você recebe a imagem real da aba aberta (anotada com etiquetas numéricas #1, #2... azuis para campos de texto e douradas para botões) + uma lista JSON de elementos com:
+   - uid: número da etiqueta na imagem
+   - kind: "input" (campo editável) ou "button" (botão/ícone/aba clicável)
+   - label / context: texto visível, placeholder, aria-label ou nome do ícone
+   - region: uma das 9 regiões ("topo-esquerdo", "topo-centro", "topo-direito", "meio-esquerdo", "centro", "meio-direito", "inferior-esquerdo", "inferior-centro", "inferior-direito")
+   - xPct (0 = extrema esquerda, 100 = extrema direita) e yPct (0 = topo absoluto, 100 = base absoluta)
+
+REGRAS DE OURO (OBRIGATÓRIAS):
+1. RESPEITE A POSIÇÃO ESPACIAL ACIMA DE TUDO:
+   - Se o usuário mencionou uma posição ("no canto inferior direito", "embaixo na direita", "no topo esquerdo", "na lateral esquerda", "no centro"), você DEVE olhar para aquela região na captura de tela e priorizar elementos naquela região (ex: para "canto inferior direito", xPct >= 62 e yPct >= 62, region "inferior-direito" ou "meio-direito").
+   - NUNCA escolha uma caixa de prompt grande no centro/esquerda se o usuário pediu especificamente o chat no canto inferior direito!
+2. CHATS RETRÁTEIS / ÍCONES FECHADOS (MUITO IMPORTANTE):
+   - Quando actionType="type" (escrever algo) e o usuário diz por exemplo "no canto inferior direito, onde tem o chat, escreve oi":
+     a) Se já houver um campo "input" aberto naquela região do chat, retorne o uid e (xPct, yPct) desse input.
+     b) Se o chat naquele canto estiver FECHADO/RETRAÍDO (aparecendo apenas um botão/bolha/ícone de chat, assistente ou ajuda no canto inferior direito), retorne o uid e (xPct, yPct) DESSE BOTÃO/ÍCONE! O navegador clicará nele automaticamente para abrir o chat e digitará o texto no campo que abrir!
+     c) Se você enxergar visualmente na imagem o chat/campo/botão naquele canto, mas ele não tiver etiqueta numérica (ex: dentro de iframe ou shadow fechado), retorne "uid": null e informe as coordenadas visuais exatas "xPct" e "yPct" (0 a 100) onde ele aparece na imagem!
+3. BOTÃO DE ENVIO OPCIONAL:
+   - Se clickAfter foi pedido ou se o usuário pediu para enviar a mensagem após escrever, indique em "submitUid" o uid do botão de enviar/gerar correspondente (se já estiver visível), ou null.
+4. Responda APENAS JSON válido no formato:
+{"uid": number | null, "xPct": number, "yPct": number, "submitUid": number | null, "targetLabel": "nome curto do alvo", "confidence": number}`;
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -79,7 +104,85 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { task = '', input = '', format = '', avoid = [], imageDataUrl } = req.body || {};
+    const body = req.body || {};
+
+    // MODO ESPECIAL: Visão Computacional + Grounding Espacial da Extensão Orbiex Copilot v2.0
+    if (body.mode === 'vision_grounding') {
+      const {
+        actionType = 'click',
+        userInstruction = '',
+        target = '',
+        spatialHint = '',
+        clickAfter = '',
+        url = '',
+        title = '',
+        elements = [],
+        imageDataUrl,
+      } = body;
+
+      const key = ACTIVE_GEMINI_KEY || process.env.GEMINI_API_KEY;
+      const compactElements = (Array.isArray(elements) ? elements : []).slice(0, 130).map((e) => ({
+        uid: e.uid,
+        kind: e.kind,
+        region: e.region,
+        xPct: e.xPct,
+        yPct: e.yPct,
+        label: String(e.label || '').slice(0, 95),
+        ...(e.context ? { context: String(e.context).slice(0, 65) } : {}),
+      }));
+
+      const visionPrompt = `AÇÃO: ${actionType === 'type' ? 'DIGITAR TEXTO EM CAMPO / CHAT' : 'CLICAR EM ELEMENTO'}
+PEDIDO EXATO DO USUÁRIO: "${userInstruction || target}"
+ALVO DESEJADO: "${target}"
+REFERÊNCIA DE POSIÇÃO / CANTO DA TELA: "${spatialHint || 'não especificada (deduza pelo pedido e pelo visual)'}"
+${clickAfter ? `CLICAR DEPOIS EM: "${clickAfter}"` : ''}
+PÁGINA ATUAL: ${title} (${url})
+
+MAPA DE ELEMENTOS DETECTADOS NA TELA (uid = número da etiqueta na imagem):
+${JSON.stringify(compactElements)}
+
+Retorne APENAS o JSON: {"uid": number | null, "xPct": number, "yPct": number, "submitUid": number | null, "targetLabel": string, "confidence": number}`;
+
+      const vParts = [];
+      if (typeof imageDataUrl === 'string' && imageDataUrl.includes('base64,')) {
+        const [header, data] = imageDataUrl.split(';base64,');
+        vParts.push({ inlineData: { mimeType: header.replace('data:', '') || 'image/jpeg', data } });
+      }
+      vParts.push({ text: visionPrompt });
+
+      for (const model of MODELS) {
+        try {
+          const r = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: vParts }],
+                systemInstruction: { parts: [{ text: VISION_SYSTEM }] },
+                generationConfig: {
+                  temperature: 0.1,
+                  topP: 0.85,
+                  responseMimeType: 'application/json',
+                  maxOutputTokens: 512,
+                },
+              }),
+            }
+          );
+          if (!r.ok) continue;
+          const data = await r.json();
+          const parsed = parseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
+          if (parsed && (parsed.uid !== undefined || typeof parsed.xPct === 'number')) {
+            return res.status(200).json({ success: true, data: parsed, provider: `vision-${model}` });
+          }
+        } catch (err) {
+          console.warn(`vision_grounding ${model} error:`, err.message);
+        }
+      }
+      return res.status(200).json({ success: false, fallback: true });
+    }
+
+    const { task = '', input = '', format = '', avoid = [], imageDataUrl } = body;
     if (!task || !format) return res.status(400).json({ error: 'task e format são obrigatórios' });
 
     const variation = Math.floor(Math.random() * 1e6);

@@ -1,7 +1,6 @@
 /**
- * Orbiex Copilot — Background Service Worker (Manifest V3)
- * Orquestra abertura de abas sem bloqueio de pop-up e envia comandos de clique/digitação/rolagem
- * para a aba ativa (Google Flow, Kling AI, TikTok, Seller Center, CapCut, etc.).
+ * Orbiex Copilot v2.0 — Background Service Worker (Visão Computacional + Mapa Espacial DOM)
+ * Captura print em tempo real da aba ativa + mapa de coordenadas para precisão cirúrgica.
  */
 
 let orbiexTabId = null;
@@ -11,7 +10,6 @@ function isOrbiexUrl(url = '') {
   return /https?:\/\/([a-z0-9-]+\.)?orbiex\.io/i.test(url) || /http:\/\/localhost:/i.test(url);
 }
 
-// Injeta imediatamente a ponte em qualquer aba da Orbiex que já estivesse aberta antes de instalar a extensão!
 async function injectBridgeIntoOpenOrbiexTabs() {
   try {
     const tabs = await chrome.tabs.query({});
@@ -68,19 +66,18 @@ function waitForTabComplete(tabId, timeoutMs = 10000) {
 }
 
 async function resolveTargetTab() {
-  // 1. Verifica a aba ativa da janela atual (se não for a própria Orbiex)
   const activeTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (activeTabs[0] && activeTabs[0].id && !isOrbiexUrl(activeTabs[0].url || '')) {
     lastControlledTabId = activeTabs[0].id;
     return activeTabs[0];
   }
 
-  // 2. Se o usuário estiver na aba da Orbiex, usa a última aba externa controlada (ex: Google Flow recém-aberto)
   if (lastControlledTabId) {
     try {
       const tab = await chrome.tabs.get(lastControlledTabId);
       if (tab && tab.id && !isOrbiexUrl(tab.url || '')) {
         await chrome.tabs.update(tab.id, { active: true });
+        await new Promise((r) => setTimeout(r, 120));
         return tab;
       }
     } catch {
@@ -88,7 +85,6 @@ async function resolveTargetTab() {
     }
   }
 
-  // 3. Procura qualquer outra aba aberta que não seja a Orbiex nem chrome://
   const allTabs = await chrome.tabs.query({ lastFocusedWindow: true });
   const candidate = allTabs
     .reverse()
@@ -96,6 +92,7 @@ async function resolveTargetTab() {
   if (candidate) {
     lastControlledTabId = candidate.id;
     await chrome.tabs.update(candidate.id, { active: true });
+    await new Promise((r) => setTimeout(r, 120));
     return candidate;
   }
 
@@ -106,12 +103,11 @@ async function sendToTabWithAutoInject(tabId, message) {
   try {
     return await chrome.tabs.sendMessage(tabId, message);
   } catch {
-    // Caso a aba já estivesse aberta antes de instalar a extensão, injeta o agente sob demanda!
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ['copilot-agent.js'],
     });
-    await new Promise((r) => setTimeout(r, 180));
+    await new Promise((r) => setTimeout(r, 200));
     return await chrome.tabs.sendMessage(tabId, message);
   }
 }
@@ -126,7 +122,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const payload = msg?.payload || {};
 
     if (type === 'PING') {
-      return { ok: true, version: '1.0.0' };
+      return { ok: true, version: '2.0.0' };
     }
 
     if (type === 'OPEN_TAB') {
@@ -162,20 +158,74 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return { ok: true };
     }
 
+    // NOVO EM V2.0: Captura Visão Real (Screenshot JPEG) + Mapa Espacial de Elementos com Coordenadas!
+    if (type === 'CAPTURE_SCREEN_CONTEXT') {
+      const tab = await resolveTargetTab();
+      if (!tab || !tab.id) {
+        return { ok: false, error: 'Nenhuma aba externa aberta.' };
+      }
+      if (!/^https?:\/\//i.test(tab.url || '')) {
+        return { ok: false, error: 'Aba interna do navegador não permite inspeção.' };
+      }
+      if (tab.status !== 'complete') {
+        await waitForTabComplete(tab.id, 5000);
+      }
+
+      // 1. Escaneia todos os elementos interativos (com coordenadas xPct, yPct e região da tela)
+      //    e desenha etiquetas numéricas discretas (#1, #2...) por 150ms durante o print (Set-of-Marks!)
+      const scanRes = await sendToTabWithAutoInject(tab.id, {
+        type: 'ORBIEX_SCAN_SOM',
+        payload: { showBadges: true },
+      });
+
+      let screenshot = null;
+      try {
+        await new Promise((r) => setTimeout(r, 70));
+        screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, {
+          format: 'jpeg',
+          quality: 62,
+        });
+      } catch {
+        screenshot = null;
+      }
+
+      // Remove as etiquetas Set-of-Marks imediatamente após tirar o print
+      sendToTabWithAutoInject(tab.id, { type: 'ORBIEX_CLEAR_SOM' }).catch(() => {});
+
+      return {
+        ok: true,
+        url: tab.url,
+        title: tab.title,
+        screenshot,
+        elements: scanRes?.elements || [],
+        viewport: scanRes?.viewport || null,
+      };
+    }
+
+    // NOVO EM V2.0: Executa ação cirúrgica no UID / Coordenada exata escolhida pela Visão IA!
+    if (type === 'EXECUTE_GROUNDED') {
+      const tab = await resolveTargetTab();
+      if (!tab || !tab.id) {
+        return { ok: false, error: 'Nenhuma aba externa aberta.' };
+      }
+      const res = await sendToTabWithAutoInject(tab.id, {
+        type: 'ORBIEX_EXECUTE_GROUNDED',
+        payload,
+      });
+      return res || { ok: false, error: 'Sem resposta ao executar ação.' };
+    }
+
     if (type === 'INTERACT_PAGE') {
       const tab = await resolveTargetTab();
       if (!tab || !tab.id) {
         return {
           ok: false,
-          error: 'Nenhuma aba externa aberta para interagir. Peça primeiro para abrir o site desejado (ex: Google Flow ou TikTok).',
+          error: 'Nenhuma aba externa aberta para interagir. Peça primeiro para abrir o site desejado.',
         };
       }
-
       if (!/^https?:\/\//i.test(tab.url || '')) {
         return { ok: false, error: 'Esta página interna do navegador não permite automação.' };
       }
-
-      // Se a página ainda estiver carregando, aguarda finalizar
       if (tab.status !== 'complete') {
         await waitForTabComplete(tab.id, 6000);
       }

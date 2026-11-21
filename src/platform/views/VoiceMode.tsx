@@ -5,9 +5,10 @@ import {
   copilotFocusOrbiex,
   copilotInteractPage,
   copilotOpenTab,
+  copilotSmartAction,
   isCopilotInstalled,
   pingCopilot,
-  useCopilotStatus,
+  useCopilotInfo,
 } from '../copilotBridge';
 import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
 
@@ -74,14 +75,24 @@ const VOICE_TOOLS = [
       {
         name: 'click_element_on_page',
         description:
-          'Caça e clica em qualquer botão, link, aba ou opção visível dentro do site aberto no navegador do usuário (por exemplo: "Criar novo projeto" ou "Novo projeto" no Google Flow, "Gerar", "Entrar", "Baixar", "Publicar", etc.). Use sempre que o usuário pedir para clicar, apertar ou selecionar um botão na interface.',
+          'Enxerga a tela aberta (com Visão Computacional + Mapa Espacial) e clica em qualquer botão, ícone, chat, link ou aba na interface (ex: "Criar novo projeto" no Google Flow, ícone do chat no canto inferior direito, "Gerar", etc.). Use sempre que o usuário pedir para clicar, apertar ou abrir um menu/chat dentro da página.',
         parameters: {
           type: 'OBJECT',
           properties: {
             buttonText: {
               type: 'STRING',
               description:
-                'Texto ou nome do botão que o usuário pediu para clicar (ex: "Criar novo projeto", "Novo projeto", "Gerar", "Entrar").',
+                'Nome, texto ou descrição visual do botão/ícone que o usuário pediu para clicar (ex: "Criar novo projeto", "chat", "Gerar", "Configurações").',
+            },
+            spatialHint: {
+              type: 'STRING',
+              description:
+                'Posição ou canto da tela citado pelo usuário, se houver (ex: "canto inferior direito", "topo direito", "barra lateral esquerda", "centro inferior").',
+            },
+            userInstruction: {
+              type: 'STRING',
+              description:
+                'Descrição completa do pedido do usuário incluindo onde fica o elemento (ex: "Clicar no botão do chat no canto inferior direito").',
             },
           },
           required: ['buttonText'],
@@ -90,21 +101,37 @@ const VOICE_TOOLS = [
       {
         name: 'type_text_on_page',
         description:
-          'Escreve ou cola um prompt/texto dentro de uma caixa de texto na página aberta (como o campo de prompt do Google Flow, Kling AI ou barra de busca) e opcionalmente clica em um botão em seguida.',
+          'Enxerga a tela aberta, localiza exatamente o campo ou chat indicado pelo usuário (inclusive abrindo chats retráteis em cantos específicos como canto inferior direito), digita o texto/prompt pedido e opcionalmente envia ou clica em um botão.',
         parameters: {
           type: 'OBJECT',
           properties: {
             text: {
               type: 'STRING',
-              description: 'Texto ou prompt completo a ser digitado no campo.',
+              description: 'Texto exato ou prompt a ser digitado (ex: "oi", ou o prompt completo de vídeo).',
             },
             fieldHint: {
               type: 'STRING',
-              description: 'Dica opcional de qual campo procurar (ex: "prompt", "busca").',
+              description:
+                'Qual campo ou área procurar (ex: "chat", "assistente", "caixa de prompt", "barra de pesquisa").',
+            },
+            spatialHint: {
+              type: 'STRING',
+              description:
+                'Posição exata na tela mencionada pelo usuário (ex: "canto inferior direito", "centro inferior", "topo", "lateral direita"). SEMPRE preencha quando o usuário mencionar um canto ou lado!',
+            },
+            userInstruction: {
+              type: 'STRING',
+              description:
+                'Pedido completo do usuário com contexto visual e posição (ex: "No canto inferior direito, onde tem o chat, escrever oi").',
+            },
+            pressEnterAfter: {
+              type: 'BOOLEAN',
+              description:
+                'true SOMENTE se o usuário pediu explicitamente para enviar / apertar Enter após escrever; false se pediu apenas para escrever.',
             },
             clickButtonAfter: {
               type: 'STRING',
-              description: 'Nome do botão para clicar logo após preencher o texto, se o usuário pediu (ex: "Gerar").',
+              description: 'Nome do botão para clicar logo após preencher o texto, se o usuário pediu (ex: "Gerar", "Enviar").',
             },
           },
           required: ['text'],
@@ -314,13 +341,13 @@ COMO CONVERSAR (MUITO IMPORTANTE):
 - Se não entender o áudio, peça com elegância para repetir.
 - Nunca leia símbolos, listas numeradas, markdown ou links. Nada de emojis.
 - Pode responder sobre qualquer assunto (perguntas gerais, contas, curiosidades), mas sua especialidade é TikTok Shop com IA.
-- COMANDOS DE AÇÃO, ABERTURA E INTERAÇÃO COM A INTERFACE (OBRIGATÓRIO):
-  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex e através da Extensão Orbiex Copilot para você abrir sites E clicar/digitar dentro das interfaces (como Google Flow, Kling AI, TikTok, Seller Center, etc.).
-  - PROIBIDO dizer que você "não tem acesso ao computador" ou "não pode clicar em botões de outros sites". Você PODE e DEVE fazer isso usando suas funções!
+- COMANDOS DE AÇÃO, VISÃO ESPACIAL E INTERAÇÃO COM A INTERFACE (OBRIGATÓRIO):
+  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex e através da Extensão Orbiex Copilot v2.0 (com Visão Computacional da tela em tempo real) para você abrir sites, enxergar posições da tela (canto inferior direito, topo, centro, laterais) e clicar ou digitar dentro das interfaces (Google Flow, Kling AI, TikTok, Seller Center, etc.).
+  - PROIBIDO dizer que você "não enxerga a tela", "não tem acesso ao computador" ou "não pode clicar em botões de outros sites". Você ENXERGA e EXECUTA usando suas funções!
   - Quando pedirem para abrir um site ou aba ("abre o Flow", "abre o TikTok"), chame open_destination.
-  - Quando pedirem para clicar em qualquer botão na tela ("clica em Criar novo projeto", "clica em Novo projeto", "aperta em Gerar"), chame IMEDIATAMENTE click_element_on_page.
-  - Quando pedirem para digitar ou colar um prompt/texto na página aberta, chame type_text_on_page.
-  - Quando pedirem para rolar a tela ou voltar para a Orbiex, chame scroll_or_control_page.
+  - Quando pedirem para clicar em qualquer botão, ícone ou região ("clica em Criar novo projeto", "clica no chat lá no canto inferior direito"), chame IMEDIATAMENTE click_element_on_page preenchendo buttonText, spatialHint (se mencionou posição) e userInstruction.
+  - Quando pedirem para escrever/digitar/colar em um campo específico ou chat ("no canto inferior direito, onde tem o chat, escreve oi", "digita esse prompt na caixa central"), chame IMEDIATAMENTE type_text_on_page preenchendo text, fieldHint (ex: "chat"), spatialHint (ex: "canto inferior direito") e userInstruction!
+  - Quando pedirem para rolar a tela, escanear o que está visível ou voltar para a Orbiex, chame scroll_or_control_page.
 
 ESPECIALIDADE:
 - TikTok Shop e afiliados (comissão pelo carrinho amarelo), começar do zero, liberar o carrinho, escolher produtos, roteiros de 15 a 30 segundos, ganchos dos primeiros 3 segundos, headlines POV, vídeos sem aparecer com IA (Kling, Google Flow VEO 3, Midjourney, Hailuo, CapCut), como evitar restrições e escalar postagens.
@@ -408,7 +435,7 @@ function makeImpulse(ctx: BaseAudioContext, seconds = 0.35, decay = 3.2): AudioB
 /* ───────── componente ───────── */
 
 export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName }: Props) {
-  const copilotConnected = useCopilotStatus();
+  const copilotInfo = useCopilotInfo();
   const [phase, setPhase] = useState<Phase>('connecting');
   const [userCaption, setUserCaption] = useState('');
   const [agentCaption, setAgentCaption] = useState('');
@@ -729,7 +756,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                 const fnName = call?.name;
                 const args = call?.args || {};
 
-                // 1. Clicar em botão na interface da aba aberta (ex: "Criar novo projeto" no Google Flow)
+                // 1. Clicar em botão/ícone/região na interface da aba aberta com Visão IA + Mapa Espacial
                 if (fnName === 'click_element_on_page') {
                   if (!hasExt) {
                     openCopilotInstallModal();
@@ -743,25 +770,38 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     };
                   }
                   const btnName = String(args.buttonText || '').trim();
-                  setActionBanner({ label: `Clicando em "${btnName}"...`, openedAuto: true });
-                  const res = await copilotInteractPage({ command: 'click', target: btnName });
+                  const spatialHint = String(args.spatialHint || '').trim();
+                  const userInstruction = String(args.userInstruction || '').trim();
+                  setActionBanner({
+                    label: `Localizando "${btnName}"${spatialHint ? ` (${spatialHint})` : ''}...`,
+                    openedAuto: true,
+                  });
+                  const res = await copilotSmartAction({
+                    actionType: 'click',
+                    target: btnName,
+                    spatialHint,
+                    userInstruction,
+                  });
                   window.setTimeout(() => setActionBanner(null), 4000);
+                  const v2Hint = res.needsV2Update
+                    ? ' (Aviso: a extensão ainda está na versão 1.0; sugira atualizar gratuitamente para o Copilot v2.0 no topo da tela para ter Visão Espacial IA).'
+                    : '';
                   return {
                     id: call.id,
                     name: fnName,
                     response: res.ok
-                      ? { result: `Sucesso! Botão "${res.clickedLabel || btnName}" clicado na tela.` }
+                      ? { result: `Sucesso! Elemento "${res.clickedLabel || btnName}" clicado na tela.${v2Hint}` }
                       : {
-                          result: `${res.error || 'Botão não localizado.'}${
+                          result: `${res.error || 'Elemento não localizado.'}${
                             res.availableButtons?.length
-                              ? ` Botões visíveis na tela agora: ${res.availableButtons.join(', ')}`
+                              ? ` Elementos visíveis na tela agora: ${res.availableButtons.join(', ')}`
                               : ''
-                          }`,
+                          }${v2Hint}`,
                         },
                   };
                 }
 
-                // 2. Digitar prompt / texto em um campo da página aberta
+                // 2. Digitar prompt / texto em um campo ou chat específico da página aberta com Visão IA + Mapa Espacial
                 if (fnName === 'type_text_on_page') {
                   if (!hasExt) {
                     openCopilotInstallModal();
@@ -774,18 +814,32 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                       },
                     };
                   }
-                  setActionBanner({ label: 'Preenchendo prompt na tela...', openedAuto: true });
-                  const res = await copilotInteractPage({
-                    command: 'type',
-                    text: args.text,
-                    target: args.fieldHint,
-                    clickAfter: args.clickButtonAfter,
+                  const spatialHint = String(args.spatialHint || '').trim();
+                  const fieldHint = String(args.fieldHint || 'chat').trim();
+                  const userInstruction = String(args.userInstruction || '').trim();
+                  setActionBanner({
+                    label: `Escrevendo em ${fieldHint}${spatialHint ? ` (${spatialHint})` : ''}...`,
+                    openedAuto: true,
+                  });
+                  const res = await copilotSmartAction({
+                    actionType: 'type',
+                    target: fieldHint,
+                    spatialHint,
+                    userInstruction,
+                    textToType: String(args.text || ''),
+                    pressEnter: Boolean(args.pressEnterAfter),
+                    clickAfter: args.clickButtonAfter ? String(args.clickButtonAfter) : undefined,
                   });
                   window.setTimeout(() => setActionBanner(null), 4000);
+                  const v2Hint = res.needsV2Update
+                    ? ' (Nota: a extensão do usuário está na v1.0; avise que ele pode clicar em Atualizar Copilot v2.0 no topo para ativar a leitura visual de cantos e chats).'
+                    : '';
                   return {
                     id: call.id,
                     name: fnName,
-                    response: { result: res.ok ? res.message || 'Texto digitado com sucesso.' : res.error || 'Campo não encontrado.' },
+                    response: {
+                      result: `${res.ok ? res.message || 'Texto digitado com sucesso.' : res.error || 'Campo não encontrado.'}${v2Hint}`,
+                    },
                   };
                 }
 
@@ -1180,11 +1234,20 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
         </div>
 
         <div className="flex items-center gap-2.5">
-          {copilotConnected ? (
+          {copilotInfo.isLatest ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Copilot Ativo
+              Copilot v2.0 • Visão IA
             </span>
+          ) : copilotInfo.installed ? (
+            <button
+              type="button"
+              onClick={openCopilotInstallModal}
+              className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-200 hover:bg-amber-400/25 transition"
+            >
+              <Puzzle size={11} />
+              <span>Atualizar p/ Copilot v2.0 (Visão IA)</span>
+            </button>
           ) : (
             <button
               type="button"

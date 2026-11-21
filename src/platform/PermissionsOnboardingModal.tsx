@@ -12,7 +12,7 @@ import {
   MousePointerClick,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { useCopilotStatus } from './copilotBridge';
+import { useCopilotInfo } from './copilotBridge';
 import { copyText } from './clipboard';
 import { downloadCopilotExtensionZip } from './extensionBundle';
 
@@ -53,7 +53,9 @@ export function hasAcceptedVoiceTerms(): boolean {
 }
 
 export function PermissionsOnboardingModal() {
-  const copilotConnected = useCopilotStatus();
+  const copilotInfo = useCopilotInfo();
+  const copilotConnected = copilotInfo.installed;
+  const needsV2Upgrade = copilotInfo.installed && !copilotInfo.isLatest;
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<'terms' | 'extension'>('terms');
@@ -271,17 +273,17 @@ export function PermissionsOnboardingModal() {
               </div>
             </div>
 
-            {copilotConnected ? (
+            {copilotInfo.isLatest ? (
               <div className="relative z-10 mt-6 space-y-5">
                 <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/12 p-5 text-center space-y-2">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
                     <Check size={24} strokeWidth={2.8} />
                   </div>
                   <h3 className="text-[16px] font-black text-emerald-300">
-                    Extensão Conectada com Sucesso!
+                    Copilot v2.0 (Visão IA) Conectado!
                   </h3>
                   <p className="text-[12.5px] leading-relaxed text-white/75">
-                    Tudo pronto! Agora você pode abrir o Agente de Voz e pedir: <strong className="text-white">“Abre o Google Flow”</strong> e depois <strong className="text-white">“Clica em Criar novo projeto”</strong>.
+                    Tudo pronto! Agora o Agente enxerga cantos, ícones e chats na tela. Peça por voz: <strong className="text-white">“Abre o Google Flow”</strong>, <strong className="text-white">“Clica em Criar novo projeto”</strong> ou <strong className="text-white">“No canto inferior direito, onde tem o chat, escreve oi”</strong>.
                   </p>
                 </div>
 
@@ -297,7 +299,16 @@ export function PermissionsOnboardingModal() {
             ) : (
               <div className="relative z-10 mt-4 space-y-4">
                 <p className="text-[12.5px] leading-relaxed text-white/75">
-                  Ative a extensão oficial gratuita no seu navegador para o Agente Orbiex conseguir <strong className="text-white">abrir abas sem bloqueio e clicar sozinho nos botões</strong> dentro do Google Flow, Kling AI e TikTok:
+                  {needsV2Upgrade ? (
+                    <>
+                      <strong className="text-amber-300">Nova atualização gratuita disponível (v2.0 — Visão IA)!</strong>{' '}
+                      Agora o Agente tira leitura espacial em tempo real da tela para identificar exatamente <strong className="text-white">cantos, ícones e caixas de chat</strong> (como no canto inferior direito do Flow):
+                    </>
+                  ) : (
+                    <>
+                      Ative a extensão oficial gratuita <strong className="text-white">v2.0 (com Visão IA)</strong> no seu navegador para o Agente Orbiex conseguir <strong className="text-white">abrir abas sem bloqueio, enxergar posições da tela e clicar/digitar sozinho</strong> no Google Flow, Kling AI e TikTok:
+                    </>
+                  )}
                 </p>
 
                 {/* Botão Principal de Download / Loja */}
@@ -311,15 +322,19 @@ export function PermissionsOnboardingModal() {
                     {CHROME_STORE_URL
                       ? 'Adicionar Extensão no Chrome (Grátis)'
                       : downloadedZip
-                      ? 'Pacote Baixado! (Baixar Novamente)'
-                      : '1. Baixar Extensão Orbiex Copilot (Grátis)'}
+                      ? 'Pacote v2.0 Baixado! (Baixar Novamente)'
+                      : needsV2Upgrade
+                      ? '1. Baixar Atualização Copilot v2.0 (Visão IA)'
+                      : '1. Baixar Extensão Orbiex Copilot v2.0 (Grátis)'}
                   </span>
                 </button>
 
                 {!CHROME_STORE_URL && (
                   <div className="rounded-2xl border border-white/10 bg-black/55 p-4 space-y-2.5 text-[12px] text-white/80">
                     <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--mvz-gold-light)]">
-                      Ativação rápida em 15 segundos (Sem precisar descompactar!):
+                      {needsV2Upgrade
+                        ? 'Como atualizar da v1.0 para a v2.0 em 10 segundos:'
+                        : 'Ativação rápida em 15 segundos (Sem precisar descompactar!):'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span>
@@ -334,19 +349,32 @@ export function PermissionsOnboardingModal() {
                         <span>{copiedUrl ? 'Copiado! Cole na barra do Chrome' : 'Copiar chrome://extensions'}</span>
                       </button>
                     </div>
-                    <p>
-                      <strong className="text-white">2.</strong> Ative a chave <strong className="text-white">“Modo do desenvolvedor”</strong> lá no canto superior direito.
-                    </p>
-                    <p>
-                      <strong className="text-white">3.</strong> Simplesmente <strong className="text-[#f4d77a]">arraste o arquivo <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code></strong> que baixou e solte no meio da página <code className="text-white">chrome://extensions</code>! <span className="text-white/55">(Ou dê 2 cliques no .zip para virar a pasta <strong>Orbiex-Copilot</strong> e selecione essa pasta em “Carregar sem compactação”).</span>
-                    </p>
+                    {needsV2Upgrade ? (
+                      <>
+                        <p>
+                          <strong className="text-white">2.</strong> Clique em <strong className="text-rose-300">“Remover”</strong> no card antigo <code className="text-white">1.0.0</code>.
+                        </p>
+                        <p>
+                          <strong className="text-white">3.</strong> Arraste o novo arquivo <strong className="text-[#f4d77a]"><code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code></strong> que acabou de baixar para o meio da página <code className="text-white">chrome://extensions</code> (vai aparecer <strong className="text-emerald-300">2.0.0</strong>) e atualize esta aba da Orbiex!
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p>
+                          <strong className="text-white">2.</strong> Ative a chave <strong className="text-white">“Modo do desenvolvedor”</strong> lá no canto superior direito.
+                        </p>
+                        <p>
+                          <strong className="text-white">3.</strong> Simplesmente <strong className="text-[#f4d77a]">arraste o arquivo <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code></strong> que baixou e solte no meio da página <code className="text-white">chrome://extensions</code>!
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="inline-flex items-center gap-2 text-[11px] text-white/45">
                     <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                    Aguardando ativação automática...
+                    {needsV2Upgrade ? 'Aguardando atualização v2.0...' : 'Aguardando ativação automática...'}
                   </span>
 
                   <button
@@ -354,7 +382,7 @@ export function PermissionsOnboardingModal() {
                     onClick={() => setOpen(false)}
                     className="text-[11.5px] font-semibold text-white/50 hover:text-white transition"
                   >
-                    Ativar depois
+                    {needsV2Upgrade ? 'Fechar' : 'Ativar depois'}
                   </button>
                 </div>
               </div>

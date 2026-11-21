@@ -1,19 +1,21 @@
 /**
- * Orbiex Bridge — Conecta a plataforma web (orbiex.io) à Extensão Orbiex Copilot
+ * Orbiex Bridge v2.0 — Conecta a plataforma web (orbiex.io) à Extensão Orbiex Copilot
  */
 (function () {
-  if (window.__ORBIEX_BRIDGE_ACTIVE__) return;
-  window.__ORBIEX_BRIDGE_ACTIVE__ = true;
+  if (window.__ORBIEX_BRIDGE_V2__) return;
+  window.__ORBIEX_BRIDGE_V2__ = true;
+
+  const EXT_VERSION = '2.0.0';
 
   function announceReady() {
     try {
       if (document.documentElement) {
-        document.documentElement.setAttribute('data-orbiex-copilot', '1.0.0');
+        document.documentElement.setAttribute('data-orbiex-copilot', EXT_VERSION);
       }
       window.dispatchEvent(
-        new CustomEvent('orbiex-copilot:ready', { detail: { version: '1.0.0' } })
+        new CustomEvent('orbiex-copilot:ready', { detail: { version: EXT_VERSION } })
       );
-      window.postMessage({ source: 'orbiex-ext-ready', version: '1.0.0' }, '*');
+      window.postMessage({ source: 'orbiex-ext-ready', version: EXT_VERSION }, '*');
     } catch {
       /* noop */
     }
@@ -32,7 +34,7 @@
     if (type === 'PING') {
       announceReady();
       window.postMessage(
-        { source: 'orbiex-ext-res', reqId, result: { ok: true, version: '1.0.0' } },
+        { source: 'orbiex-ext-res', reqId, result: { ok: true, version: EXT_VERSION } },
         '*'
       );
       return;

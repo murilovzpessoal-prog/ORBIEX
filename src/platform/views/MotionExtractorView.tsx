@@ -16,6 +16,8 @@ import {
   X,
   Sliders,
 } from 'lucide-react';
+import { copyText as copyToClipboard } from '../clipboard';
+import { getGenMemory, addGenMemory, pickOne, jitter } from '../aiGenerate';
 
 interface SampleVideoPreset {
   id: string;
@@ -185,10 +187,108 @@ const ENGINES: EngineDef[] = [
   },
 ];
 
+// ───── Síntese local variada (fallback quando a IA não responde) ─────
+function buildVariedMotion(base: SampleVideoPreset, videoName: string): SampleVideoPreset {
+  const subject = videoName.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').trim() || base.title;
+
+  const framings = [
+    'Plano Medio Vertical (9:16) • Eye-Level',
+    'Plano Americano (9:16) • Leve Contra-Plongee',
+    'Corpo Inteiro para Plano Medio (9:16)',
+    'Primeiro Plano / Busto (9:16) • Altura dos Olhos',
+    'Plano Geral Vertical (9:16) • Camera Baixa Heroica',
+  ];
+  const motions: [string, string][] = [
+    ['Subtle Handheld Push-In com estabilizacao otica', 'subtle handheld push-in with optical stabilization'],
+    ['Smooth Backward Dolly / Tracking Gimbal Shot', 'smooth backward gimbal tracking shot'],
+    ['Arco Lateral Lento de 30 graus (Orbit)', 'slow 30-degree lateral orbit around the subject'],
+    ['Camera Fixa com Micro-Float Organico', 'locked-off tripod framing with organic micro-float'],
+    ['Pull-Out Suave revelando o look inteiro', 'gentle pull-out revealing the full outfit'],
+    ['POV Handheld Smartphone com micro-vibracoes reais', 'POV smartphone handheld with real micro-vibrations'],
+  ];
+  const lenses: [string, string][] = [
+    ['35mm Prime f/1.8 com desfoque suave de fundo', '35mm f/1.8'],
+    ['50mm f/1.4 com compressao elegante', '50mm f/1.4'],
+    ['26mm Wide (lente nativa de smartphone)', '26mm smartphone wide lens'],
+    ['85mm f/1.8 retrato com bokeh cremoso', '85mm f/1.8 portrait lens'],
+    ['24mm f/2.0 grande angular vertical', '24mm f/2.0 wide lens'],
+  ];
+  const lightings: [string, string][] = [
+    ['Luz Difusa Natural frontal com Rim Light dourado', 'soft frontal daylight with golden rim light'],
+    ['Golden Hour (luz solar dourada de fim de tarde)', 'golden hour sunlight backlighting the hair'],
+    ['Luz de Janela Suave (Soft Daylight)', 'soft window daylight'],
+    ['Softbox lateral + preenchimento quente', 'side softbox key with warm fill'],
+    ['Ring light frontal com fundo levemente escurecido', 'frontal ring light with a slightly darkened background'],
+  ];
+  const fpsOpts = ['24 fps (Padrao Cinematografico)', '30 fps (Fluidez UGC Premium)', '30 fps (Formato Nativo TikTok Shop)', '60 fps (Camera lenta suave)'];
+
+  const [motionPt, motionEn] = pickOne(motions);
+  const [lensPt, lensEn] = pickOne(lenses);
+  const [lightPt, lightEn] = pickOne(lightings);
+  const fps = pickOne(fpsOpts);
+  const fpsNum = fps.slice(0, 2);
+
+  const total = jitter(7, 1, 6, 9);
+  const t1 = jitter(Math.round(total * 0.3), 1, 1, total - 3);
+  const t2 = jitter(Math.round(total * 0.7), 1, t1 + 1, total - 1);
+  const ts = (n: number) => `00:${String(n).padStart(2, '0')}`;
+
+  const openings: [string, string, string][] = [
+    ['Postura Inicial e Contato Visual', 'Posiciona-se estavel em frente a camera, postura ereta e olhar direto para a lente.', 'stands steady facing the lens with confident posture and direct eye contact'],
+    ['Entrada no Quadro', 'Entra no enquadramento com passos curtos e naturais, ajustando o cabelo com uma das maos.', 'steps into frame with short natural strides, brushing her hair with one hand'],
+    ['Respiro e Preparacao', 'Pequena pausa com respiracao visivel e leve sorriso antes de iniciar o movimento principal.', 'pauses with a visible breath and a subtle smile before the main move'],
+    ['Olhar de Canto', 'Comeca de perfil e vira o rosto para a camera com um olhar de canto magnetico.', 'starts in profile and turns her face toward the camera with a magnetic side glance'],
+  ];
+  const middles: [string, string, string][] = [
+    ['Giro Controlado no Eixo', 'Rotacao suave no proprio eixo mostrando caimento lateral e contorno traseiro da peca.', 'performs a smooth controlled rotation on her axis showing the side drape and back silhouette'],
+    ['Transferencia de Peso e Bracos', 'Transfere o peso de uma perna para a outra com bracos fluidos, evidenciando o movimento do tecido.', 'shifts weight from one leg to the other with fluid arms, emphasizing fabric movement'],
+    ['Demonstracao de Detalhe', 'Aproxima a mao do detalhe principal da peca e aponta com o indicador, inclinando o tronco.', 'brings her hand to the key garment detail and points with her index finger, leaning slightly'],
+    ['Caminhada Curta para a Lente', 'Dois ou tres passos firmes em direcao a camera com balanço natural do tecido.', 'takes two or three confident steps toward the camera with natural fabric sway'],
+  ];
+  const endings: [string, string, string][] = [
+    ['Mao na Cintura e Aprovacao', 'Repousa a mao na cintura, retorna o olhar para a camera e assente com aprovacao.', 'rests a hand on her waist, returns her gaze to camera and nods approvingly'],
+    ['Pose Final Congelada', 'Desacelera ate parar numa pose estavel, queixo levemente erguido e micro-sorriso.', 'slows into a still final pose, chin slightly raised with a micro-smile'],
+    ['Ajuste e Saida Elegante', 'Ajusta a barra ou a gola da peca e gira o rosto saindo de cena com elegancia.', 'adjusts the hem or collar and turns her face away exiting elegantly'],
+    ['Close de Confirmacao', 'Inclina-se em direcao a lente, sorri e faz um sinal de positivo sutil.', 'leans toward the lens, smiles and gives a subtle thumbs up'],
+  ];
+  const [o, m, e] = [pickOne(openings), pickOne(middles), pickOne(endings)];
+
+  // Mistura 1 etapa original do preset (quando existir) para manter fidelidade ao video base
+  const keepIdx = Math.floor(Math.random() * 3);
+  const baseStep = base.timeline[keepIdx];
+  const steps = [o, m, e].map(([title, desc], idx) =>
+    idx === keepIdx && baseStep && Math.random() < 0.5 ? { title: baseStep.title, desc: baseStep.desc } : { title, desc }
+  );
+
+  const promptEnglish = `A photorealistic vertical 9:16 video recreating the movement dynamics of "${subject}". At ${ts(0)}, the model ${o[2]}. At ${ts(t1)}, she ${m[2]}. At ${ts(t2)}, she ${e[2]}. Camera: ${motionEn}, ${lensEn}, ${lightEn}, ${pickOne([
+    'ultra-realistic cloth physics',
+    'natural skin texture and realistic fabric simulation',
+    'zero morphing, stable anatomy and realistic hands',
+    'seamless temporal coherence and true-to-life fabric drape',
+  ])}, ${fpsNum}fps.`;
+
+  return {
+    ...base,
+    promptEnglish,
+    timeline: [
+      { time: `${ts(0)} - ${ts(t1)}`, ...steps[0] },
+      { time: `${ts(t1)} - ${ts(t2)}`, ...steps[1] },
+      { time: `${ts(t2)} - ${ts(total)}`, ...steps[2] },
+    ],
+    cameraDetails: {
+      framing: pickOne(framings),
+      motion: motionPt,
+      lens: lensPt,
+      lighting: lightPt,
+      fps,
+    },
+  };
+}
+
 // Helper seguro de copia para area de transferencia com fallback
 function copyTextSafe(text: string, onSuccess: () => void) {
-  if (navigator?.clipboard?.writeText) {
-    navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
+  if (true) {
+    copyToClipboard(text).then((ok) => (ok ? onSuccess() : fallbackCopy(text, onSuccess))).catch(() => {
       fallbackCopy(text, onSuccess);
     });
   } else {
@@ -239,6 +339,9 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Preset original (sem variações) usado como base cinética de cada nova geração
+  const basePresetRef = useRef<SampleVideoPreset>(SAMPLE_VIDEOS[0]);
+  const runIdRef = useRef(0);
 
   // Limpeza de timers ao desmontar componente
   useEffect(() => {
@@ -255,6 +358,8 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
 
   // Selecionar preset validado
   const handleSelectPreset = (preset: SampleVideoPreset) => {
+    runIdRef.current++;
+    basePresetRef.current = preset;
     setActivePreset(preset);
     setActiveVideoUrl(preset.videoUrl);
     setActiveVideoName(preset.title);
@@ -278,7 +383,8 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
     const cleanBaseName = file.name.replace(/\.[^/.]+$/, '');
 
     // Ajusta preset para dados customizados com base no nome do video
-    setActivePreset({
+    runIdRef.current++;
+    const customPreset: SampleVideoPreset = {
       id: 'custom-' + Date.now(),
       title: file.name,
       tag: 'Video Personalizado',
@@ -310,7 +416,9 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
         lighting: 'Iluminacao Natural de Estudio com Rim Light Dourado',
         fps: '24 / 30 fps Adaptativo',
       },
-    });
+    };
+    basePresetRef.current = customPreset;
+    setActivePreset(customPreset);
 
     setStatus('preview');
   };
@@ -337,58 +445,69 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
     if (file) handleFileUpload(file);
   };
 
-  // Disparo da Analise de Visao Computacional (~3.8s) + Chamada ao Backend IA
+  // Disparo da Analise de Visao Computacional (~3.6s) + Chamada ao Backend IA (sempre uma geracao nova)
   const handleStartExtraction = () => {
     setStatus('analyzing');
     setProgress(0);
     setScanMessage('Detectando 33 keypoints anatomicos (BlazePose)...');
     setScanTag('Keypoints Corporais');
 
-    if (activePreset.id.startsWith('custom-')) {
-      fetch('/api/generate-prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'motion',
-          videoName: activeVideoName,
-          engineName: currentEngine.name,
-        }),
+    const base = basePresetRef.current;
+    const videoName = activeVideoName;
+    const engineName = currentEngine.name;
+    const memoryKey = `motion:${videoName}:${engineName}`;
+    const runId = ++runIdRef.current;
+
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 25000);
+
+    const aiPromise: Promise<SampleVideoPreset | null> = fetch('/api/generate-prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'motion',
+        videoName,
+        engineName,
+        basePrompt: base.promptEnglish,
+        avoid: getGenMemory(memoryKey),
+      }),
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const json = await res.json();
+        const data = json?.data;
+        if (!json?.success || !data || typeof data.promptEnglish !== 'string' || !data.promptEnglish.trim()) return null;
+        const timeline =
+          Array.isArray(data.timeline) && data.timeline.length >= 3
+            ? data.timeline.slice(0, 5).map((t: { time?: unknown; title?: unknown; desc?: unknown }, i: number) => ({
+                time: String(t?.time || base.timeline[i]?.time || '00:00 - 00:02'),
+                title: String(t?.title || base.timeline[i]?.title || 'Movimento Detectado'),
+                desc: String(t?.desc || base.timeline[i]?.desc || ''),
+              }))
+            : null;
+        const local = buildVariedMotion(base, videoName);
+        const cd = data.cameraDetails || {};
+        const preset: SampleVideoPreset = {
+          ...base,
+          promptEnglish: data.promptEnglish.trim(),
+          timeline: timeline || local.timeline,
+          cameraDetails: {
+            framing: String(cd.framing || local.cameraDetails.framing),
+            motion: String(cd.motion || local.cameraDetails.motion),
+            lens: String(cd.lens || local.cameraDetails.lens),
+            lighting: String(cd.lighting || local.cameraDetails.lighting),
+            fps: String(cd.fps || local.cameraDetails.fps),
+          },
+        };
+        return preset;
       })
-        .then(async (res) => {
-          if (!res.ok) return;
-          const json = await res.json();
-          const data = json?.data;
-          if (data && data.promptEnglish) {
-            setActivePreset((prev) => ({
-              ...prev,
-              promptEnglish: String(data.promptEnglish),
-              timeline:
-                Array.isArray(data.timeline) && data.timeline.length >= 3
-                  ? data.timeline.map((t: any) => ({
-                      time: String(t.time || '00:00 - 00:02'),
-                      title: String(t.title || 'Movimento Detectado'),
-                      desc: String(t.desc || ''),
-                    }))
-                  : prev.timeline,
-              cameraDetails: data.cameraDetails
-                ? {
-                    framing: String(data.cameraDetails.framing || prev.cameraDetails.framing),
-                    motion: String(data.cameraDetails.motion || prev.cameraDetails.motion),
-                    lens: String(data.cameraDetails.lens || prev.cameraDetails.lens),
-                    lighting: String(data.cameraDetails.lighting || prev.cameraDetails.lighting),
-                    fps: String(data.cameraDetails.fps || prev.cameraDetails.fps),
-                  }
-                : prev.cameraDetails,
-            }));
-          }
-        })
-        .catch(() => {
-          // Fallback automático para a síntese local
-        });
-    }
+      .catch(() => null)
+      .finally(() => clearTimeout(abortTimer));
 
     const startTime = Date.now();
     const duration = 3600;
+    let finished = false;
 
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -407,19 +526,30 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
         setScanMessage('Analisando micro-expressoes faciais, piscar e direcao do olhar...');
         setScanTag('Face Mesh 468 pts');
       } else if (pct < 88) {
-        setScanMessage(`Calculando trajetoria de camera para o motor ${currentEngine.name}...`);
+        setScanMessage(`Calculando trajetoria de camera para o motor ${engineName}...`);
         setScanTag('Trajetoria de Lente');
       } else {
         setScanMessage('Formatando prompt tecnico e parametros de renderizacao...');
         setScanTag('Prompt Sintetizado');
       }
 
-      if (elapsed >= duration) {
+      if (elapsed >= duration && !finished) {
+        finished = true;
         if (timerRef.current) clearInterval(timerRef.current);
-        setTimeout(() => {
-          setStatus('results');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 180);
+        setScanMessage('Finalizando analise personalizada com IA...');
+        aiPromise.then((aiPreset) => {
+          if (runId !== runIdRef.current) return; // outra extracao foi iniciada
+          const finalPreset = aiPreset || buildVariedMotion(base, videoName);
+          addGenMemory(memoryKey, [
+            finalPreset.promptEnglish.slice(0, 200),
+            finalPreset.timeline.map((t) => t.title).join(' | '),
+          ]);
+          setActivePreset(finalPreset);
+          setTimeout(() => {
+            setStatus('results');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 180);
+        });
       }
     }, 45);
   };
@@ -1096,6 +1226,14 @@ export function MotionExtractorView({ onUse }: { onUse?: (prompt: string) => voi
                     <span>Usar no Agente IA</span>
                   </button>
                 )}
+
+                <button
+                  onClick={handleStartExtraction}
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 text-[12px] font-bold text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                >
+                  <Sparkles size={14} className="text-[var(--mvz-gold)]" />
+                  <span>Nova Versao</span>
+                </button>
 
                 <button
                   onClick={() => setStatus('empty')}

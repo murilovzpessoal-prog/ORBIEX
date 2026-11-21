@@ -9,7 +9,12 @@ import {
   Pause,
   Play,
   RotateCcw,
+  Copy,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
+import { aiGenerateJSON, jitter, pickOne, shuffle } from '../aiGenerate';
+import { copyText as copyToClipboard } from '../clipboard';
 
 interface PolicyCheck {
   id: string;
@@ -30,8 +35,256 @@ interface ScanResult {
   actions: string[];
 }
 
+const POLICY_BASE = [
+  { id: 'claims', name: 'Alegações e Promessas' },
+  { id: 'nudity', name: 'Exposição Corporal' },
+  { id: 'trademark', name: 'Marcas e Propriedade Intelectual' },
+  { id: 'audio', name: 'Áudio e Trilha Comercial' },
+  { id: 'framing', name: 'Enquadramento e Safe Zone' },
+] as const;
+
+/** Extrai um frame real do arquivo de vídeo para visão computacional da IA */
+function extractVideoFrame(file: File): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    try {
+      const url = URL.createObjectURL(file);
+      const vid = document.createElement('video');
+      vid.preload = 'metadata';
+      vid.muted = true;
+      vid.playsInline = true;
+      const done = (img?: string) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          /* noop */
+        }
+        resolve(img);
+      };
+      const timer = window.setTimeout(() => done(undefined), 2800);
+      vid.onloadeddata = () => {
+        vid.currentTime = Math.min(1.2, (vid.duration || 2) * 0.25);
+      };
+      vid.onseeked = () => {
+        window.clearTimeout(timer);
+        try {
+          const w = 360;
+          const h = Math.round((vid.videoHeight / Math.max(1, vid.videoWidth)) * w) || 640;
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return done(undefined);
+          ctx.drawImage(vid, 0, 0, w, h);
+          done(canvas.toDataURL('image/jpeg', 0.72));
+        } catch {
+          done(undefined);
+        }
+      };
+      vid.onerror = () => {
+        window.clearTimeout(timer);
+        done(undefined);
+      };
+      vid.src = url;
+    } catch {
+      resolve(undefined);
+    }
+  });
+}
+
+function buildVariedFallback(fileName: string): ScanResult {
+  const cleanLabel = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'criativo enviado';
+  const lower = cleanLabel.toLowerCase();
+
+  const hasClaimsRisk = /emagrec|antes|depois|perder|cura|peso|barriga|milagre|garantid/.test(lower);
+  const hasBrandRisk = /nike|gucci|marca|apple|adidas|louis|prada|chanel|replica|inspiracao/.test(lower);
+
+  if (hasClaimsRisk) {
+    const score = jitter(35, 6, 22, 46);
+    return {
+      hasRisk: true,
+      score,
+      verdict: 'Chance de restrição: SIM',
+      statusText: pickOne([
+        'Alto risco de bloqueio por alegação sensível',
+        'Atenção crítica: gatilho de promessa de resultado detectado',
+        'Risco elevado na moderação automática do TikTok Shop',
+      ]),
+      summary: pickOne([
+        `Na análise de "${cleanLabel}", foram identificados termos ou estruturas de transformação acelerada ("antes e depois" ou promessa corporal) que acionam o filtro de conformidade comercial.`,
+        `O criativo "${cleanLabel}" apresenta indícios de promessa exagerada de resultado físico, principal causa de reprovação de carrinho amarelo no TikTok Shop.`,
+      ]),
+      policies: [
+        {
+          id: 'claims',
+          name: 'Alegações e Promessas',
+          status: 'danger',
+          score: jitter(20, 6, 10, 32),
+          description: `Referência implícita ou explícita a resultado garantido identificada em "${cleanLabel}".`,
+          adjustment: pickOne([
+            'Troque promessas de prazo por demonstração real de caimento e conforto no corpo.',
+            'Substitua comparações de antes/depois por foco na modelagem e estrutura do tecido.',
+          ]),
+        },
+        {
+          id: 'nudity',
+          name: 'Exposição Corporal',
+          status: 'warning',
+          score: jitter(56, 7, 45, 68),
+          description: 'Enquadramento próximo em região corporal pode sensibilizar o filtro automático.',
+          adjustment: 'Mantenha plano médio (cintura para cima ou corpo inteiro no espelho).',
+        },
+        {
+          id: 'trademark',
+          name: 'Marcas e Propriedade Intelectual',
+          status: 'safe',
+          score: jitter(94, 4, 88, 99),
+          description: 'Nenhuma logomarca protegida de terceiros detectada.',
+        },
+        {
+          id: 'audio',
+          name: 'Áudio e Trilha Comercial',
+          status: 'safe',
+          score: jitter(91, 4, 85, 98),
+          description: 'Padrão de trilha compatível com uso comercial.',
+        },
+        {
+          id: 'framing',
+          name: 'Enquadramento e Safe Zone',
+          status: 'safe',
+          score: jitter(92, 4, 86, 98),
+          description: 'Proporção vertical adequada para exibição do ícone do carrinho.',
+        },
+      ],
+      actions: shuffle([
+        `Remova promessas de resultado imediato na legenda e locução de "${cleanLabel}".`,
+        'Foque no toque do tecido, costura reforçada e experiência real de uso.',
+        'Evite tela dividida de antes/depois nos primeiros 3 segundos.',
+        'Vincule exatamente a mesma peça demonstrada no vídeo ao carrinho amarelo.',
+      ]).slice(0, 3),
+    };
+  }
+
+  if (hasBrandRisk) {
+    const score = jitter(46, 6, 36, 56);
+    return {
+      hasRisk: true,
+      score,
+      verdict: 'Chance de restrição: SIM',
+      statusText: pickOne([
+        'Risco moderado por propriedade intelectual / marca',
+        'Alerta de conformidade: referência a marca registrada',
+      ]),
+      summary: `O arquivo "${cleanLabel}" indica presença ou menção a marca registrada de terceiros sem autorização expressa na vitrine, o que pode limitar a entrega ou derrubar o link do produto.`,
+      policies: [
+        {
+          id: 'claims',
+          name: 'Alegações e Promessas',
+          status: 'safe',
+          score: jitter(93, 4, 86, 99),
+          description: 'Linguagem comercial sem promessas milagrosas.',
+        },
+        {
+          id: 'nudity',
+          name: 'Exposição Corporal',
+          status: 'safe',
+          score: jitter(96, 3, 90, 99),
+          description: 'Vestimenta e enquadramento dentro das diretrizes.',
+        },
+        {
+          id: 'trademark',
+          name: 'Marcas e Propriedade Intelectual',
+          status: 'danger',
+          score: jitter(26, 7, 15, 38),
+          description: `Menção ou símbolo associado a marca protegida detectado em "${cleanLabel}".`,
+          adjustment: 'Remova logos de terceiros do enquadramento e do título do vídeo.',
+        },
+        {
+          id: 'audio',
+          name: 'Áudio e Trilha Comercial',
+          status: 'warning',
+          score: jitter(52, 8, 40, 65),
+          description: 'Verifique se a música selecionada pertence à Commercial Music Library.',
+          adjustment: 'Selecione um som comercial liberado dentro do próprio TikTok.',
+        },
+        {
+          id: 'framing',
+          name: 'Enquadramento e Safe Zone',
+          status: 'safe',
+          score: jitter(89, 5, 82, 96),
+          description: 'Área inferior esquerda livre para o botão de compra.',
+        },
+      ],
+      actions: shuffle([
+        'Oculte etiquetas ou estampas de marcas registradas que não pertençam à loja parceira.',
+        'Não cite nomes de grifes famosas na legenda ou no texto falado.',
+        'Substitua a trilha por áudio da Biblioteca Comercial do TikTok Shop.',
+      ]),
+    };
+  }
+
+  const score = jitter(95, 3, 90, 99);
+  return {
+    hasRisk: false,
+    score,
+    verdict: 'Chance de restrição: NÃO',
+    statusText: pickOne([
+      'Aprovado para veiculação imediata no TikTok Shop',
+      'Criativo blindado e em conformidade com as diretrizes',
+      'Sinal verde para publicação com carrinho amarelo',
+    ]),
+    summary: pickOne([
+      `O criativo "${cleanLabel}" atende aos critérios de segurança do TikTok Shop: foco claro no produto, ausência de promessas proibidas e enquadramento limpo para conversão.`,
+      `Análise concluída para "${cleanLabel}": estrutura visual segura para afiliados, sem gatilhos de bloqueio algorítmico ou violação comercial.`,
+    ]),
+    policies: [
+      {
+        id: 'claims',
+        name: 'Alegações e Promessas',
+        status: 'safe',
+        score: jitter(97, 2, 92, 100),
+        description: `Demonstração objetiva de "${cleanLabel}" sem promessas enganosas.`,
+      },
+      {
+        id: 'nudity',
+        name: 'Exposição Corporal',
+        status: 'safe',
+        score: jitter(96, 3, 91, 100),
+        description: 'Caimento e exposição adequados para entrega orgânica aberta.',
+      },
+      {
+        id: 'trademark',
+        name: 'Marcas e Propriedade Intelectual',
+        status: 'safe',
+        score: jitter(98, 2, 94, 100),
+        description: 'Livre de logotipos protegidos ou falsificações aparentes.',
+      },
+      {
+        id: 'audio',
+        name: 'Áudio e Trilha Comercial',
+        status: 'safe',
+        score: jitter(95, 3, 90, 99),
+        description: 'Pronto para sincronização com sons comerciais em volume 10%.',
+      },
+      {
+        id: 'framing',
+        name: 'Enquadramento e Safe Zone',
+        status: 'safe',
+        score: jitter(96, 3, 91, 99),
+        description: 'Terço inferior livre de legendas sobrepondo o carrinho amarelo.',
+      },
+    ],
+    actions: shuffle([
+      `Publique "${cleanLabel}" vinculando exatamente a variação/cor exibida no vídeo.`,
+      'Use som da Biblioteca Comercial em 8% a 12% de volume para blindar o alcance.',
+      'Posicione a headline POV no terço superior da tela para não cobrir o produto.',
+      'Mantenha o produto visível já nos primeiros 3 segundos para validação do algoritmo.',
+    ]).slice(0, 3),
+  };
+}
+
 export function AntiRestrictionView() {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanProgress, setScanProgress] = useState<number>(0);
@@ -39,210 +292,129 @@ export function AntiRestrictionView() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [copiedReport, setCopiedReport] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scanRunRef = useRef(0);
 
-  const analyzeVideo = (file: File) => {
-    const objectUrl = URL.createObjectURL(file);
-    setVideoSrc(objectUrl);
+  const runScan = async (file: File, existingUrl?: string) => {
+    const myRun = ++scanRunRef.current;
+    const objectUrl = existingUrl || URL.createObjectURL(file);
+    if (!existingUrl) setVideoSrc(objectUrl);
+    setCurrentFile(file);
     setFileName(file.name);
     setIsScanning(true);
-    setScanProgress(0);
+    setScanProgress(10);
+    setScanStep('Mapeando quadros e proporção 9:16...');
     setResult(null);
 
-    // Heurística baseada no conteúdo do nome do arquivo
-    const lower = file.name.toLowerCase();
-    const hasClaimsRisk =
-      lower.includes('emagrec') ||
-      lower.includes('antes') ||
-      lower.includes('perder') ||
-      lower.includes('cura') ||
-      lower.includes('peso') ||
-      lower.includes('barriga');
-
-    const hasBrandRisk =
-      lower.includes('nike') ||
-      lower.includes('gucci') ||
-      lower.includes('marca') ||
-      lower.includes('apple') ||
-      lower.includes('adidas');
-
     const steps = [
-      { p: 20, step: 'Mapeando quadros e proporção 9:16...' },
-      { p: 45, step: 'Analisando exposição corporal e transparência...' },
-      { p: 70, step: 'OCR de texto na tela e leitura de legendas...' },
-      { p: 90, step: 'Verificando trilha sonora e regras de comércio...' },
-      { p: 100, step: 'Concluído' },
+      { p: 25, step: 'Mapeando quadros e proporção 9:16...' },
+      { p: 50, step: 'Analisando exposição corporal e transparência...' },
+      { p: 75, step: 'Lendo contexto visual e diretrizes do TikTok Shop...' },
+      { p: 92, step: 'Verificando marcas, claims e safe zone do carrinho...' },
     ];
 
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < steps.length) {
-        setScanProgress(steps[i].p);
-        setScanStep(steps[i].step);
-        i++;
-      } else {
-        clearInterval(interval);
-        setIsScanning(false);
-
-        if (hasClaimsRisk) {
-          setResult({
-            hasRisk: true,
-            score: 34,
-            verdict: 'Chance de restrição: SIM',
-            statusText: 'Alto risco de bloqueio ou rejeição imediata',
-            summary:
-              'Foram identificados indícios de promessas de resultado exagerado ou padrão de antes e depois, o que viola as diretrizes de anúncios do TikTok e da Meta.',
-            policies: [
-              {
-                id: 'claims',
-                name: 'Alegações e Promessas',
-                status: 'danger',
-                score: 18,
-                description: 'Promessa de transformação física em curto prazo detectada.',
-                adjustment: 'Remover promessas de prazo ("em X dias") e focar em rotina de uso ou qualidade.',
-              },
-              {
-                id: 'nudity',
-                name: 'Exposição Corporal',
-                status: 'warning',
-                score: 52,
-                description: 'Enquadramento fechado com alto contraste de pele.',
-                adjustment: 'Ampliar o plano de filmagem para meio-corpo.',
-              },
-              {
-                id: 'trademark',
-                name: 'Marcas e Propriedade Intelectual',
-                status: 'safe',
-                score: 95,
-                description: 'Nenhuma marca de terceiro detectada.',
-              },
-              {
-                id: 'audio',
-                name: 'Áudio e Trilha Comercial',
-                status: 'safe',
-                score: 90,
-                description: 'Áudio em conformidade.',
-              },
-              {
-                id: 'framing',
-                name: 'Enquadramento e Safe Zone',
-                status: 'safe',
-                score: 92,
-                description: 'Proporção vertical 9:16 correta.',
-              },
-            ],
-            actions: [
-              'Remover referências a perda de peso, dias ou garantia de resultado.',
-              'Trocar termos milagrosos por benefícios de conforto e usabilidade.',
-              'Evitar imagens estáticas de comparação antes/depois.',
-            ],
-          });
-        } else if (hasBrandRisk) {
-          setResult({
-            hasRisk: true,
-            score: 46,
-            verdict: 'Chance de restrição: SIM',
-            statusText: 'Risco moderado por direito autoral ou logotipo',
-            summary:
-              'Foi detectado logotipo de marca registrada de terceiros ou trilha sonora protegida sem licença comercial para anúncios.',
-            policies: [
-              {
-                id: 'claims',
-                name: 'Alegações e Promessas',
-                status: 'safe',
-                score: 94,
-                description: 'Nenhuma promessa indevida detectada.',
-              },
-              {
-                id: 'nudity',
-                name: 'Exposição Corporal',
-                status: 'safe',
-                score: 98,
-                description: 'Sem violações de vestimenta ou pele.',
-              },
-              {
-                id: 'trademark',
-                name: 'Marcas e Propriedade Intelectual',
-                status: 'danger',
-                score: 25,
-                description: 'Logotipo de terceiro visível sem autorização de revenda.',
-                adjustment: 'Desfocar a logo nos primeiros segundos ou usar produto neutro.',
-              },
-              {
-                id: 'audio',
-                name: 'Áudio e Trilha Comercial',
-                status: 'warning',
-                score: 40,
-                description: 'Trilha pode ser silenciada por copyright em anúncios pagos.',
-                adjustment: 'Usar áudios da biblioteca comercial autorizada do TikTok.',
-              },
-              {
-                id: 'framing',
-                name: 'Enquadramento e Safe Zone',
-                status: 'safe',
-                score: 85,
-                description: 'Formato vertical aceito.',
-              },
-            ],
-            actions: [
-              'Desfocar logos de marcas terceiras visíveis na peça.',
-              'Substituir a música por uma faixa da biblioteca de uso comercial.',
-            ],
-          });
-        } else {
-          setResult({
-            hasRisk: false,
-            score: 98,
-            verdict: 'Chance de restrição: NÃO',
-            statusText: 'Aprovado para veiculação',
-            summary:
-              'O vídeo cumpre todas as regras de anúncios e do TikTok Shop. Sem termos proibidos, sem nudez algorítmica e sem violação de direitos autorais.',
-            policies: [
-              {
-                id: 'claims',
-                name: 'Alegações e Promessas',
-                status: 'safe',
-                score: 100,
-                description: 'Livre de promessas de resultado milagroso ou claims agressivos.',
-              },
-              {
-                id: 'nudity',
-                name: 'Exposição Corporal',
-                status: 'safe',
-                score: 96,
-                description: 'Caimento adequado, zero transparência e decote dentro das diretrizes.',
-              },
-              {
-                id: 'trademark',
-                name: 'Marcas e Propriedade Intelectual',
-                status: 'safe',
-                score: 100,
-                description: 'Nenhum símbolo de grife ou marca protegida identificado.',
-              },
-              {
-                id: 'audio',
-                name: 'Áudio e Trilha Comercial',
-                status: 'safe',
-                score: 98,
-                description: 'Áudio limpo, sem bloqueio de direitos autorais.',
-              },
-              {
-                id: 'framing',
-                name: 'Enquadramento e Safe Zone',
-                status: 'safe',
-                score: 97,
-                description: 'Elementos visuais dentro da área de segurança da tela.',
-              },
-            ],
-            actions: [
-              'Vídeo aprovado e seguro para uso direto em campanhas e TikTok Shop.',
-            ],
-          });
-        }
+    let stepIdx = 0;
+    const interval = window.setInterval(() => {
+      if (stepIdx < steps.length) {
+        setScanProgress(steps[stepIdx].p);
+        setScanStep(steps[stepIdx].step);
+        stepIdx++;
       }
-    }, 450);
+    }, 520);
+
+    const minDelay = new Promise((r) => setTimeout(r, 2200));
+    const fallback = buildVariedFallback(file.name);
+
+    const aiPromise = (async (): Promise<ScanResult | null> => {
+      const frame = await extractVideoFrame(file);
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim();
+      const ai = await aiGenerateJSON<Partial<ScanResult>>({
+        memoryKey: `anti-restriction:${cleanName}`,
+        task: 'Faça uma auditoria técnica de conformidade (antirrestrição) deste vídeo para publicação com carrinho no TikTok Shop. Personalize cada diretriz para o produto/cena identificado no arquivo e no frame enviado.',
+        input: {
+          arquivo: file.name,
+          identificacaoCriativo: cleanName,
+          tamanhoMB: (file.size / (1024 * 1024)).toFixed(2),
+          riscoBaseDetectado: fallback.hasRisk ? 'atenção' : 'baixo',
+        },
+        imageDataUrl: frame,
+        format: `{
+  "hasRisk": boolean,
+  "score": number (0 a 100),
+  "verdict": "Chance de restrição: SIM" ou "Chance de restrição: NÃO",
+  "statusText": string curta personalizada,
+  "summary": string (2 frases específicas sobre este criativo),
+  "policies": [
+    { "id": "claims", "name": "Alegações e Promessas", "status": "safe"|"warning"|"danger", "score": number, "description": string, "adjustment": string opcional },
+    { "id": "nudity", "name": "Exposição Corporal", "status": "safe"|"warning"|"danger", "score": number, "description": string, "adjustment": string opcional },
+    { "id": "trademark", "name": "Marcas e Propriedade Intelectual", "status": "safe"|"warning"|"danger", "score": number, "description": string, "adjustment": string opcional },
+    { "id": "audio", "name": "Áudio e Trilha Comercial", "status": "safe"|"warning"|"danger", "score": number, "description": string, "adjustment": string opcional },
+    { "id": "framing", "name": "Enquadramento e Safe Zone", "status": "safe"|"warning"|"danger", "score": number, "description": string, "adjustment": string opcional }
+  ],
+  "actions": [3 recomendações práticas específicas para este vídeo]
+}`,
+        remember: (d) => [d?.summary, ...(Array.isArray(d?.actions) ? d.actions : [])].filter(Boolean),
+      });
+
+      if (!ai || typeof ai !== 'object') return null;
+
+      const hasRisk = fallback.hasRisk ? true : Boolean(ai.hasRisk);
+      const rawScore = Number(ai.score);
+      const score = Number.isFinite(rawScore)
+        ? hasRisk
+          ? Math.max(18, Math.min(68, Math.round(rawScore)))
+          : Math.max(82, Math.min(99, Math.round(rawScore)))
+        : fallback.score;
+
+      const policies: PolicyCheck[] = POLICY_BASE.map((base, idx) => {
+        const found = Array.isArray(ai.policies)
+          ? ai.policies.find((p) => p?.id === base.id) || ai.policies[idx]
+          : undefined;
+        const fbPol = fallback.policies[idx];
+        const st =
+          found?.status === 'safe' || found?.status === 'warning' || found?.status === 'danger'
+            ? found.status
+            : fbPol.status;
+        const pScore = Number.isFinite(Number(found?.score))
+          ? Math.max(5, Math.min(100, Math.round(Number(found!.score))))
+          : fbPol.score;
+        return {
+          id: base.id,
+          name: base.name,
+          status: st,
+          score: pScore,
+          description: String(found?.description || fbPol.description).trim(),
+          adjustment: found?.adjustment ? String(found.adjustment).trim() : fbPol.adjustment,
+        };
+      });
+
+      const actions =
+        Array.isArray(ai.actions) && ai.actions.length > 0
+          ? ai.actions.map((a) => String(a).trim()).filter(Boolean).slice(0, 4)
+          : fallback.actions;
+
+      return {
+        hasRisk,
+        score,
+        verdict: hasRisk ? 'Chance de restrição: SIM' : 'Chance de restrição: NÃO',
+        statusText: String(ai.statusText || fallback.statusText).trim(),
+        summary: String(ai.summary || fallback.summary).trim(),
+        policies,
+        actions,
+      };
+    })();
+
+    const [aiRes] = await Promise.all([aiPromise, minDelay]);
+    window.clearInterval(interval);
+    if (myRun !== scanRunRef.current) return;
+
+    setScanProgress(100);
+    setScanStep('Concluído');
+    setIsScanning(false);
+    setResult(aiRes || fallback);
   };
 
   const handleFile = (file: File) => {
@@ -250,7 +422,33 @@ export function AntiRestrictionView() {
       alert('Selecione um arquivo de vídeo válido (MP4, MOV ou WebM).');
       return;
     }
-    analyzeVideo(file);
+    runScan(file);
+  };
+
+  const handleRescan = () => {
+    if (!currentFile || isScanning) return;
+    runScan(currentFile, videoSrc || undefined);
+  };
+
+  const handleCopyReport = () => {
+    if (!result) return;
+    const text =
+      `AUDITORIA DE ANTIRRESTRIÇÃO — ${fileName}\n` +
+      `${result.verdict} (${result.score}% de conformidade)\n` +
+      `${result.summary}\n\n` +
+      `DIRETRIZES:\n` +
+      result.policies
+        .map(
+          (p) =>
+            `- ${p.name} [${p.score}%]: ${p.description}${p.adjustment ? ` | Ajuste: ${p.adjustment}` : ''}`
+        )
+        .join('\n') +
+      `\n\nPLANO DE AÇÃO:\n` +
+      result.actions.map((a, i) => `${i + 1}. ${a}`).join('\n');
+
+    copyToClipboard(text);
+    setCopiedReport(true);
+    setTimeout(() => setCopiedReport(false), 2000);
   };
 
   const togglePlay = () => {
@@ -265,7 +463,9 @@ export function AntiRestrictionView() {
   };
 
   const handleReset = () => {
+    scanRunRef.current++;
     setVideoSrc(null);
+    setCurrentFile(null);
     setFileName('');
     setResult(null);
     setIsScanning(false);
@@ -329,7 +529,6 @@ export function AntiRestrictionView() {
         {/* Coluna Esquerda: Player ou Dropzone Limpo */}
         <div className="lg:col-span-5 space-y-3">
           {!videoSrc ? (
-            /* Dropzone Vazio Inicial */
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -361,7 +560,6 @@ export function AntiRestrictionView() {
               </span>
             </div>
           ) : (
-            /* Vídeo Carregado com Scanner Vertical */
             <div className="space-y-3">
               <div className="relative mx-auto w-full max-w-[340px] aspect-[9/16] rounded-2xl overflow-hidden bg-black border border-[rgba(255,236,190,0.15)] shadow-2xl flex items-center justify-center group">
                 <video
@@ -374,14 +572,13 @@ export function AntiRestrictionView() {
                   className="w-full h-full object-cover"
                 />
 
-                {/* Laser vertical subindo e descendo */}
                 {isScanning && (
                   <>
                     <div className="mvz-scan-laser-vert absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#f5d77f] to-transparent pointer-events-none shadow-[0_0_18px_#d4af37,0_0_35px_#f5d77f] z-20" />
                     <div className="absolute inset-0 bg-black/20 pointer-events-none z-10" />
                     <div className="absolute bottom-4 left-3 right-3 bg-black/85 backdrop-blur-md border border-[rgba(255,236,190,0.15)] rounded-lg p-2.5 text-[11px] font-mono space-y-1 z-20">
                       <div className="flex items-center justify-between text-[#f5d77f]">
-                        <span>Analisando vídeo...</span>
+                        <span>Analisando vídeo com IA...</span>
                         <span>{scanProgress}%</span>
                       </div>
                       <div className="text-[var(--mvz-dim)] truncate">{scanStep}</div>
@@ -389,7 +586,6 @@ export function AntiRestrictionView() {
                   </>
                 )}
 
-                {/* Play/Pause */}
                 <button
                   onClick={togglePlay}
                   className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -400,16 +596,26 @@ export function AntiRestrictionView() {
                 </button>
               </div>
 
-              {/* Botão sutil para trocar de vídeo */}
               <div className="flex items-center justify-between px-1 text-xs text-[var(--mvz-dim)]">
-                <span className="truncate max-w-[200px]">{fileName}</span>
-                <button
-                  onClick={handleReset}
-                  className="hover:text-[#f6f1e4] flex items-center gap-1 transition-colors"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Trocar vídeo</span>
-                </button>
+                <span className="truncate max-w-[180px]">{fileName}</span>
+                <div className="flex items-center gap-3">
+                  {currentFile && !isScanning && (
+                    <button
+                      onClick={handleRescan}
+                      className="hover:text-[var(--mvz-gold-light)] flex items-center gap-1 transition-colors"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Nova Análise</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleReset}
+                    className="hover:text-[#f6f1e4] flex items-center gap-1 transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Trocar vídeo</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -421,16 +627,16 @@ export function AntiRestrictionView() {
             <div className="rounded-2xl border border-[rgba(255,236,190,0.08)] bg-[#0b0a08] p-8 text-center space-y-2">
               <p className="text-sm font-medium text-[#f6f1e4]">Aguardando vídeo</p>
               <p className="text-xs text-[var(--mvz-dim)] max-w-sm mx-auto">
-                Envie um vídeo no campo ao lado para rodar o scanner e saber se ele tem chance de tomar restrição.
+                Envie um vídeo no campo ao lado para rodar o scanner de IA e saber se ele tem chance de tomar restrição.
               </p>
             </div>
           )}
 
           {isScanning && (
             <div className="rounded-2xl border border-[rgba(255,236,190,0.08)] bg-[#0b0a08] p-8 text-center space-y-3">
-              <p className="text-sm font-medium text-[#f6f1e4]">Escaneando vídeo...</p>
+              <p className="text-sm font-medium text-[#f6f1e4]">Escaneando vídeo com IA...</p>
               <p className="text-xs text-[var(--mvz-dim)] max-w-sm mx-auto">
-                Avaliando conformidade de alegações, direitos autorais e exposição corporal.
+                Avaliando conformidade de alegações, direitos autorais, safe zone e exposição corporal.
               </p>
               <div className="w-full max-w-xs mx-auto bg-[#181510] h-1.5 rounded-full overflow-hidden">
                 <div
@@ -443,7 +649,6 @@ export function AntiRestrictionView() {
 
           {result && (
             <>
-              {/* Card Principal do Veredito */}
               <div
                 className={`rounded-2xl border p-5 ${
                   result.hasRisk
@@ -451,7 +656,7 @@ export function AntiRestrictionView() {
                     : 'border-emerald-500/30 bg-[#07140b]'
                 }`}
               >
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-11 h-11 rounded-xl flex items-center justify-center ${
@@ -478,15 +683,25 @@ export function AntiRestrictionView() {
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-xs text-[var(--mvz-dim)] block">Conformidade</span>
-                    <span
-                      className={`text-2xl font-bold ${
-                        result.hasRisk ? 'text-rose-400' : 'text-emerald-400'
-                      }`}
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleCopyReport}
+                      className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/85 hover:border-[var(--mvz-gold)] hover:text-white transition"
                     >
-                      {result.score}%
-                    </span>
+                      {copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedReport ? 'Copiado!' : 'Copiar Diagnóstico'}</span>
+                    </button>
+
+                    <div className="text-right">
+                      <span className="text-xs text-[var(--mvz-dim)] block">Conformidade</span>
+                      <span
+                        className={`text-2xl font-bold ${
+                          result.hasRisk ? 'text-rose-400' : 'text-emerald-400'
+                        }`}
+                      >
+                        {result.score}%
+                      </span>
+                    </div>
                   </div>
                 </div>
 

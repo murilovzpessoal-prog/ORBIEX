@@ -21,7 +21,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Ring, Pill } from '../ui';
-import { auditProduct, type ProductAuditResult } from '../productAuditor';
+import { auditProduct, auditProductAI, type ProductAuditResult } from '../productAuditor';
+import { copyText as copyToClipboard } from '../clipboard';
 
 export function ProductScoreView({
   onUseInAgent,
@@ -39,8 +40,10 @@ export function ProductScoreView({
 
   const [copiedScript, setCopiedScript] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
 
   const handleClear = () => {
+    requestIdRef.current++;
     setProductLink('');
     setProductName('');
     setResult(null);
@@ -48,36 +51,44 @@ export function ProductScoreView({
     setStepIndex(0);
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setResult(null);
     setStepIndex(0);
 
-    // Realistic progressive analysis audit pipeline
-    setTimeout(() => setStepIndex(1), 600);
-    setTimeout(() => setStepIndex(2), 1300);
-    setTimeout(() => setStepIndex(3), 2000);
+    // Pipeline progressivo enquanto a IA gera a análise
+    const timers = [
+      window.setTimeout(() => setStepIndex(1), 600),
+      window.setTimeout(() => setStepIndex(2), 1300),
+      window.setTimeout(() => setStepIndex(3), 2000),
+    ];
+    const minDelay = new Promise((r) => window.setTimeout(r, 2500));
+
+    let audit: ProductAuditResult;
+    try {
+      const [ai] = await Promise.all([
+        auditProductAI({ productName, productLink, category, commission }),
+        minDelay,
+      ]);
+      audit = ai;
+    } catch {
+      audit = auditProduct({ productName, productLink, category, commission });
+    }
+    if (requestId !== requestIdRef.current) return; // limpado ou nova análise iniciada
+    timers.forEach((t) => window.clearTimeout(t));
+
+    setLoading(false);
+    setResult(audit);
 
     setTimeout(() => {
-      const audit = auditProduct({
-        productName,
-        productLink,
-        category,
-        commission,
-      });
-
-      setLoading(false);
-      setResult(audit);
-
-      setTimeout(() => {
-        reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }, 2500);
+      reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const copySampleScript = () => {
     if (!result) return;
-    navigator.clipboard.writeText(result.freeSampleScript);
+    copyToClipboard(result.freeSampleScript);
     setCopiedScript(true);
     setTimeout(() => setCopiedScript(false), 2000);
   };

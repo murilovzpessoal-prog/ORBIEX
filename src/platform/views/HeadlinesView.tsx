@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Upload,
@@ -19,6 +19,8 @@ import {
   inferPieceType,
   type WinningProduct,
 } from '../productsStore';
+import { copyText as copyToClipboard } from '../clipboard';
+import { getGenMemory, addGenMemory, shuffle, pickOne, jitter } from '../aiGenerate';
 
 export type PieceType = 'superior' | 'inferior' | 'conjunto';
 
@@ -199,6 +201,678 @@ function extractPieceGrammar(name: string, fallbackType?: PieceType): PieceGramm
   };
 }
 
+/* ───────────── Personalização & anti-repetição ───────────── */
+
+const HEADLINE_TARGET_COUNT = 10;
+
+function normTxt(s: string) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function headlinesMemoryKey(name: string) {
+  return `headlines:${normTxt(name)}`;
+}
+
+/** Nome do produto encurtado na quebra de palavra (para caber em headline de tela) */
+function shortProductName(name: string, max = 38) {
+  const clean = name.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean.toLowerCase();
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 12 ? cut.slice(0, lastSpace) : cut).replace(/\s+(com|de|e|do|da|para)$/i, '').toLowerCase();
+}
+
+/** Detalhes do nome após o tipo da peça, ex: "Vestido Midi Canelado com Fenda" → "midi canelado" */
+function productDetail(name: string, noun: string) {
+  const words = name.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, ' ').split(/\s+/).filter(Boolean);
+  const nounRoot = normTxt(noun).slice(0, 4);
+  const idx = words.findIndex((w) => normTxt(w).startsWith(nounRoot));
+  const rest = (idx >= 0 ? words.slice(idx + 1) : words.slice(1)).slice(0, 3);
+  while (rest.length && /^(com|de|e|do|da|para|sem|em)$/.test(rest[rest.length - 1])) rest.pop();
+  return rest.join(' ');
+}
+
+function buildNameSpecificHeadlines(name: string, g: PieceGrammar, seed: string): HeadlineItem[] {
+  const short = shortProductName(name);
+  const detail = productDetail(name, g.noun);
+  const dem = g.gender === 'f' ? 'essa' : 'esse';
+  const nounDetail = detail ? `${g.noun} ${detail}` : g.noun;
+  const ela = g.gender === 'f' ? 'ela' : 'ele';
+  const actions = [
+    'Entrar no quadro ajeitando a peça e parar de frente para o espelho.',
+    'Começar com close no detalhe da peça e abrir para o look inteiro.',
+    'Girar devagar mostrando frente, lateral e costas no espelho.',
+    'Caminhar em direção à câmera e parar com a mão na cintura.',
+    'Passar a mão no tecido em close e recuar mostrando o caimento.',
+    'Transição de roupa de casa para a peça vestida com um estalo de dedos.',
+  ];
+  const act = () => pickOne(actions);
+  return [
+    {
+      id: `hl-nome-1-${seed}`,
+      category: 'Descoberta Pessoal',
+      headline: `POV: achei ${short}\nVirou meu look favorito.`,
+      overlayText: 'POV: VIROU MEU FAVORITO',
+      visualAction: act(),
+      retentionScore: 97,
+      viralScore: 9.7,
+      whyItWorks: `Gatilho: Descoberta autêntica. Ponto que pega: cita "${name}" pelo nome, como quem conta um achado para a amiga.`,
+    },
+    {
+      id: `hl-nome-2-${seed}`,
+      category: 'Expectativa x Realidade',
+      headline: `POV: ${g.article} ${nounDetail}\nChegou melhor que na foto.`,
+      overlayText: 'POV: MELHOR QUE NA FOTO',
+      visualAction: act(),
+      retentionScore: 98,
+      viralScore: 9.8,
+      whyItWorks: `Gatilho: Quebra de expectativa positiva. Ponto que pega: o detalhe "${detail || g.noun}" aparece na frase e prende quem já pesquisou essa peça.`,
+    },
+    {
+      id: `hl-nome-3-${seed}`,
+      category: 'Teste no Espelho',
+      headline: `POV: testei ${dem} ${nounDetail}\nNo espelho ficou ainda melhor.`,
+      overlayText: 'POV: TESTE NO ESPELHO',
+      visualAction: act(),
+      retentionScore: 96,
+      viralScore: 9.6,
+      whyItWorks: `Gatilho: Prova visual. Ponto que pega: o "teste" gera curiosidade de ver como ${g.article} ${g.noun} veste de verdade.`,
+    },
+    {
+      id: `hl-nome-4-${seed}`,
+      category: 'Validação Social',
+      headline: `POV: saí com ${short}\nTodo mundo perguntou de onde é.`,
+      overlayText: 'POV: PERGUNTARAM DE ONDE É',
+      visualAction: act(),
+      retentionScore: 97,
+      viralScore: 9.8,
+      whyItWorks: `Gatilho: Validação de terceiros. Ponto que pega: associa "${name}" a elogios espontâneos no dia a dia.`,
+    },
+    {
+      id: `hl-nome-5-${seed}`,
+      category: 'Look do Dia',
+      headline: `POV: ${dem} ${nounDetail}\nResolveu meu look do dia.`,
+      overlayText: 'POV: LOOK DO DIA RESOLVIDO',
+      visualAction: act(),
+      retentionScore: 95,
+      viralScore: 9.6,
+      whyItWorks: `Gatilho: Praticidade. Ponto que pega: resolve a dor do "não tenho roupa" usando ${g.article} ${g.noun} como solução pronta.`,
+    },
+    {
+      id: `hl-nome-6-${seed}`,
+      category: 'Padrão de Grife',
+      headline: `POV: ${g.diminutive}${detail ? ` ${detail}` : ''}\nVeste como peça de grife.`,
+      overlayText: 'POV: VESTE COMO GRIFE',
+      visualAction: act(),
+      retentionScore: 96,
+      viralScore: 9.7,
+      whyItWorks: `Gatilho: Ancoragem de sofisticação sem citar preço. Ponto que pega: o diminutivo "${g.diminutive}" soa íntimo e natural.`,
+    },
+    {
+      id: `hl-nome-7-${seed}`,
+      category: 'Apego & Conforto',
+      headline: `POV: provei ${short}\nNão quis mais tirar.`,
+      overlayText: 'POV: NÃO QUIS MAIS TIRAR',
+      visualAction: act(),
+      retentionScore: 97,
+      viralScore: 9.7,
+      whyItWorks: `Gatilho: Conforto + desejo. Ponto que pega: frase curta e espontânea que vende a sensação de vestir "${name}".`,
+    },
+    {
+      id: `hl-nome-8-${seed}`,
+      category: 'Curiosidade',
+      headline: `POV: o detalhe d${g.article} ${g.noun}\nQue ninguém repara na foto.`,
+      overlayText: 'POV: O DETALHE ESCONDIDO',
+      visualAction: 'Close lento no detalhe da peça e depois revelar o look inteiro.',
+      retentionScore: 98,
+      viralScore: 9.8,
+      whyItWorks: `Gatilho: Loop de curiosidade. Ponto que pega: a pessoa fica até o fim para descobrir o detalhe d${g.article} ${g.noun}${detail ? ` ${detail}` : ''}.`,
+    },
+    {
+      id: `hl-nome-9-${seed}`,
+      category: 'Recompra',
+      headline: `POV: comprei ${g.article} ${g.noun} uma vez\nAgora quero de todas as cores.`,
+      overlayText: 'POV: QUERO TODAS AS CORES',
+      visualAction: act(),
+      retentionScore: 95,
+      viralScore: 9.6,
+      whyItWorks: `Gatilho: Prova de satisfação real. Ponto que pega: recompra sinaliza que ${g.article} ${g.noun} entrega o que promete.`,
+    },
+    {
+      id: `hl-nome-10-${seed}`,
+      category: 'Identificação',
+      headline: `POV: você queria ${g.article} ${g.noun} ${g.adjective}\nEu achei e vou te mostrar.`,
+      overlayText: `POV: ACHEI ${g.article.toUpperCase()} ${g.noun.toUpperCase()} ${g.adjective.toUpperCase()}`,
+      visualAction: act(),
+      retentionScore: 97,
+      viralScore: 9.7,
+      whyItWorks: `Gatilho: Identificação direta com a busca da cliente. Ponto que pega: promete mostrar como ${ela} veste antes de qualquer dúvida.`,
+    },
+  ];
+}
+
+/** Monta um lote local, sempre embaralhado e evitando os textos já entregues para este produto */
+function pickLocalHeadlines(name: string, type: PieceType, avoid: string[]): HeadlineItem[] {
+  const uid = Math.random().toString(36).slice(2, 8);
+  const pool = buildLocalHeadlinePool(name, type, uid);
+  const avoidSet = new Set(avoid.map(normTxt));
+  const fresh = shuffle(pool.filter((h) => !avoidSet.has(normTxt(h.headline))));
+  const seen = shuffle(pool.filter((h) => avoidSet.has(normTxt(h.headline))));
+  const ordered = [...fresh, ...seen];
+
+  // Prioriza diversidade de categorias/gatilhos
+  const picked: HeadlineItem[] = [];
+  const usedCats = new Set<string>();
+  const usedTexts = new Set<string>();
+  for (const h of ordered) {
+    if (picked.length >= HEADLINE_TARGET_COUNT) break;
+    if (usedCats.has(h.category) || usedTexts.has(normTxt(h.headline))) continue;
+    picked.push(h);
+    usedCats.add(h.category);
+    usedTexts.add(normTxt(h.headline));
+  }
+  for (const h of ordered) {
+    if (picked.length >= HEADLINE_TARGET_COUNT) break;
+    if (usedTexts.has(normTxt(h.headline))) continue;
+    picked.push(h);
+    usedTexts.add(normTxt(h.headline));
+  }
+
+  return picked.map((h) => ({
+    ...h,
+    retentionScore: jitter(h.retentionScore, 3, 86, 99),
+    viralScore: Math.round(Math.min(9.9, Math.max(8.5, h.viralScore + (Math.random() * 0.8 - 0.4))) * 10) / 10,
+  }));
+}
+
+/** Valida e normaliza o JSON da IA, completando campos ausentes com o lote local */
+function normalizeAiHeadlines(raw: unknown, local: HeadlineItem[], uid: string): HeadlineItem[] | null {
+  if (!Array.isArray(raw)) return null;
+  const seenTexts = new Set<string>();
+  const items: HeadlineItem[] = [];
+  raw.forEach((item: any, idx: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const headline = String(item?.headline || '').replace(/\\n/g, '\n').trim();
+    if (!headline || seenTexts.has(normTxt(headline))) return;
+    seenTexts.add(normTxt(headline));
+    const fb = local[idx % Math.max(1, local.length)];
+    let viral = Number(item?.viralScore);
+    if (viral > 10) viral = viral / 10;
+    viral = Number.isFinite(viral) && viral > 0 ? Math.round(Math.min(9.9, Math.max(7, viral)) * 10) / 10 : fb?.viralScore ?? 9.5;
+    let retention = Number(item?.retentionScore);
+    if (retention > 0 && retention <= 10) retention = retention * 10;
+    retention = Number.isFinite(retention) && retention > 0 ? Math.round(Math.min(99, Math.max(60, retention))) : fb?.retentionScore ?? 95;
+    items.push({
+      id: `hl-ai-${uid}-${idx}`,
+      category: String(item?.category || fb?.category || 'Caimento & Elegância').trim(),
+      headline,
+      overlayText: String(item?.overlayText || fb?.overlayText || 'POV: CAIMENTO IMPECÁVEL').trim(),
+      visualAction: String(item?.visualAction || fb?.visualAction || 'Girar no espelho mostrando o caimento.').trim(),
+      retentionScore: retention,
+      viralScore: viral,
+      whyItWorks: String(item?.whyItWorks || fb?.whyItWorks || 'Gatilho orgânico de retenção para TikTok Shop.').trim(),
+    });
+  });
+  if (items.length < 6) return null;
+  for (const fb of local) {
+    if (items.length >= HEADLINE_TARGET_COUNT) break;
+    if (!seenTexts.has(normTxt(fb.headline))) {
+      items.push(fb);
+      seenTexts.add(normTxt(fb.headline));
+    }
+  }
+  return items.slice(0, Math.max(HEADLINE_TARGET_COUNT, Math.min(items.length, 12)));
+}
+
+function buildLocalHeadlinePool(clothingName: string, pieceType: PieceType, seed: string): HeadlineItem[] {
+  const g = extractPieceGrammar(clothingName, pieceType);
+
+  const nounPhrase = `${g.article} ${g.noun} do momento`;
+  const dimPhrase = `${g.article} ${g.diminutive} quase de graça`;
+  const queridinhoBlogueiras = g.gender === 'f' ? `a ${g.noun} queridinha das blogueiras` : `o ${g.noun} queridinho das blogueiras`;
+  const queridinhoMeninas = g.gender === 'f' ? 'a queridinha das meninas' : 'o queridinho das meninas';
+  const queridinhoMomento = g.gender === 'f' ? `a ${g.noun} queridinha do momento` : `o ${g.noun} queridinho do momento`;
+  const adjCap = g.adjective.charAt(0).toUpperCase() + g.adjective.slice(1);
+  const cadaCorPhrase = g.gender === 'f' ? 'Quero uma de cada cor.' : 'Quero um de cada cor.';
+
+  
+  const pool1: HeadlineItem[] = [
+      {
+        id: `hl-caimento-2-${seed}`,
+        category: 'Caimento & Elegância',
+        headline: `POV: ${queridinhoMomento}\nO caimento ficou impecável.`,
+        overlayText: 'POV: CAIMENTO IMPECÁVEL',
+        visualAction: 'Girar lentamente no espelho mostrando o caimento perfeito.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: `Gatilho: Desejo estético imediato pelo caimento. Ponto que pega: Realça como ${g.article} ${g.noun} assenta perfeitamente no corpo sem apertar.`,
+      },
+      {
+        id: `hl-tecido-2-${seed}`,
+        category: 'Qualidade do Tecido',
+        headline: `POV: ${nounPhrase}\nO tecido é super encorpado.`,
+        overlayText: 'POV: TECIDO ENCORPADO',
+        visualAction: 'Puxar levemente o tecido para demonstrar a textura e elasticidade.',
+        retentionScore: 98,
+        viralScore: 9.9,
+        whyItWorks: `Gatilho: Quebra de objeção sobre espessura do tecido. Ponto que pega: Confirma a gramatura premium de ${g.article} ${g.noun} de forma orgânica.`,
+      },
+      {
+        id: `hl-amigas-2-${seed}`,
+        category: 'Prova Social Próxima',
+        headline: `POV: ${dimPhrase}\nMinhas amigas acharam lindo.`,
+        overlayText: 'POV: MINHAS AMIGAS AMARAM',
+        visualAction: 'Sorriso espontâneo no espelho conferindo o look completo.',
+        retentionScore: 97,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Validação social de amigas próximas. Ponto que pega: Mostra aceitação imediata e elogios sinceros no dia a dia.',
+      },
+      {
+        id: `hl-praticidade-2-${seed}`,
+        category: 'Praticidade Extrema',
+        headline: `POV: ${queridinhoBlogueiras}\nNão amassa e não encolhe.`,
+        overlayText: 'POV: NÃO AMASSA',
+        visualAction: 'Movimento natural no espelho testando o conforto da peça.',
+        retentionScore: 98,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Alívio de manutenção da roupa. Ponto que pega: Peça prática que não dá trabalho para passar ou cuidar.',
+      },
+      {
+        id: `hl-cintura-2-${seed}`,
+        category: 'Modelagem da Cintura',
+        headline: `POV: ${nounPhrase}\nValorizou muito a cintura.`,
+        overlayText: 'POV: VALORIZOU A CINTURA',
+        visualAction: 'Passar as mãos contornando a cintura com suavidade.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: `Gatilho: Realce da silhueta feminina. Ponto que pega: Mostra como ${g.article} ${g.noun} desenha a cintura no espelho.`,
+      },
+      {
+        id: `hl-grife-2-${seed}`,
+        category: 'Percepção de Grife',
+        headline: `POV: ${dimPhrase}\nParece peça de grife cara.`,
+        overlayText: 'POV: PARECE DE GRIFE',
+        visualAction: 'Afastar no espelho para mostrar o look completo com postura.',
+        retentionScore: 97,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Status visual sem parecer ostensivo. Ponto que pega: Alto valor percebido gerado pelo caimento sofisticado.',
+      },
+      {
+        id: `hl-teste-2-${seed}`,
+        category: 'Teste Autêntico',
+        headline: `POV: ${queridinhoMeninas}\nTestei no espelho e aprovei.`,
+        overlayText: 'POV: TESTEI E APROVEI',
+        visualAction: 'Conferir os ângulos no espelho com aprovação sincera.',
+        retentionScore: 96,
+        viralScore: 9.7,
+        whyItWorks: 'Gatilho: Autenticidade de criadora de conteúdo real. Ponto que pega: Reação 100% natural sem tom de anúncio ou propaganda.',
+      },
+      {
+        id: `hl-versatilidade-2-${seed}`,
+        category: 'Versatilidade',
+        headline: `POV: ${nounPhrase}\n${adjCap} pro dia a dia.`,
+        overlayText: 'POV: PRO DIA A DIA',
+        visualAction: 'Dar uma caminhada leve até o espelho.',
+        retentionScore: 96,
+        viralScore: 9.7,
+        whyItWorks: `Gatilho: Usabilidade universal. Ponto que pega: Mostra que ${g.article} ${g.noun} serve perfeitamente para qualquer rotina.`,
+      },
+      {
+        id: `hl-acabamento-2-${seed}`,
+        category: 'Acabamento & Detalhes',
+        headline: `POV: ${dimPhrase}\nAcabamento surreal de lindo.`,
+        overlayText: 'POV: ACABAMENTO SURREAL',
+        visualAction: 'Aproximar da câmera mostrando os detalhes de barra e costura.',
+        retentionScore: 98,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Foco em qualidade de manufatura. Ponto que pega: Detalhes bem acabados encantam e retêm o público no vídeo.',
+      },
+      {
+        id: `hl-colecao-2-${seed}`,
+        category: 'Desejo de Coleção',
+        headline: `POV: ${queridinhoMomento}\n${cadaCorPhrase}`,
+        overlayText: 'POV: QUERO DE CADA COR',
+        visualAction: 'Trocar o peso do corpo no espelho em sinal de animação.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: `Gatilho: Efeito coleção compulsiva. Ponto que pega: Sinaliza que ${g.article} ${g.noun} é tão perfeita que dá vontade de ter todas as cores.`,
+      },
+    ];
+
+  const pool2: HeadlineItem[] = [
+      {
+        id: `hl-costura-3-${seed}`,
+        category: 'Costura & Resistência',
+        headline: `POV: ${dimPhrase}\nCostura reforçada de verdade.`,
+        overlayText: 'POV: COSTURA REFORÇADA',
+        visualAction: 'Mostrar de perto os pontos de costura e o acabamento lateral.',
+        retentionScore: 98,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Garantia de durabilidade. Ponto que pega: Elimina a desconfiança comum de compras pela internet.',
+      },
+      {
+        id: `hl-sustentacao-3-${seed}`,
+        category: 'Sustentação & Conforto',
+        headline: `POV: ${nounPhrase}\nSegura tudo sem apertar nada.`,
+        overlayText: 'POV: SEGURA TUDO',
+        visualAction: 'Ajeitar a peça no corpo demonstrando conforto e firmeza.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: `Gatilho: Conforto corporal extremo. Ponto que pega: Promete que ${g.article} ${g.noun} sustenta perfeitamente sem machucar.`,
+      },
+      {
+        id: `hl-sonhos-3-${seed}`,
+        category: 'Modelagem Perfeita',
+        headline: `POV: ${queridinhoMomento}\nCaimento dos sonhos no corpo.`,
+        overlayText: 'POV: CAIMENTO DOS SONHOS',
+        visualAction: 'Volta completa no espelho admirando a peça.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: 'Gatilho: Ideal estético alcançado. Ponto que pega: Duas frases curtas e de altíssimo impacto sobre o caimento no corpo.',
+      },
+      {
+        id: `hl-achadinho-3-${seed}`,
+        category: 'Achadinho TikTok Shop',
+        headline: `POV: ${dimPhrase}\nAchadinho que salvou meu look.`,
+        overlayText: 'POV: ACHADINHO DE OURO',
+        visualAction: 'Conferir o visual de cima a baixo com expressão de satisfação.',
+        retentionScore: 98,
+        viralScore: 9.9,
+        whyItWorks: 'Gatilho: Sensação de descoberta única ("achadinho"). Ponto que pega: Termo viral orgânico de maior conversão entre criadoras.',
+      },
+      {
+        id: `hl-defeitos-3-${seed}`,
+        category: 'Perfeição Visual',
+        headline: `POV: ${nounPhrase}\nZero defeitos nessa peça.`,
+        overlayText: 'POV: ZERO DEFEITOS',
+        visualAction: 'Girar no espelho em silêncio mostrando os ângulos.',
+        retentionScore: 97,
+        viralScore: 9.8,
+        whyItWorks: `Gatilho: Aprovação categórica e espontânea. Ponto que pega: Comunica alta qualidade de ${g.article} ${g.noun} em pouquíssimas palavras.`,
+      },
+      {
+        id: `hl-curiosidade-3-${seed}`,
+        category: 'Curiosidade Viral',
+        headline: `POV: ${queridinhoBlogueiras}\nTodo mundo pergunta de onde é.`,
+        overlayText: 'POV: DE ONDE É ESSA PEÇA',
+        visualAction: 'Ajeitar o cabelo e conferir o caimento no espelho.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: 'Gatilho: Desejo social irresistível. Ponto que pega: Dispara dezenas de comentários orgânicos perguntando a procedência.',
+      },
+      {
+        id: `hl-toque-3-${seed}`,
+        category: 'Toque & Maciez',
+        headline: `POV: ${dimPhrase}\nTecido macio que abraça o corpo.`,
+        overlayText: 'POV: TECIDO SUPER MACIO',
+        visualAction: 'Tocar o tecido delicadamente em frente à câmera.',
+        retentionScore: 96,
+        viralScore: 9.7,
+        whyItWorks: 'Gatilho: Sensação de toque agradável. Ponto que pega: Conecta o espectador com a sensação gostosa de vestir o tecido.',
+      },
+      {
+        id: `hl-ocasiao-3-${seed}`,
+        category: 'Ocasião Universal',
+        headline: `POV: ${nounPhrase}\nCombina com qualquer ocasião.`,
+        overlayText: 'POV: COMBINA COM TUDO',
+        visualAction: 'Dar passos leves mostrando a fluidez da peça.',
+        retentionScore: 96,
+        viralScore: 9.6,
+        whyItWorks: `Gatilho: Praticidade e versatilidade de guarda-roupa. Ponto que pega: Multiplica o valor percebido de ${g.article} ${g.noun}.`,
+      },
+      {
+        id: `hl-elegancia-3-${seed}`,
+        category: 'Elegância & Postura',
+        headline: `POV: ${queridinhoMeninas}\nSuper elegante e confortável.`,
+        overlayText: 'POV: ELEGANTE E CONFORTÁVEL',
+        visualAction: 'Postura ereta no espelho demonstrando o caimento limpo.',
+        retentionScore: 97,
+        viralScore: 9.7,
+        whyItWorks: 'Gatilho: O equilíbrio perfeito que toda mulher procura: estar elegante sem abrir mão do conforto.',
+      },
+      {
+        id: `hl-escolha-3-${seed}`,
+        category: 'Satisfação Total',
+        headline: `POV: ${queridinhoMomento}\nMelhor escolha que já fiz.`,
+        overlayText: 'POV: MELHOR ESCOLHA',
+        visualAction: 'Sorriso de satisfação ao conferir o look completo.',
+        retentionScore: 98,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Certeza absoluta de acerto. Ponto que pega: Passa segurança total para quem está assistindo no feed.',
+      },
+    ];
+
+  const pool3: HeadlineItem[] = [
+      {
+        id: `hl-postura-4-${seed}`,
+        category: 'Postura & Autoestima',
+        headline: `POV: ${nounPhrase}\nDeu outra postura no corpo.`,
+        overlayText: 'POV: OUTRA POSTURA',
+        visualAction: 'Ajeitar a coluna e conferir a transformação visual no espelho.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: `Gatilho: Autoestima e transformação postural. Ponto que pega: Mostra como ${g.article} ${g.noun} valoriza a presença e o porte.`,
+      },
+      {
+        id: `hl-qualidade-4-${seed}`,
+        category: 'Qualidade Tátil',
+        headline: `POV: ${dimPhrase}\nQualidade absurda no toque.`,
+        overlayText: 'POV: QUALIDADE ABSURDA',
+        visualAction: 'Sentir o tecido com as mãos aproximando da luz.',
+        retentionScore: 98,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Surpresa positiva com o material. Ponto que pega: Demonstra valor superior sem precisar falar de dinheiro.',
+      },
+      {
+        id: `hl-luz-4-${seed}`,
+        category: 'Teste Contra a Luz',
+        headline: `POV: ${queridinhoMomento}\nNão é transparente de jeito nenhum.`,
+        overlayText: 'POV: NADA TRANSPARENTE',
+        visualAction: 'Posicionar-se contra a luz da janela mostrando a opacidade perfeita.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: 'Gatilho: Quebra de objeção crítica contra a luz. Ponto que pega: Dá segurança total na hora de usar em público.',
+      },
+      {
+        id: `hl-modelagem-4-${seed}`,
+        category: 'Tendência & Desejo',
+        headline: `POV: ${queridinhoBlogueiras}\nA modelagem que todo mundo quer.`,
+        overlayText: 'POV: MODELAGEM DESEJADA',
+        visualAction: 'Girar 360 no espelho destacando os recortes e costuras.',
+        retentionScore: 98,
+        viralScore: 9.9,
+        whyItWorks: `Gatilho: Efeito manada e urgência de tendência. Ponto que pega: Destaca o formato exclusivo de ${g.article} ${g.noun}.`,
+      },
+      {
+        id: `hl-rapidez-4-${seed}`,
+        category: 'Rapidez & Praticidade',
+        headline: `POV: ${dimPhrase}\nPronta pra sair em 2 minutos.`,
+        overlayText: 'POV: PRONTA EM 2 MINUTOS',
+        visualAction: 'Dar o último ajuste no look e pegar a bolsa para sair.',
+        retentionScore: 97,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Economia de tempo. Ponto que pega: Resolve o estresse de não saber o que vestir com rapidez e estilo.',
+      },
+      {
+        id: `hl-destaque-4-${seed}`,
+        category: 'Destaque Visual',
+        headline: `POV: ${nounPhrase}\nRealçou o visual sem esforço.`,
+        overlayText: 'POV: REALÇOU O VISUAL',
+        visualAction: 'Dar um passo para trás mostrando a harmonia do look no espelho.',
+        retentionScore: 97,
+        viralScore: 9.7,
+        whyItWorks: `Gatilho: Beleza sem esforço (effortless chic). Ponto que pega: Prova que ${g.article} ${g.noun} transforma qualquer produção.`,
+      },
+      {
+        id: `hl-costas-4-${seed}`,
+        category: 'Caimento de Costas',
+        headline: `POV: ${queridinhoMeninas}\nCaimento impecável de costas.`,
+        overlayText: 'POV: IMPECÁVEL DE COSTAS',
+        visualAction: 'Virar de costas para o espelho olhando por cima do ombro.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: 'Gatilho: Confirmação do caimento traseiro. Ponto que pega: Vídeos mostrando o caimento de costas geram retenção altíssima no TikTok.',
+      },
+      {
+        id: `hl-unboxing-4-${seed}`,
+        category: 'Chegada da Peça',
+        headline: `POV: ${dimPhrase}\nAcabou de chegar e já amei.`,
+        overlayText: 'POV: JÁ AMEI DE CARA',
+        visualAction: 'Retirar da embalagem ou provar no primeiro segundo.',
+        retentionScore: 98,
+        viralScore: 9.8,
+        whyItWorks: 'Gatilho: Empolgação autêntica de unboxing. Ponto que pega: O sentimento de provar a peça na hora e se apaixonar.',
+      },
+      {
+        id: `hl-coringa-4-${seed}`,
+        category: 'Peça Coringa',
+        headline: `POV: ${nounPhrase}\nPeça coringa do guarda-roupa.`,
+        overlayText: 'POV: PEÇA CORINGA',
+        visualAction: 'Ajustar no corpo com naturalidade em frente ao espelho.',
+        retentionScore: 96,
+        viralScore: 9.7,
+        whyItWorks: `Gatilho: Item indispensável no armário. Ponto que pega: Fixa ${g.article} ${g.noun} como compra obrigatória para qualquer ocasião.`,
+      },
+      {
+        id: `hl-surpresa-4-${seed}`,
+        category: 'Efeito Surpresa',
+        headline: `POV: ${queridinhoMomento}\nNunca vesti nada tão bom assim.`,
+        overlayText: 'POV: NUNCA VESTI NADA TÃO BOM',
+        visualAction: 'Olhar surpreso no espelho com aprovação nítida.',
+        retentionScore: 99,
+        viralScore: 9.9,
+        whyItWorks: 'Gatilho: Hiper-satisfação autêntica. Ponto que pega: Gancho verbal de altíssima curiosidade para o feed do TikTok.',
+      },
+    ];
+
+  const pool0: HeadlineItem[] = [
+    // 1. POV: [Peça] do Momento
+    {
+      id: `hl-momento-1-${seed}`,
+      category: 'Tendência & Efeito Manada',
+      headline: `POV: ${nounPhrase}\nVeste bem demais no corpo.`,
+      overlayText: `POV: ${nounPhrase.toUpperCase()}`,
+      visualAction: 'Girar 360 no espelho mostrando o caimento natural da peça.',
+      retentionScore: 99,
+      viralScore: 9.9,
+      whyItWorks: `Gatilho: Efeito manada imediato ("${g.noun} do momento") em formato POV. Ponto que pega: Frase 100% natural sem parecer vendedor, prendendo a atenção no primeiro frame.`,
+    },
+
+    // 2. POV: [Peça] Quase de Graça
+    {
+      id: `hl-quase-1-${seed}`,
+      category: 'Percepção de Valor Orgânica',
+      headline: `POV: ${dimPhrase}\nFicou ${g.adjective} no espelho.`,
+      overlayText: `POV: ${g.diminutive.toUpperCase()} QUASE DE GRAÇA`,
+      visualAction: 'Dar um passo para trás em silêncio conferindo o caimento real.',
+      retentionScore: 99,
+      viralScore: 9.9,
+      whyItWorks: `Gatilho: Percepção de pechincha ("${g.diminutive} quase de graça") sem citar preços ou números. Ponto que pega: Gera curiosidade espontânea sobre onde encontrar a peça.`,
+    },
+
+    // 3. POV: O Queridinho das Blogueiras
+    {
+      id: `hl-queridinho-1-${seed}`,
+      category: 'Prova Social & Autoridade',
+      headline: `POV: ${queridinhoBlogueiras}\nEsgotou e voltou hoje.`,
+      overlayText: 'POV: ESGOTOU E VOLTOU HOJE',
+      visualAction: 'Aproximar o tecido para mostrar a gramatura e afastar revelando o caimento.',
+      retentionScore: 98,
+      viralScore: 9.9,
+      whyItWorks: `Gatilho: Autoridade estética ("${g.noun} queridinha") associada à escassez de reposição. Ponto que pega: Prova social sem empurrar produto comercialmente.`,
+    },
+
+    // 4. POV: Parece de Shopping Chique
+    {
+      id: `hl-shopping-1-${seed}`,
+      category: 'Ancoragem Visual',
+      headline: `POV: ${dimPhrase}\nParece de shopping chique.`,
+      overlayText: 'POV: PARECE DE SHOPPING',
+      visualAction: 'Passar a mão no tecido mostrando a textura encorpada.',
+      retentionScore: 97,
+      viralScore: 9.8,
+      whyItWorks: 'Gatilho: Alto padrão estético com custo mínimo. Ponto que pega: A sensação de elegância de grife de forma totalmente orgânica.',
+    },
+
+    // 5. POV: Zero Transparência
+    {
+      id: `hl-espelho-1-${seed}`,
+      category: 'Quebra de Objeção',
+      headline: `POV: ${nounPhrase}\nZero transparência no sol.`,
+      overlayText: 'POV: ZERO TRANSPARÊNCIA',
+      visualAction: 'Puxar e esticar levemente o tecido em frente ao espelho com luz natural.',
+      retentionScore: 99,
+      viralScore: 9.9,
+      whyItWorks: `Gatilho: Quebra de objeção visual instantânea em 2 frases curtinhas sobre ${g.noun}. Ponto que pega: Elimina a maior dúvida feminina sobre tecidos finos.`,
+    },
+
+    // 6. POV: Modela a Cintura
+    {
+      id: `hl-queridinho-2-${seed}`,
+      category: 'Modelagem & Curvas',
+      headline: `POV: ${queridinhoMeninas}\nModela o corpo na hora.`,
+      overlayText: 'POV: MODELA O CORPO',
+      visualAction: 'Passar as mãos contornando a silhueta no espelho.',
+      retentionScore: 96,
+      viralScore: 9.7,
+      whyItWorks: 'Gatilho: Transformação estética imediata e conforto. Ponto que pega: Promete valorizar a silhueta com caimento natural sem aperto.',
+    },
+
+    // 7. POV: Não Marca Nada
+    {
+      id: `hl-marca-1-${seed}`,
+      category: 'Conforto & Caimento',
+      headline: `POV: ${nounPhrase}\nNão marca nada no corpo.`,
+      overlayText: 'POV: NÃO MARCA NADA',
+      visualAction: 'Girar no espelho mostrando o caimento suave.',
+      retentionScore: 97,
+      viralScore: 9.8,
+      whyItWorks: `Gatilho: Segurança corporal e conforto. Ponto que pega: Tranquilidade de vestir ${g.article} ${g.noun} que valoriza o corpo sem marcar.`,
+    },
+
+    // 8. POV: Direto de Fábrica
+    {
+      id: `hl-secreto-1-${seed}`,
+      category: 'Segredo de Fábrica',
+      headline: `POV: ${dimPhrase}\nPeguei direto de fábrica.`,
+      overlayText: 'POV: DIRETO DE FÁBRICA',
+      visualAction: 'Ajeitar o look no espelho com naturalidade.',
+      retentionScore: 96,
+      viralScore: 9.7,
+      whyItWorks: 'Gatilho: Vantagem de fábrica sem parecer propaganda comercial. Ponto que pega: Curiosidade natural sobre a procedência da peça.',
+    },
+
+    // 9. POV: Todo Mundo Elogiou
+    {
+      id: `hl-trabalho-1-${seed}`,
+      category: 'Validação Social',
+      headline: `POV: ${nounPhrase}\nTodo mundo me elogiou hoje.`,
+      overlayText: 'POV: TODO MUNDO ELOGIOU',
+      visualAction: 'Ajustar a peça no espelho com elegância e sorriso espontâneo.',
+      retentionScore: 95,
+      viralScore: 9.6,
+      whyItWorks: 'Gatilho: Validação social de terceiros. Ponto que pega: Desejo de receber elogios no dia a dia ao vestir a roupa.',
+    },
+
+    // 10. POV: Coloquei e Não Tiro Mais
+    {
+      id: `hl-lote-1-${seed}`,
+      category: 'Apego & Conforto',
+      headline: `POV: ${queridinhoMomento}\nColoquei e não tiro mais.`,
+      overlayText: 'POV: NÃO TIRO MAIS',
+      visualAction: 'Movimento natural no espelho demonstrando o caimento.',
+      retentionScore: 98,
+      viralScore: 9.8,
+      whyItWorks: `Gatilho: Sensação de peça favorita e confortável. Ponto que pega: Duas frases curtas, naturais e espontâneas sobre ${g.article} ${g.noun}.`,
+    },
+  ];
+  return [...pool0, ...pool1, ...pool2, ...pool3, ...buildNameSpecificHeadlines(clothingName, g, seed)];
+}
+
 export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => void }) {
   // Passos: 1 = Catálogo de Produtos | 3 = Headlines Prontas
   const [step, setStep] = useState<1 | 3>(1);
@@ -217,40 +891,57 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
   const [copiedAll, setCopiedAll] = useState(false);
   const [seed, setSeed] = useState(1);
   const [aiHeadlines, setAiHeadlines] = useState<HeadlineItem[] | null>(null);
+  const [localHeadlines, setLocalHeadlines] = useState<HeadlineItem[]>(() =>
+    pickLocalHeadlines('Vestido Midi Canelado com Fenda Lateral', 'conjunto', [])
+  );
+  const requestIdRef = useRef(0);
 
-  const requestBackendHeadlines = (nameTarget: string, typeTarget: PieceType, imgTarget: string, nextSeed: number) => {
-    fetch('/api/generate-prompt', {
+  /**
+   * Gera um lote novo SEMPRE: seed aleatório + lista "não repita" (memória por produto).
+   * Prepara imediatamente um lote local personalizado/embaralhado como fallback.
+   * Resolve quando a IA responde (ou falha/expira), para o loading aguardar o resultado real.
+   */
+  const requestBackendHeadlines = (nameTarget: string, typeTarget: PieceType, imgTarget: string): Promise<void> => {
+    const reqId = ++requestIdRef.current;
+    const memKey = headlinesMemoryKey(nameTarget);
+    const avoid = getGenMemory(memKey);
+    const local = pickLocalHeadlines(nameTarget, typeTarget, avoid);
+    setAiHeadlines(null);
+    setLocalHeadlines(local);
+
+    const randomSeed = Math.floor(Math.random() * 1_000_000_000);
+    const uid = `${Date.now().toString(36)}${randomSeed.toString(36)}`;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 20000);
+
+    return fetch('/api/generate-prompt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         mode: 'headlines',
         clothingName: nameTarget,
         pieceType: typeTarget,
-        seed: nextSeed,
+        seed: randomSeed,
+        avoid,
         imageDataUrl: imgTarget?.startsWith('data:image/') ? imgTarget : undefined,
       }),
+      signal: controller.signal,
     })
       .then(async (res) => {
-        if (!res.ok) return;
+        if (!res.ok) throw new Error('headlines api error');
         const json = await res.json();
-        if (Array.isArray(json?.headlines) && json.headlines.length >= 6) {
-          setAiHeadlines(
-            json.headlines.map((item: any, idx: number) => ({
-              id: `hl-ai-${nextSeed}-${idx}`,
-              category: String(item.category || 'Caimento & Elegância'),
-              headline: String(item.headline || '').trim(),
-              overlayText: String(item.overlayText || 'POV: CAIMENTO IMPECÁVEL'),
-              visualAction: String(item.visualAction || 'Girar no espelho mostrando o caimento.'),
-              retentionScore: Number(item.retentionScore) || 98,
-              viralScore: Number(item.viralScore) || 9.9,
-              whyItWorks: String(item.whyItWorks || 'Gatilho orgânico de retenção para TikTok Shop.'),
-            }))
-          );
-        }
+        const normalized = normalizeAiHeadlines(json?.headlines, local, uid);
+        if (!normalized) throw new Error('headlines invalid');
+        if (reqId !== requestIdRef.current) return;
+        setAiHeadlines(normalized);
+        addGenMemory(memKey, normalized.map((h) => h.headline));
       })
       .catch(() => {
-        // Fallback automático para a engine local
-      });
+        // Fallback: lote local personalizado (já aplicado) entra na memória para não repetir no próximo clique
+        if (reqId !== requestIdRef.current) return;
+        addGenMemory(memKey, local.map((h) => h.headline));
+      })
+      .finally(() => window.clearTimeout(timer));
   };
 
   // Integração com a esteira de produtos
@@ -340,14 +1031,17 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
     setScanProgress(0);
     setScanPhaseText('Escaneando textura e silhueta da peça...');
     setScanTags(['Modelagem Detectada', 'Scanner Ativo']);
-    requestBackendHeadlines(targetName, targetType, targetImg, seed);
+    let aiDone = false;
+    requestBackendHeadlines(targetName, targetType, targetImg).finally(() => {
+      aiDone = true;
+    });
 
     const startTime = Date.now();
     const totalDuration = 3800; // 3.8s para transmitir análise autêntica
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const progress = Math.min(100, Math.round((elapsed / totalDuration) * 100));
+      const progress = Math.min(aiDone ? 100 : 96, Math.round((elapsed / totalDuration) * 100));
       setScanProgress(progress);
 
       if (progress < 25) {
@@ -360,11 +1054,11 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
         setScanPhaseText('Identificando gatilhos virais para vídeos sem fala no TikTok...');
         setScanTags(['Modelagem Detectada', 'Zero Transparência', 'Vídeo Sem Fala', 'Gatilho 0-3s']);
       } else {
-        setScanPhaseText('Formatando 10 headlines de até 2 frases para tela...');
+        setScanPhaseText(aiDone ? 'Formatando 10 headlines de até 2 frases para tela...' : 'Personalizando headlines exclusivas com IA...');
         setScanTags(['Modelagem Detectada', 'Zero Transparência', 'Headlines Prontas']);
       }
 
-      if (elapsed >= totalDuration) {
+      if (elapsed >= totalDuration && aiDone) {
         clearInterval(interval);
         setTimeout(() => {
           setIsAnalyzing(false);
@@ -376,464 +1070,11 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
   };
 
   // Headlines geradas dinamicamente com formato POV e personalizadas pela peça (100% orgânico, sem preço, sem venda, sem frete grátis)
-  // Cada clique em "Gerar Mais Variações" avança o seed e entrega um lote 100% novo de headlines
-  const headlinesList = useMemo<HeadlineItem[]>(() => {
-    if (aiHeadlines && aiHeadlines.length > 0) {
-      return aiHeadlines;
-    }
-    const g = extractPieceGrammar(clothingName, pieceType);
-
-    const nounPhrase = `${g.article} ${g.noun} do momento`;
-    const dimPhrase = `${g.article} ${g.diminutive} quase de graça`;
-    const queridinhoBlogueiras = g.gender === 'f' ? `a ${g.noun} queridinha das blogueiras` : `o ${g.noun} queridinho das blogueiras`;
-    const queridinhoMeninas = g.gender === 'f' ? 'a queridinha das meninas' : 'o queridinho das meninas';
-    const queridinhoMomento = g.gender === 'f' ? `a ${g.noun} queridinha do momento` : `o ${g.noun} queridinho do momento`;
-    const adjCap = g.adjective.charAt(0).toUpperCase() + g.adjective.slice(1);
-    const cadaCorPhrase = g.gender === 'f' ? 'Quero uma de cada cor.' : 'Quero um de cada cor.';
-
-    const cycle = (seed - 1) % 4;
-
-    if (cycle === 1) {
-      return [
-        {
-          id: `hl-caimento-2-${seed}`,
-          category: 'Caimento & Elegância',
-          headline: `POV: ${queridinhoMomento}\nO caimento ficou impecável.`,
-          overlayText: 'POV: CAIMENTO IMPECÁVEL',
-          visualAction: 'Girar lentamente no espelho mostrando o caimento perfeito.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: `Gatilho: Desejo estético imediato pelo caimento. Ponto que pega: Realça como ${g.article} ${g.noun} assenta perfeitamente no corpo sem apertar.`,
-        },
-        {
-          id: `hl-tecido-2-${seed}`,
-          category: 'Qualidade do Tecido',
-          headline: `POV: ${nounPhrase}\nO tecido é super encorpado.`,
-          overlayText: 'POV: TECIDO ENCORPADO',
-          visualAction: 'Puxar levemente o tecido para demonstrar a textura e elasticidade.',
-          retentionScore: 98,
-          viralScore: 9.9,
-          whyItWorks: `Gatilho: Quebra de objeção sobre espessura do tecido. Ponto que pega: Confirma a gramatura premium de ${g.article} ${g.noun} de forma orgânica.`,
-        },
-        {
-          id: `hl-amigas-2-${seed}`,
-          category: 'Prova Social Próxima',
-          headline: `POV: ${dimPhrase}\nMinhas amigas acharam lindo.`,
-          overlayText: 'POV: MINHAS AMIGAS AMARAM',
-          visualAction: 'Sorriso espontâneo no espelho conferindo o look completo.',
-          retentionScore: 97,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Validação social de amigas próximas. Ponto que pega: Mostra aceitação imediata e elogios sinceros no dia a dia.',
-        },
-        {
-          id: `hl-praticidade-2-${seed}`,
-          category: 'Praticidade Extrema',
-          headline: `POV: ${queridinhoBlogueiras}\nNão amassa e não encolhe.`,
-          overlayText: 'POV: NÃO AMASSA',
-          visualAction: 'Movimento natural no espelho testando o conforto da peça.',
-          retentionScore: 98,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Alívio de manutenção da roupa. Ponto que pega: Peça prática que não dá trabalho para passar ou cuidar.',
-        },
-        {
-          id: `hl-cintura-2-${seed}`,
-          category: 'Modelagem da Cintura',
-          headline: `POV: ${nounPhrase}\nValorizou muito a cintura.`,
-          overlayText: 'POV: VALORIZOU A CINTURA',
-          visualAction: 'Passar as mãos contornando a cintura com suavidade.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: `Gatilho: Realce da silhueta feminina. Ponto que pega: Mostra como ${g.article} ${g.noun} desenha a cintura no espelho.`,
-        },
-        {
-          id: `hl-grife-2-${seed}`,
-          category: 'Percepção de Grife',
-          headline: `POV: ${dimPhrase}\nParece peça de grife cara.`,
-          overlayText: 'POV: PARECE DE GRIFE',
-          visualAction: 'Afastar no espelho para mostrar o look completo com postura.',
-          retentionScore: 97,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Status visual sem parecer ostensivo. Ponto que pega: Alto valor percebido gerado pelo caimento sofisticado.',
-        },
-        {
-          id: `hl-teste-2-${seed}`,
-          category: 'Teste Autêntico',
-          headline: `POV: ${queridinhoMeninas}\nTestei no espelho e aprovei.`,
-          overlayText: 'POV: TESTEI E APROVEI',
-          visualAction: 'Conferir os ângulos no espelho com aprovação sincera.',
-          retentionScore: 96,
-          viralScore: 9.7,
-          whyItWorks: 'Gatilho: Autenticidade de criadora de conteúdo real. Ponto que pega: Reação 100% natural sem tom de anúncio ou propaganda.',
-        },
-        {
-          id: `hl-versatilidade-2-${seed}`,
-          category: 'Versatilidade',
-          headline: `POV: ${nounPhrase}\n${adjCap} pro dia a dia.`,
-          overlayText: 'POV: PRO DIA A DIA',
-          visualAction: 'Dar uma caminhada leve até o espelho.',
-          retentionScore: 96,
-          viralScore: 9.7,
-          whyItWorks: `Gatilho: Usabilidade universal. Ponto que pega: Mostra que ${g.article} ${g.noun} serve perfeitamente para qualquer rotina.`,
-        },
-        {
-          id: `hl-acabamento-2-${seed}`,
-          category: 'Acabamento & Detalhes',
-          headline: `POV: ${dimPhrase}\nAcabamento surreal de lindo.`,
-          overlayText: 'POV: ACABAMENTO SURREAL',
-          visualAction: 'Aproximar da câmera mostrando os detalhes de barra e costura.',
-          retentionScore: 98,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Foco em qualidade de manufatura. Ponto que pega: Detalhes bem acabados encantam e retêm o público no vídeo.',
-        },
-        {
-          id: `hl-colecao-2-${seed}`,
-          category: 'Desejo de Coleção',
-          headline: `POV: ${queridinhoMomento}\n${cadaCorPhrase}`,
-          overlayText: 'POV: QUERO DE CADA COR',
-          visualAction: 'Trocar o peso do corpo no espelho em sinal de animação.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: `Gatilho: Efeito coleção compulsiva. Ponto que pega: Sinaliza que ${g.article} ${g.noun} é tão perfeita que dá vontade de ter todas as cores.`,
-        },
-      ];
-    }
-
-    if (cycle === 2) {
-      return [
-        {
-          id: `hl-costura-3-${seed}`,
-          category: 'Costura & Resistência',
-          headline: `POV: ${dimPhrase}\nCostura reforçada de verdade.`,
-          overlayText: 'POV: COSTURA REFORÇADA',
-          visualAction: 'Mostrar de perto os pontos de costura e o acabamento lateral.',
-          retentionScore: 98,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Garantia de durabilidade. Ponto que pega: Elimina a desconfiança comum de compras pela internet.',
-        },
-        {
-          id: `hl-sustentacao-3-${seed}`,
-          category: 'Sustentação & Conforto',
-          headline: `POV: ${nounPhrase}\nSegura tudo sem apertar nada.`,
-          overlayText: 'POV: SEGURA TUDO',
-          visualAction: 'Ajeitar a peça no corpo demonstrando conforto e firmeza.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: `Gatilho: Conforto corporal extremo. Ponto que pega: Promete que ${g.article} ${g.noun} sustenta perfeitamente sem machucar.`,
-        },
-        {
-          id: `hl-sonhos-3-${seed}`,
-          category: 'Modelagem Perfeita',
-          headline: `POV: ${queridinhoMomento}\nCaimento dos sonhos no corpo.`,
-          overlayText: 'POV: CAIMENTO DOS SONHOS',
-          visualAction: 'Volta completa no espelho admirando a peça.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: 'Gatilho: Ideal estético alcançado. Ponto que pega: Duas frases curtas e de altíssimo impacto sobre o caimento no corpo.',
-        },
-        {
-          id: `hl-achadinho-3-${seed}`,
-          category: 'Achadinho TikTok Shop',
-          headline: `POV: ${dimPhrase}\nAchadinho que salvou meu look.`,
-          overlayText: 'POV: ACHADINHO DE OURO',
-          visualAction: 'Conferir o visual de cima a baixo com expressão de satisfação.',
-          retentionScore: 98,
-          viralScore: 9.9,
-          whyItWorks: 'Gatilho: Sensação de descoberta única ("achadinho"). Ponto que pega: Termo viral orgânico de maior conversão entre criadoras.',
-        },
-        {
-          id: `hl-defeitos-3-${seed}`,
-          category: 'Perfeição Visual',
-          headline: `POV: ${nounPhrase}\nZero defeitos nessa peça.`,
-          overlayText: 'POV: ZERO DEFEITOS',
-          visualAction: 'Girar no espelho em silêncio mostrando os ângulos.',
-          retentionScore: 97,
-          viralScore: 9.8,
-          whyItWorks: `Gatilho: Aprovação categórica e espontânea. Ponto que pega: Comunica alta qualidade de ${g.article} ${g.noun} em pouquíssimas palavras.`,
-        },
-        {
-          id: `hl-curiosidade-3-${seed}`,
-          category: 'Curiosidade Viral',
-          headline: `POV: ${queridinhoBlogueiras}\nTodo mundo pergunta de onde é.`,
-          overlayText: 'POV: DE ONDE É ESSA PEÇA',
-          visualAction: 'Ajeitar o cabelo e conferir o caimento no espelho.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: 'Gatilho: Desejo social irresistível. Ponto que pega: Dispara dezenas de comentários orgânicos perguntando a procedência.',
-        },
-        {
-          id: `hl-toque-3-${seed}`,
-          category: 'Toque & Maciez',
-          headline: `POV: ${dimPhrase}\nTecido macio que abraça o corpo.`,
-          overlayText: 'POV: TECIDO SUPER MACIO',
-          visualAction: 'Tocar o tecido delicadamente em frente à câmera.',
-          retentionScore: 96,
-          viralScore: 9.7,
-          whyItWorks: 'Gatilho: Sensação de toque agradável. Ponto que pega: Conecta o espectador com a sensação gostosa de vestir o tecido.',
-        },
-        {
-          id: `hl-ocasiao-3-${seed}`,
-          category: 'Ocasião Universal',
-          headline: `POV: ${nounPhrase}\nCombina com qualquer ocasião.`,
-          overlayText: 'POV: COMBINA COM TUDO',
-          visualAction: 'Dar passos leves mostrando a fluidez da peça.',
-          retentionScore: 96,
-          viralScore: 9.6,
-          whyItWorks: `Gatilho: Praticidade e versatilidade de guarda-roupa. Ponto que pega: Multiplica o valor percebido de ${g.article} ${g.noun}.`,
-        },
-        {
-          id: `hl-elegancia-3-${seed}`,
-          category: 'Elegância & Postura',
-          headline: `POV: ${queridinhoMeninas}\nSuper elegante e confortável.`,
-          overlayText: 'POV: ELEGANTE E CONFORTÁVEL',
-          visualAction: 'Postura ereta no espelho demonstrando o caimento limpo.',
-          retentionScore: 97,
-          viralScore: 9.7,
-          whyItWorks: 'Gatilho: O equilíbrio perfeito que toda mulher procura: estar elegante sem abrir mão do conforto.',
-        },
-        {
-          id: `hl-escolha-3-${seed}`,
-          category: 'Satisfação Total',
-          headline: `POV: ${queridinhoMomento}\nMelhor escolha que já fiz.`,
-          overlayText: 'POV: MELHOR ESCOLHA',
-          visualAction: 'Sorriso de satisfação ao conferir o look completo.',
-          retentionScore: 98,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Certeza absoluta de acerto. Ponto que pega: Passa segurança total para quem está assistindo no feed.',
-        },
-      ];
-    }
-
-    if (cycle === 3) {
-      return [
-        {
-          id: `hl-postura-4-${seed}`,
-          category: 'Postura & Autoestima',
-          headline: `POV: ${nounPhrase}\nDeu outra postura no corpo.`,
-          overlayText: 'POV: OUTRA POSTURA',
-          visualAction: 'Ajeitar a coluna e conferir a transformação visual no espelho.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: `Gatilho: Autoestima e transformação postural. Ponto que pega: Mostra como ${g.article} ${g.noun} valoriza a presença e o porte.`,
-        },
-        {
-          id: `hl-qualidade-4-${seed}`,
-          category: 'Qualidade Tátil',
-          headline: `POV: ${dimPhrase}\nQualidade absurda no toque.`,
-          overlayText: 'POV: QUALIDADE ABSURDA',
-          visualAction: 'Sentir o tecido com as mãos aproximando da luz.',
-          retentionScore: 98,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Surpresa positiva com o material. Ponto que pega: Demonstra valor superior sem precisar falar de dinheiro.',
-        },
-        {
-          id: `hl-luz-4-${seed}`,
-          category: 'Teste Contra a Luz',
-          headline: `POV: ${queridinhoMomento}\nNão é transparente de jeito nenhum.`,
-          overlayText: 'POV: NADA TRANSPARENTE',
-          visualAction: 'Posicionar-se contra a luz da janela mostrando a opacidade perfeita.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: 'Gatilho: Quebra de objeção crítica contra a luz. Ponto que pega: Dá segurança total na hora de usar em público.',
-        },
-        {
-          id: `hl-modelagem-4-${seed}`,
-          category: 'Tendência & Desejo',
-          headline: `POV: ${queridinhoBlogueiras}\nA modelagem que todo mundo quer.`,
-          overlayText: 'POV: MODELAGEM DESEJADA',
-          visualAction: 'Girar 360 no espelho destacando os recortes e costuras.',
-          retentionScore: 98,
-          viralScore: 9.9,
-          whyItWorks: `Gatilho: Efeito manada e urgência de tendência. Ponto que pega: Destaca o formato exclusivo de ${g.article} ${g.noun}.`,
-        },
-        {
-          id: `hl-rapidez-4-${seed}`,
-          category: 'Rapidez & Praticidade',
-          headline: `POV: ${dimPhrase}\nPronta pra sair em 2 minutos.`,
-          overlayText: 'POV: PRONTA EM 2 MINUTOS',
-          visualAction: 'Dar o último ajuste no look e pegar a bolsa para sair.',
-          retentionScore: 97,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Economia de tempo. Ponto que pega: Resolve o estresse de não saber o que vestir com rapidez e estilo.',
-        },
-        {
-          id: `hl-destaque-4-${seed}`,
-          category: 'Destaque Visual',
-          headline: `POV: ${nounPhrase}\nRealçou o visual sem esforço.`,
-          overlayText: 'POV: REALÇOU O VISUAL',
-          visualAction: 'Dar um passo para trás mostrando a harmonia do look no espelho.',
-          retentionScore: 97,
-          viralScore: 9.7,
-          whyItWorks: `Gatilho: Beleza sem esforço (effortless chic). Ponto que pega: Prova que ${g.article} ${g.noun} transforma qualquer produção.`,
-        },
-        {
-          id: `hl-costas-4-${seed}`,
-          category: 'Caimento de Costas',
-          headline: `POV: ${queridinhoMeninas}\nCaimento impecável de costas.`,
-          overlayText: 'POV: IMPECÁVEL DE COSTAS',
-          visualAction: 'Virar de costas para o espelho olhando por cima do ombro.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: 'Gatilho: Confirmação do caimento traseiro. Ponto que pega: Vídeos mostrando o caimento de costas geram retenção altíssima no TikTok.',
-        },
-        {
-          id: `hl-unboxing-4-${seed}`,
-          category: 'Chegada da Peça',
-          headline: `POV: ${dimPhrase}\nAcabou de chegar e já amei.`,
-          overlayText: 'POV: JÁ AMEI DE CARA',
-          visualAction: 'Retirar da embalagem ou provar no primeiro segundo.',
-          retentionScore: 98,
-          viralScore: 9.8,
-          whyItWorks: 'Gatilho: Empolgação autêntica de unboxing. Ponto que pega: O sentimento de provar a peça na hora e se apaixonar.',
-        },
-        {
-          id: `hl-coringa-4-${seed}`,
-          category: 'Peça Coringa',
-          headline: `POV: ${nounPhrase}\nPeça coringa do guarda-roupa.`,
-          overlayText: 'POV: PEÇA CORINGA',
-          visualAction: 'Ajustar no corpo com naturalidade em frente ao espelho.',
-          retentionScore: 96,
-          viralScore: 9.7,
-          whyItWorks: `Gatilho: Item indispensável no armário. Ponto que pega: Fixa ${g.article} ${g.noun} como compra obrigatória para qualquer ocasião.`,
-        },
-        {
-          id: `hl-surpresa-4-${seed}`,
-          category: 'Efeito Surpresa',
-          headline: `POV: ${queridinhoMomento}\nNunca vesti nada tão bom assim.`,
-          overlayText: 'POV: NUNCA VESTI NADA TÃO BOM',
-          visualAction: 'Olhar surpreso no espelho com aprovação nítida.',
-          retentionScore: 99,
-          viralScore: 9.9,
-          whyItWorks: 'Gatilho: Hiper-satisfação autêntica. Ponto que pega: Gancho verbal de altíssima curiosidade para o feed do TikTok.',
-        },
-      ];
-    }
-
-    // cycle === 0 (Lote Inicial Padrão)
-    return [
-      // 1. POV: [Peça] do Momento
-      {
-        id: `hl-momento-1-${seed}`,
-        category: 'Tendência & Efeito Manada',
-        headline: `POV: ${nounPhrase}\nVeste bem demais no corpo.`,
-        overlayText: `POV: ${nounPhrase.toUpperCase()}`,
-        visualAction: 'Girar 360 no espelho mostrando o caimento natural da peça.',
-        retentionScore: 99,
-        viralScore: 9.9,
-        whyItWorks: `Gatilho: Efeito manada imediato ("${g.noun} do momento") em formato POV. Ponto que pega: Frase 100% natural sem parecer vendedor, prendendo a atenção no primeiro frame.`,
-      },
-
-      // 2. POV: [Peça] Quase de Graça
-      {
-        id: `hl-quase-1-${seed}`,
-        category: 'Percepção de Valor Orgânica',
-        headline: `POV: ${dimPhrase}\nFicou ${g.adjective} no espelho.`,
-        overlayText: `POV: ${g.diminutive.toUpperCase()} QUASE DE GRAÇA`,
-        visualAction: 'Dar um passo para trás em silêncio conferindo o caimento real.',
-        retentionScore: 99,
-        viralScore: 9.9,
-        whyItWorks: `Gatilho: Percepção de pechincha ("${g.diminutive} quase de graça") sem citar preços ou números. Ponto que pega: Gera curiosidade espontânea sobre onde encontrar a peça.`,
-      },
-
-      // 3. POV: O Queridinho das Blogueiras
-      {
-        id: `hl-queridinho-1-${seed}`,
-        category: 'Prova Social & Autoridade',
-        headline: `POV: ${queridinhoBlogueiras}\nEsgotou e voltou hoje.`,
-        overlayText: 'POV: ESGOTOU E VOLTOU HOJE',
-        visualAction: 'Aproximar o tecido para mostrar a gramatura e afastar revelando o caimento.',
-        retentionScore: 98,
-        viralScore: 9.9,
-        whyItWorks: `Gatilho: Autoridade estética ("${g.noun} queridinha") associada à escassez de reposição. Ponto que pega: Prova social sem empurrar produto comercialmente.`,
-      },
-
-      // 4. POV: Parece de Shopping Chique
-      {
-        id: `hl-shopping-1-${seed}`,
-        category: 'Ancoragem Visual',
-        headline: `POV: ${dimPhrase}\nParece de shopping chique.`,
-        overlayText: 'POV: PARECE DE SHOPPING',
-        visualAction: 'Passar a mão no tecido mostrando a textura encorpada.',
-        retentionScore: 97,
-        viralScore: 9.8,
-        whyItWorks: 'Gatilho: Alto padrão estético com custo mínimo. Ponto que pega: A sensação de elegância de grife de forma totalmente orgânica.',
-      },
-
-      // 5. POV: Zero Transparência
-      {
-        id: `hl-espelho-1-${seed}`,
-        category: 'Quebra de Objeção',
-        headline: `POV: ${nounPhrase}\nZero transparência no sol.`,
-        overlayText: 'POV: ZERO TRANSPARÊNCIA',
-        visualAction: 'Puxar e esticar levemente o tecido em frente ao espelho com luz natural.',
-        retentionScore: 99,
-        viralScore: 9.9,
-        whyItWorks: `Gatilho: Quebra de objeção visual instantânea em 2 frases curtinhas sobre ${g.noun}. Ponto que pega: Elimina a maior dúvida feminina sobre tecidos finos.`,
-      },
-
-      // 6. POV: Modela a Cintura
-      {
-        id: `hl-queridinho-2-${seed}`,
-        category: 'Modelagem & Curvas',
-        headline: `POV: ${queridinhoMeninas}\nModela o corpo na hora.`,
-        overlayText: 'POV: MODELA O CORPO',
-        visualAction: 'Passar as mãos contornando a silhueta no espelho.',
-        retentionScore: 96,
-        viralScore: 9.7,
-        whyItWorks: 'Gatilho: Transformação estética imediata e conforto. Ponto que pega: Promete valorizar a silhueta com caimento natural sem aperto.',
-      },
-
-      // 7. POV: Não Marca Nada
-      {
-        id: `hl-marca-1-${seed}`,
-        category: 'Conforto & Caimento',
-        headline: `POV: ${nounPhrase}\nNão marca nada no corpo.`,
-        overlayText: 'POV: NÃO MARCA NADA',
-        visualAction: 'Girar no espelho mostrando o caimento suave.',
-        retentionScore: 97,
-        viralScore: 9.8,
-        whyItWorks: `Gatilho: Segurança corporal e conforto. Ponto que pega: Tranquilidade de vestir ${g.article} ${g.noun} que valoriza o corpo sem marcar.`,
-      },
-
-      // 8. POV: Direto de Fábrica
-      {
-        id: `hl-secreto-1-${seed}`,
-        category: 'Segredo de Fábrica',
-        headline: `POV: ${dimPhrase}\nPeguei direto de fábrica.`,
-        overlayText: 'POV: DIRETO DE FÁBRICA',
-        visualAction: 'Ajeitar o look no espelho com naturalidade.',
-        retentionScore: 96,
-        viralScore: 9.7,
-        whyItWorks: 'Gatilho: Vantagem de fábrica sem parecer propaganda comercial. Ponto que pega: Curiosidade natural sobre a procedência da peça.',
-      },
-
-      // 9. POV: Todo Mundo Elogiou
-      {
-        id: `hl-trabalho-1-${seed}`,
-        category: 'Validação Social',
-        headline: `POV: ${nounPhrase}\nTodo mundo me elogiou hoje.`,
-        overlayText: 'POV: TODO MUNDO ELOGIOU',
-        visualAction: 'Ajustar a peça no espelho com elegância e sorriso espontâneo.',
-        retentionScore: 95,
-        viralScore: 9.6,
-        whyItWorks: 'Gatilho: Validação social de terceiros. Ponto que pega: Desejo de receber elogios no dia a dia ao vestir a roupa.',
-      },
-
-      // 10. POV: Coloquei e Não Tiro Mais
-      {
-        id: `hl-lote-1-${seed}`,
-        category: 'Apego & Conforto',
-        headline: `POV: ${queridinhoMomento}\nColoquei e não tiro mais.`,
-        overlayText: 'POV: NÃO TIRO MAIS',
-        visualAction: 'Movimento natural no espelho demonstrando o caimento.',
-        retentionScore: 98,
-        viralScore: 9.8,
-        whyItWorks: `Gatilho: Sensação de peça favorita e confortável. Ponto que pega: Duas frases curtas, naturais e espontâneas sobre ${g.article} ${g.noun}.`,
-      },
-    ];
-  }, [clothingName, pieceType, seed]);
+  // Cada clique gera um lote novo (IA com seed aleatório + memória anti-repetição; fallback local embaralhado)
+  const headlinesList = aiHeadlines && aiHeadlines.length > 0 ? aiHeadlines : localHeadlines;
 
   const copyHeadline = (item: HeadlineItem) => {
-    navigator.clipboard.writeText(item.headline);
+    copyToClipboard(item.headline);
     setCopiedId(item.id);
     setTimeout(() => {
       setCopiedId(null);
@@ -841,9 +1082,10 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
   };
 
   const handleGenerateMore = () => {
-    const nextSeed = seed + 1;
-    setAiHeadlines(null);
-    requestBackendHeadlines(clothingName, pieceType, clothingImage, nextSeed);
+    let aiDone = false;
+    requestBackendHeadlines(clothingName, pieceType, clothingImage).finally(() => {
+      aiDone = true;
+    });
     setIsAnalyzing(true);
     setScanProgress(0);
     setScanPhaseText('Gerando novo lote de variações virais...');
@@ -854,7 +1096,7 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const progress = Math.min(100, Math.round((elapsed / totalDuration) * 100));
+      const progress = Math.min(aiDone ? 100 : 96, Math.round((elapsed / totalDuration) * 100));
       setScanProgress(progress);
 
       if (progress < 30) {
@@ -867,11 +1109,11 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
         setScanPhaseText('Formatando 10 novas headlines em formato POV de 2 frases...');
         setScanTags(['POV Empilhado', '10 Novas Headlines', 'Prontas Para Gravar']);
       } else {
-        setScanPhaseText('Novas headlines concluídas!');
+        setScanPhaseText(aiDone ? 'Novas headlines concluídas!' : 'Personalizando novas headlines com IA...');
         setScanTags(['Lote Atualizado', '10 Novas Headlines']);
       }
 
-      if (elapsed >= totalDuration) {
+      if (elapsed >= totalDuration && aiDone) {
         clearInterval(interval);
         setSeed((s) => s + 1);
         setTimeout(() => {
@@ -891,7 +1133,7 @@ export function HeadlinesView({ onUse: _onUse }: { onUse?: (text: string) => voi
       )
       .join('\n──────────────────────────────────────\n\n');
 
-    navigator.clipboard.writeText(all);
+    copyToClipboard(all);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2200);
   };

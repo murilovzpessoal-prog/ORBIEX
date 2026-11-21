@@ -1,3 +1,5 @@
+import { aiGenerateJSON, shuffle, pickOne, jitter } from './aiGenerate';
+
 export interface ProductAuditRequest {
   productName: string;
   productLink: string;
@@ -69,7 +71,8 @@ export function extractProductTitle(rawName: string, rawLink: string, defaultCat
   return 'Produto TikTok Shop';
 }
 
-export function auditProduct(req: ProductAuditRequest): ProductAuditResult {
+/** Triagem base por categoria (política/risco). A variação é aplicada em `auditProduct`. */
+function baseAuditProduct(req: ProductAuditRequest): ProductAuditResult {
   const name = extractProductTitle(req.productName, req.productLink, req.category);
   const normalized = `${name} ${req.productLink} ${req.category}`.toLowerCase();
 
@@ -723,4 +726,346 @@ export function auditProduct(req: ProductAuditRequest): ProductAuditResult {
     actionableAdvice:
       'Mantenha a comunicação do vídeo simples e direta. Mostre o produto nos primeiros 2 segundos para garantir alta retenção de visualização.',
   };
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+ * Camada de variação local (fallback): nunca entrega o mesmo relatório
+ * em cliques consecutivos — pools de textos com o nome do produto,
+ * números com jitter coerente dentro da faixa de risco.
+ * ══════════════════════════════════════════════════════════════════════ */
+
+let lastLocalSignature = '';
+
+function scoreBand(banRisk: ProductAuditResult['banRisk'], baseScore: number): [number, number] {
+  if (banRisk === 'Alto') return [Math.max(5, baseScore - 8), Math.min(49, baseScore + 8)];
+  if (banRisk === 'Médio') return [62, 84];
+  return [80, 99];
+}
+
+function jitterPercentRange(text: string): string {
+  // "55% a 72% ..." -> números variados mantendo ordem
+  const m = text.match(/^(\d+)% a (\d+)%(.*)$/);
+  if (!m) return text;
+  const lo = jitter(Number(m[1]), 4, 5, 90);
+  const hi = Math.max(lo + 8, jitter(Number(m[2]), 4, 10, 95));
+  return `${lo}% a ${hi}%${m[3]}`;
+}
+
+function jitterReturnRate(text: string): string {
+  const m = text.match(/^(\d+(?:\.\d+)?)%(.*)$/);
+  if (!m) return text;
+  const base = Number(m[1]);
+  const v = Math.max(0.4, base + (Math.random() * 2 - 1) * Math.max(0.4, base * 0.2));
+  return `${v.toFixed(1)}%${m[2]}`;
+}
+
+function strengthPool(name: string, req: ProductAuditRequest): string[] {
+  const c = req.commission || '20%';
+  return [
+    `"${name}" mostra o benefício em poucos segundos de vídeo, ideal para o feed vertical`,
+    `Comissão de ${c} deixa "${name}" rentável mesmo com volume moderado de vendas`,
+    `Produto fácil de explicar sem fala: legenda + demonstração já vendem "${name}"`,
+    `"${name}" funciona bem em vídeos curtos de 15–25s, o formato que mais converte na sacola`,
+    `Público de ${req.category || 'compras por impulso'} costuma salvar e compartilhar vídeos desse tipo de produto`,
+    `Ticket compatível com compra por impulso direto do vídeo`,
+    `Dá para gravar vários criativos diferentes de "${name}" com a mesma amostra`,
+    `"${name}" gera comentários de dúvida (“onde compra?”), o que alimenta o algoritmo`,
+    `Boa chance de recompra ou presente, ampliando o público de "${name}"`,
+    `Visual de "${name}" se destaca no primeiro frame sem precisar de edição pesada`,
+  ];
+}
+
+function riskPool(name: string): string[] {
+  return [
+    `Muitos criadores já postam "${name}": diferencie o gancho nos 2 primeiros segundos`,
+    `Confirme prazo de postagem do vendedor antes de escalar vídeos de "${name}"`,
+    `Não prometa resultado que o "${name}" não entrega na prática — gera devolução`,
+    `Verifique se as fotos da vitrine batem com o "${name}" que chega na amostra`,
+    `Evite cortes acelerados que pareçam truque ao demonstrar "${name}"`,
+    `Acompanhe avaliações da loja: nota abaixo de 4.5 derruba a conversão do link`,
+    `Picos de viralização podem esgotar o estoque de "${name}" — tenha um produto reserva`,
+    `Mostre tamanho/escala real do "${name}" na mão para evitar frustração do comprador`,
+  ];
+}
+
+function anglePool(name: string, req: ProductAuditRequest): ContentAngle[] {
+  return [
+    { type: 'Gancho de Curiosidade', title: `"Ninguém me contou que ${name} fazia isso"`, description: `Abra com o resultado inesperado do ${name} e só depois revele o produto, segurando a retenção até o 3º segundo.` },
+    { type: 'POV do Comprador', title: `POV: você finalmente comprou ${name}`, description: `Grave em primeira pessoa a rotina real usando o ${name}, com legenda curta e som em alta.` },
+    { type: 'Teste Real / Prova', title: `Testei ${name} por 7 dias`, description: `Mostre dia 1 e dia 7 com uso honesto do ${name}, sem promessas exageradas, terminando na sacola amarela.` },
+    { type: 'Comparativo', title: `${name} vs o jeito antigo`, description: `Tela dividida: à esquerda o problema sem o produto, à direita o ${name} resolvendo em segundos.` },
+    { type: 'Quebra de Objeção', title: `"Vale mesmo a pena?"`, description: `Responda a dúvida mais comum dos comentários sobre o ${name} mostrando o detalhe que convence.` },
+    { type: 'Unboxing ASMR', title: `Abrindo o ${name} sem falar nada`, description: `Som nítido da embalagem, primeiro uso do ${name} e texto na tela com o principal benefício.` },
+    { type: 'Lista Rápida', title: `3 motivos para ter ${name}`, description: `Três cortes de 3 segundos, cada um com um benefício visual do ${name}, CTA na última cena.` },
+    { type: 'Reação / Duet', title: `Reagindo a quem duvidou do ${name}`, description: `Use um comentário cético como gancho e prove na prática o funcionamento do ${name}.` },
+    { type: 'Nicho Específico', title: `${name} para quem curte ${req.category || 'praticidade'}`, description: `Fale direto com o público de ${req.category || 'compras inteligentes'}, mostrando um uso que só ele entende.` },
+  ];
+}
+
+function advicePool(name: string): string[] {
+  return [
+    `Mostre o ${name} em ação no primeiro frame; a fala vem só depois do 2º segundo.`,
+    `Grave 3 ganchos diferentes para o ${name} e mantenha o que tiver maior retenção em 24h.`,
+    `Use legenda grande com o benefício principal do ${name} — muita gente assiste no mudo.`,
+    `Termine todo vídeo do ${name} apontando para a sacola amarela e citando o frete.`,
+    `Responda comentários de dúvida sobre o ${name} com vídeo-resposta: converte mais que post novo.`,
+    `Poste vídeos do ${name} em horários diferentes (12h, 18h, 21h) e compare o alcance.`,
+  ];
+}
+
+function buildSampleScript(name: string, req: ProductAuditRequest): string {
+  const greet = pickOne(['Olá, equipe!', 'Oi, tudo bem?', 'Olá, time de parcerias!', 'Bom dia, pessoal da loja!', 'Olá! Espero que estejam bem.']);
+  const intro = pickOne([
+    `Sou criador(a) de conteúdo no TikTok Shop com foco em ${req.category || 'achadinhos'}.`,
+    `Produzo vídeos curtos de conversão para o público de ${req.category || 'compras online'} no TikTok.`,
+    `Trabalho com vídeos de demonstração real e link direto na sacola do TikTok Shop.`,
+    `Meu perfil é focado em reviews honestos de ${req.category || 'produtos do dia a dia'}.`,
+  ]);
+  const hook = pickOne([
+    `Vi o "${name}" na vitrine de vocês e enxerguei um ótimo potencial de venda.`,
+    `O "${name}" chamou minha atenção pelo apelo visual — é perfeito para vídeo vertical.`,
+    `Acredito que o "${name}" tem tudo para viralizar com a abordagem certa.`,
+    `Meu público vem pedindo algo como o "${name}" nos comentários.`,
+  ]);
+  const ask = pickOne([
+    `Gostaria de solicitar uma amostra grátis para gravar ${pickOne(['3', '3 a 5', '4'])} criativos de demonstração com link para a loja.`,
+    `Posso produzir ${pickOne(['um unboxing + 2 vídeos de uso real', 'um teste de 7 dias + vídeo de review', '3 vídeos com ganchos diferentes'])} se puderem enviar uma amostra.`,
+    `Com uma amostra, consigo publicar os primeiros vídeos em até ${pickOne(['5', '7', '3'])} dias após o recebimento.`,
+  ]);
+  const close = pickOne([
+    'Podemos alinhar o envio?',
+    'Qual o melhor caminho para combinarmos o envio?',
+    'Fico no aguardo para alinharmos os detalhes!',
+    'Se fizer sentido, me passem os próximos passos. Obrigado(a)!',
+  ]);
+  return `${greet} ${intro} ${hook} ${ask} ${close}`;
+}
+
+function verdictVariant(base: ProductAuditResult, req: ProductAuditRequest): string {
+  if (base.banRisk === 'Alto') {
+    const pre = pickOne([
+      `Análise de "${base.name}": `,
+      `Sobre "${base.name}": `,
+      `Parecer para "${base.name}": `,
+    ]);
+    return pre + base.verdictSummary;
+  }
+  const pre = pickOne([
+    `"${base.name}" tem score ${base.score}/100 nesta análise.`,
+    `Para "${base.name}", o cenário é ${base.score >= 88 ? 'muito favorável' : base.score >= 80 ? 'favorável' : 'positivo, com cuidados'}.`,
+    `Avaliando "${base.name}" em ${base.categoryDetected}:`,
+    `Leitura rápida de "${base.name}":`,
+  ]);
+  const post = pickOne([
+    ` Com comissão de ${req.commission || '20%'}, o foco deve ser volume de criativos curtos.`,
+    ` Demanda estimada em ${base.demandIndex}% — vale testar ganchos variados logo na primeira semana.`,
+    ` Facilidade de demonstração em ${base.demonstrationEase}% favorece vídeos sem fala.`,
+    '',
+  ]);
+  return `${pre} ${base.verdictSummary}${post}`;
+}
+
+function localSignature(r: ProductAuditResult) {
+  return [r.score, r.demandIndex, r.verdictSummary, r.freeSampleScript, r.actionableAdvice].join('|');
+}
+
+/** Auditoria local com variação (fallback quando a IA não responde). */
+export function auditProduct(req: ProductAuditRequest): ProductAuditResult {
+  let out: ProductAuditResult | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    out = varyAudit(baseAuditProduct(req), req);
+    if (localSignature(out) !== lastLocalSignature) break;
+  }
+  lastLocalSignature = localSignature(out!);
+  return out!;
+}
+
+function varyAudit(base: ProductAuditResult, req: ProductAuditRequest): ProductAuditResult {
+  const name = base.name;
+  const blocked = base.banRisk === 'Alto';
+  const [lo, hi] = scoreBand(base.banRisk, base.score);
+  const score = jitter(base.score, 4, lo, hi);
+  const demandIndex = jitter(base.demandIndex, 5, 20, 99);
+  const demonstrationEase = jitter(base.demonstrationEase, 5, 15, 99);
+  const r: ProductAuditResult = {
+    ...base,
+    score,
+    demandIndex,
+    demonstrationEase,
+    estimatedMargin: jitterPercentRange(base.estimatedMargin),
+    returnRateRisk: jitterReturnRate(base.returnRateRisk),
+  };
+  r.verdictSummary = verdictVariant(r, req);
+
+  if (blocked) {
+    r.riskFactors = shuffle(base.riskFactors);
+    r.guidelines = base.guidelines.map((g) => ({ ...g }));
+    return r;
+  }
+
+  r.strengths = shuffle([...base.strengths.slice(0, 2), ...shuffle(strengthPool(name, req)).slice(0, 3)]).slice(0, 3);
+  r.riskFactors = shuffle([...base.riskFactors.slice(0, 1), ...shuffle(riskPool(name)).slice(0, 2)]).slice(
+    0,
+    2 + Math.round(Math.random())
+  );
+  const angles = [...shuffle(base.contentAngles).slice(0, 1), ...shuffle(anglePool(name, req))];
+  r.contentAngles = angles.slice(0, 3);
+  r.freeSampleScript = buildSampleScript(name, req);
+  r.actionableAdvice = pickOne([base.actionableAdvice, ...advicePool(name)]);
+  return r;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * Análise AI-first: personalizada para o produto, diferente a cada clique.
+ * ══════════════════════════════════════════════════════════════════════ */
+
+const AI_FORMAT = `{
+  "categoryDetected": "string (categoria real do produto no TikTok Shop)",
+  "score": "number 0-100 (coerente com banRisk: Alto <= 49, Médio 55-84, Baixo >= 75)",
+  "banRisk": "'Baixo' | 'Médio' | 'Alto'",
+  "status": "string curta, ex: 'Aprovado · motivo específico'",
+  "demandIndex": "number 0-100",
+  "demonstrationEase": "number 0-100",
+  "estimatedMargin": "string, ex: '45% a 60% com giro rápido'",
+  "returnRateRisk": "string, ex: '2.8% (Baixo)'",
+  "verdictSummary": "string 2-3 frases citando o produto pelo nome",
+  "guidelines": [ { "label": "string", "passed": "boolean", "severity": "'ok' | 'alerta' | 'bloqueio'", "note": "string específica do produto", "policyRef": "string" } ] (exatamente 5),
+  "contentAngles": [ { "type": "string", "title": "string", "description": "string" } ] (exatamente 3; vazio [] se o produto for proibido),
+  "strengths": ["string"] (3 itens específicos do produto),
+  "riskFactors": ["string"] (2 a 3 itens específicos),
+  "freeSampleScript": "string: mensagem pronta para pedir amostra grátis ao vendedor, citando o produto",
+  "actionableAdvice": "string: 1 diretriz prática de gravação para este produto"
+}`;
+
+const AI_TASK = `Você é o auditor de produtos Orbiex para afiliados do TikTok Shop Brasil.
+Analise o produto informado (nome, link, categoria, comissão) e gere um relatório de viabilidade
+100% personalizado para ESTE produto: cite o nome, use características reais desse tipo de produto,
+público, objeções e formas de demonstrar. Avalie conformidade com as políticas do TikTok Shop
+(itens proibidos, réplicas/marcas, alegações médicas/emagrecimento, antes-e-depois, logística, comissão).
+Scores devem ser coerentes com os dados e com a triagemLocal (se a triagem indicar risco Alto, mantenha risco Alto).
+Gere textos, ângulos de conteúdo e script de amostra NOVOS, com ângulo criativo diferente das gerações anteriores.
+Tudo em português do Brasil.`;
+
+type AnyObj = Record<string, unknown>;
+
+const str = (v: unknown, fb: string) => (typeof v === 'string' && v.trim() ? v.trim() : fb);
+const num = (v: unknown, fb: number) => {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? Math.round(Math.max(0, Math.min(100, n))) : fb;
+};
+const strArr = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => (x as string).trim()) : [];
+
+function normalizeAI(raw: unknown, local: ProductAuditResult): ProductAuditResult {
+  const d = (raw && typeof raw === 'object' ? raw : {}) as AnyObj;
+  let banRisk: ProductAuditResult['banRisk'] =
+    d.banRisk === 'Baixo' || d.banRisk === 'Médio' || d.banRisk === 'Alto' ? d.banRisk : local.banRisk;
+  if (local.banRisk === 'Alto') banRisk = 'Alto';
+
+  let score = num(d.score, local.score);
+  if (banRisk === 'Alto') score = Math.min(score, 49);
+  else if (banRisk === 'Médio') score = Math.max(55, Math.min(84, score));
+  else score = Math.max(75, score);
+
+  const guidelinesRaw = Array.isArray(d.guidelines) ? (d.guidelines as AnyObj[]) : [];
+  const guidelines: GuidelineItem[] = [];
+  for (let i = 0; i < 5; i++) {
+    const g = guidelinesRaw[i];
+    const fb = local.guidelines[i] ?? local.guidelines[local.guidelines.length - 1];
+    if (g && typeof g === 'object' && typeof g.label === 'string' && g.label.trim()) {
+      const severity: GuidelineItem['severity'] =
+        g.severity === 'ok' || g.severity === 'alerta' || g.severity === 'bloqueio' ? g.severity : 'ok';
+      guidelines.push({
+        label: g.label.trim(),
+        severity,
+        passed: typeof g.passed === 'boolean' ? g.passed : severity !== 'bloqueio',
+        note: str(g.note, fb?.note ?? ''),
+        policyRef: str(g.policyRef, fb?.policyRef ?? 'Diretrizes TikTok Shop'),
+      });
+    } else if (fb) {
+      guidelines.push({ ...fb });
+    }
+  }
+
+  const prohibited = local.banRisk === 'Alto' && local.contentAngles.length === 0;
+  let contentAngles: ContentAngle[] = prohibited
+    ? []
+    : (Array.isArray(d.contentAngles) ? (d.contentAngles as AnyObj[]) : [])
+        .filter((a) => a && typeof a === 'object' && typeof a.title === 'string' && a.title.trim())
+        .map((a) => ({
+          type: str(a.type, 'Ângulo de Conteúdo'),
+          title: str(a.title, ''),
+          description: str(a.description, ''),
+        }))
+        .slice(0, 3);
+  if (!prohibited && contentAngles.length < (local.contentAngles.length ? 1 : 0)) contentAngles = local.contentAngles;
+
+  const strengths = strArr(d.strengths).slice(0, 4);
+  const riskFactors = strArr(d.riskFactors).slice(0, 4);
+
+  return {
+    name: local.name,
+    categoryDetected: str(d.categoryDetected, local.categoryDetected),
+    score,
+    banRisk,
+    status: str(d.status, local.status),
+    demandIndex: num(d.demandIndex, local.demandIndex),
+    demonstrationEase: num(d.demonstrationEase, local.demonstrationEase),
+    estimatedMargin: str(d.estimatedMargin, local.estimatedMargin),
+    returnRateRisk: str(d.returnRateRisk, local.returnRateRisk),
+    verdictSummary: str(d.verdictSummary, local.verdictSummary),
+    guidelines,
+    contentAngles,
+    strengths: prohibited ? strengths.slice(0, 1) : strengths.length ? strengths : local.strengths,
+    riskFactors: riskFactors.length ? riskFactors : local.riskFactors,
+    freeSampleScript: str(d.freeSampleScript, local.freeSampleScript),
+    actionableAdvice: str(d.actionableAdvice, local.actionableAdvice),
+  };
+}
+
+/**
+ * Auditoria AI-first. Sempre gera uma análise nova (memória anti-repetição por produto);
+ * se a IA estiver indisponível, devolve o fallback local variado.
+ */
+export async function auditProductAI(
+  req: ProductAuditRequest,
+  opts: { imageDataUrl?: string } = {}
+): Promise<ProductAuditResult> {
+  const local = auditProduct(req);
+  const memoryKey = `product-score:${local.name.toLowerCase().trim()}`;
+  const data = await aiGenerateJSON<AnyObj>({
+    memoryKey,
+    task: AI_TASK,
+    input: {
+      productName: local.name,
+      productLink: req.productLink || undefined,
+      categoriaInformada: req.category,
+      comissao: req.commission || '20%',
+      triagemLocal: {
+        categoria: local.categoryDetected,
+        riscoBan: local.banRisk,
+        scoreReferencia: local.score,
+      },
+    },
+    format: AI_FORMAT,
+    imageDataUrl: opts.imageDataUrl,
+    timeoutMs: 35000,
+    remember: (d: AnyObj) => {
+      const angles = Array.isArray(d?.contentAngles) ? (d.contentAngles as AnyObj[]).map((a) => String(a?.title ?? '')) : [];
+      return [
+        String(d?.verdictSummary ?? ''),
+        String(d?.freeSampleScript ?? '').slice(0, 160),
+        String(d?.actionableAdvice ?? ''),
+        ...angles,
+        ...strArr(d?.strengths),
+      ];
+    },
+  });
+  if (!data) return local;
+  try {
+    return normalizeAI(data, local);
+  } catch {
+    return local;
+  }
 }

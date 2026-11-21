@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Pill } from '../ui';
 import { PROMPT_CARDS, type PromptCard } from '../promptCards';
+import { copyText as copyToClipboard } from '../clipboard';
 
 export type PromptCategoryFilter =
   | 'Todos'
@@ -125,10 +126,15 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
     });
   };
 
-  const copyPrompt = (id: string, promptText: string, mediaUrl: string, e?: React.MouseEvent) => {
+  const copyPrompt = (
+    id: string,
+    promptText: string,
+    fallbackText: string,
+    e?: React.MouseEvent
+  ) => {
     if (e) e.stopPropagation();
-    const textToCopy = promptText && promptText.length > 5 ? promptText : mediaUrl;
-    navigator.clipboard.writeText(textToCopy);
+    const textToCopy = promptText && promptText.length > 5 ? promptText : fallbackText;
+    copyToClipboard(textToCopy);
     setCopiedId(id);
     setTimeout(() => setCopiedId((curr) => (curr === id ? null : curr)), 2000);
   };
@@ -597,7 +603,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     </button>
                   ) : (
                     <button
-                      onClick={(e) => copyPrompt(item.id, item.prompt, item.mediaUrl, e)}
+                      onClick={(e) => copyPrompt(item.id, item.prompt, item.description || item.mediaUrl, e)}
                       className={`mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl border text-[11.5px] font-bold uppercase tracking-wider transition-all duration-200 ${
                         isCopied
                           ? 'border-[#7fcf9f] bg-[#7fcf9f]/15 text-[#7fcf9f]'
@@ -606,11 +612,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     >
                       {isCopied ? <Check size={14} /> : <Copy size={13} />}
                       <span>
-                        {isCopied
-                          ? 'Prompt Copiado!'
-                          : item.prompt && item.prompt.length > 5
-                          ? 'Copiar Prompt'
-                          : 'Copiar Link Mídia'}
+                        {isCopied ? 'Prompt Copiado!' : 'Copiar Prompt'}
                       </span>
                     </button>
                   )}
@@ -712,8 +714,8 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                       const text =
                         activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
                           ? activeModalPrompt.prompt
-                          : activeModalPrompt.mediaUrl;
-                      navigator.clipboard.writeText(text);
+                          : activeModalPrompt.description || activeModalPrompt.mediaUrl;
+                      copyToClipboard(text);
                       setModalCopied(true);
                       setTimeout(() => setModalCopied(false), 2000);
                     }}
@@ -748,37 +750,56 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                         ? 'Imagem Baixada com Sucesso!'
                         : 'Baixar Imagem de Referência (Alta Resolução)'}
                     </button>
-                    {activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5 && (
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(activeModalPrompt.prompt);
-                          setModalCopied(true);
-                          setTimeout(() => setModalCopied(false), 2000);
-                        }}
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--mvz-line-strong)] bg-white/[0.04] px-5 text-[12.5px] font-semibold text-white transition hover:border-[var(--mvz-gold)] hover:bg-[rgba(212,175,55,0.1)]"
-                      >
-                        {modalCopied ? <Check size={14} className="text-[#7fcf9f]" /> : <Copy size={13} />}
-                        {modalCopied ? 'Prompt Copiado!' : 'Copiar Prompt'}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        const text =
+                          activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                            ? activeModalPrompt.prompt
+                            : activeModalPrompt.description;
+                        copyToClipboard(text);
+                        setModalCopied(true);
+                        setTimeout(() => setModalCopied(false), 2000);
+                      }}
+                      className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--mvz-line-strong)] bg-white/[0.04] px-5 text-[12.5px] font-semibold text-white transition hover:border-[var(--mvz-gold)] hover:bg-[rgba(212,175,55,0.1)]"
+                    >
+                      {modalCopied ? <Check size={14} className="text-[#7fcf9f]" /> : <Copy size={13} />}
+                      {modalCopied ? 'Prompt Copiado!' : 'Copiar Prompt'}
+                    </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => {
-                      const text =
-                        activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
-                          ? activeModalPrompt.prompt
-                          : activeModalPrompt.description;
-                      onUse(
-                        `Execute este prompt e gere variações de roteiro e criativos visuais para o Orbiex AI:\n\n"${text}"`
-                      );
-                      setActiveModalPrompt(null);
-                    }}
-                    className="mvz-btn-grad flex h-11 flex-1 items-center justify-center gap-2 text-[12.5px]"
-                  >
-                    <Sparkles size={14} />
-                    Usar e Criar Variações no Agente Orbiex
-                  </button>
+                  <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+                    <button
+                      onClick={() => {
+                        const text =
+                          activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                            ? activeModalPrompt.prompt
+                            : activeModalPrompt.description;
+                        copyToClipboard(text);
+                        setModalCopied(true);
+                        setTimeout(() => setModalCopied(false), 2000);
+                      }}
+                      className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--mvz-gold)]/50 bg-[rgba(212,175,55,0.12)] px-5 text-[12.5px] font-bold text-[var(--mvz-gold-light)] transition hover:bg-[var(--mvz-gold)] hover:text-black"
+                    >
+                      {modalCopied ? <Check size={14} /> : <Copy size={13} />}
+                      {modalCopied ? 'Prompt Copiado!' : 'Copiar Prompt'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const text =
+                          activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                            ? activeModalPrompt.prompt
+                            : activeModalPrompt.description;
+                        onUse(
+                          `Execute este prompt e gere variações inéditas de roteiro e criativos visuais para o Orbiex AI:\n\n"${text}"`
+                        );
+                        setActiveModalPrompt(null);
+                      }}
+                      className="mvz-btn-grad flex h-11 flex-1 items-center justify-center gap-2 text-[12.5px]"
+                    >
+                      <Sparkles size={14} />
+                      Criar Variações no Agente IA
+                    </button>
+                  </div>
                 )}
 
                 <a

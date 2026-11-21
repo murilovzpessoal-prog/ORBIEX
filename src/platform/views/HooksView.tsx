@@ -14,6 +14,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useProducts, type WinningProduct } from '../productsStore';
+import { copyText as copyToClipboard } from '../clipboard';
+import { getGenMemory, addGenMemory, pickOne } from '../aiGenerate';
 
 export interface ViralHook {
   id: string;
@@ -169,6 +171,302 @@ function inferCategoryFromName(name: string): ClothingCategory {
   return 'geral';
 }
 
+/* ───────────── Personalização & anti-repetição ───────────── */
+
+const HOOK_CATEGORIES: ViralHook['category'][] = [
+  'Quebra de Objeção',
+  'Efeito Visual',
+  'Padrão de Grife',
+  'Curiosidade Extrema',
+  'Composição de Estilo',
+  'Modelagem & Caimento',
+];
+
+function normTxt(s: string) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function hooksMemoryKey(name: string) {
+  return `hooks:${normTxt(name)}`;
+}
+
+/** Detalhes do nome após o tipo da peça, ex: "Vestido Midi Canelado com Fenda" → "midi canelado" */
+function productDetail(name: string, noun: string) {
+  const words = name.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, ' ').split(/\s+/).filter(Boolean);
+  const nounRoot = normTxt(noun).slice(0, 4);
+  const idx = words.findIndex((w) => normTxt(w).startsWith(nounRoot));
+  const rest = (idx >= 0 ? words.slice(idx + 1) : words.slice(1)).slice(0, 3);
+  while (rest.length && /^(com|de|e|do|da|para|sem|em)$/.test(rest[rest.length - 1])) rest.pop();
+  return rest.join(' ');
+}
+
+function buildNameSpecificHooks(productName: string, g: PieceGrammar, seed: string): ViralHook[] {
+  const name = productName.replace(/\s+/g, ' ').trim();
+  const detail = productDetail(name, g.noun);
+  const nounDetail = detail ? `${g.noun} ${detail}` : g.noun;
+  const NOUN = g.noun.toUpperCase();
+  const openers = ['Gente,', 'Olha só,', 'Para tudo:', 'Sério,', 'Vou ser sincera:', 'Confesso que'];
+  const op = () => pickOne(openers);
+  return [
+    {
+      id: `hook-nome-1-${seed}`,
+      category: 'Quebra de Objeção',
+      spokenHook: `${op()} eu tinha medo de comprar ${g.article} ${nounDetail} pela internet e chegar diferente. Olha como ficou no corpo de verdade.`,
+      overlayText: `${NOUN} ${detail.toUpperCase()}: FOTO X REALIDADE`.replace(/\s+:/, ':'),
+      visualAction: 'Mostrar a foto do anúncio no celular e virar a câmera para o espelho com a peça vestida.',
+      whyItWorks: `Ataca a desconfiança nº1 de quem compra "${name}" online: a peça chegar diferente da foto.`,
+    },
+    {
+      id: `hook-nome-2-${seed}`,
+      category: 'Efeito Visual',
+      spokenHook: `Repara no que ${g.demonstrative} ${nounDetail} faz quando eu ando. É esse movimento que ninguém mostra na foto.`,
+      overlayText: `O MOVIMENTO D${g.article.toUpperCase()} ${NOUN} QUE A FOTO NÃO MOSTRA`,
+      visualAction: 'Caminhar em direção à câmera em câmera lenta e parar com meia-volta no espelho.',
+      whyItWorks: `O movimento real d${g.article} ${g.noun} prende o olhar nos 3 primeiros segundos e entrega o que a foto estática não consegue.`,
+    },
+    {
+      id: `hook-nome-3-${seed}`,
+      category: 'Padrão de Grife',
+      spokenHook: `Se eu tirasse a etiqueta e falasse que ${g.demonstrative} ${g.noun} é de grife, você acreditaria? Olha o acabamento.`,
+      overlayText: `PARECE GRIFE? O ACABAMENTO D${g.article.toUpperCase()} ${NOUN}`,
+      visualAction: 'Close nas costuras e na barra, depois recuar mostrando a peça inteira vestida.',
+      whyItWorks: `Pergunta direta gera comentário e ancora "${name}" em padrão premium sem falar de preço.`,
+    },
+    {
+      id: `hook-nome-4-${seed}`,
+      category: 'Curiosidade Extrema',
+      spokenHook: `Tem um detalhe n${g.article} ${nounDetail} que eu só percebi depois de vestir. Fica até o final que eu te mostro.`,
+      overlayText: `O DETALHE ESCONDIDO D${g.article.toUpperCase()} ${NOUN}`,
+      visualAction: 'Começar com a mão cobrindo parte da peça e revelar o detalhe em close no final.',
+      whyItWorks: 'Loop aberto de curiosidade: o espectador precisa assistir até o fim para ver o detalhe.',
+    },
+    {
+      id: `hook-nome-5-${seed}`,
+      category: 'Composição de Estilo',
+      spokenHook: `Montei dois looks completamente diferentes com ${g.article} mesm${g.gender === 'f' ? 'a' : 'o'} ${nounDetail}. Qual você usaria?`,
+      overlayText: `1 ${NOUN}, 2 LOOKS: QUAL VOCÊ USARIA?`,
+      visualAction: 'Transição com estalo de dedos trocando acessórios e calçado, mantendo a mesma peça.',
+      whyItWorks: `Gera comentários (enquete implícita) e mostra a versatilidade de "${name}" no dia a dia.`,
+    },
+    {
+      id: `hook-nome-6-${seed}`,
+      category: 'Modelagem & Caimento',
+      spokenHook: `Procurei ${g.article} ${g.noun} ${g.adjective} por muito tempo. ${g.gender === 'f' ? 'Essa' : 'Esse'} aqui assenta no corpo sem marcar nada.`,
+      overlayText: `ACHEI ${g.article.toUpperCase()} ${NOUN} ${g.adjective.toUpperCase()}`,
+      visualAction: 'Ajustar a peça na cintura diante do espelho e girar devagar mostrando a lateral.',
+      whyItWorks: `Identificação imediata com quem procura ${g.article} ${g.noun} ideal e não encontra.`,
+    },
+  ];
+}
+
+/** Monta 6 hooks locais (1 por categoria), embaralhando e evitando falas já entregues para este produto */
+function pickLocalHooks(productName: string, avoid: string[]): ViralHook[] {
+  const uid = Math.random().toString(36).slice(2, 8);
+  const pool = buildLocalHookPool(productName, uid);
+  const avoidSet = new Set(avoid.map(normTxt));
+  return HOOK_CATEGORIES.map((cat) => {
+    const options = pool.filter((h) => h.category === cat);
+    const fresh = options.filter((h) => !avoidSet.has(normTxt(h.spokenHook)));
+    return pickOne(fresh.length ? fresh : options);
+  }).filter(Boolean);
+}
+
+/** Valida e normaliza o JSON da IA, completando campos ausentes com o lote local */
+function normalizeAiHooks(raw: unknown, local: ViralHook[], uid: string): ViralHook[] | null {
+  if (!Array.isArray(raw)) return null;
+  const seen = new Set<string>();
+  const items: ViralHook[] = [];
+  raw.forEach((h: any, idx: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const spokenHook = String(h?.spokenHook || '').trim();
+    if (!spokenHook || seen.has(normTxt(spokenHook))) return;
+    seen.add(normTxt(spokenHook));
+    const category: ViralHook['category'] = HOOK_CATEGORIES.includes(h?.category)
+      ? h.category
+      : HOOK_CATEGORIES[idx % HOOK_CATEGORIES.length];
+    const fb = local.find((l) => l.category === category) || local[idx % Math.max(1, local.length)];
+    items.push({
+      id: `hook-ai-${uid}-${idx}`,
+      category,
+      spokenHook,
+      overlayText: String(h?.overlayText || fb?.overlayText || '').trim(),
+      visualAction: String(h?.visualAction || fb?.visualAction || '').trim(),
+      whyItWorks: String(h?.whyItWorks || fb?.whyItWorks || '').trim(),
+    });
+  });
+  if (items.length < 4) return null;
+  for (const fb of local) {
+    if (items.length >= 6) break;
+    if (!items.some((i) => i.category === fb.category) && !seen.has(normTxt(fb.spokenHook))) {
+      items.push(fb);
+      seen.add(normTxt(fb.spokenHook));
+    }
+  }
+  return items;
+}
+
+function buildLocalHookPool(productName: string, generationSeed: string): ViralHook[] {
+  const g = extractPieceGrammar(productName);
+  
+  const pool1: ViralHook[] = [
+      {
+        id: `hook-rot2-1-${generationSeed}`,
+        category: 'Quebra de Objeção',
+        spokenHook: `O maior medo de comprar ${g.noun} pela internet é o tecido enrolar ou amassar fácil. Olha a densidade e o caimento reto dessa peça.`,
+        overlayText: `NÃO ENROLA E NÃO MARCA: O CAIMENTO D${g.article.toUpperCase()} ${g.noun.toUpperCase()}`,
+        visualAction: 'Pressionar suavemente o tecido com os dedos e soltar no espelho, comprovando que a peça não cria vincos e mantém a estrutura.',
+        whyItWorks: `Desmonta de imediato a desconfiança sobre durabilidade e firmeza do tecido de ${g.article} ${g.noun} sem artifícios comerciais.`,
+      },
+      {
+        id: `hook-rot2-2-${generationSeed}`,
+        category: 'Efeito Visual',
+        spokenHook: `Gravei esse vídeo só para mostrar as costas e o caimento lateral d${g.article} ${g.noun}. A postura no corpo fica impecável.`,
+        overlayText: `OLHA AS COSTAS E O CAIMENTO D${g.article.toUpperCase()} ${g.noun.toUpperCase()}`,
+        visualAction: 'Virar de costas para o espelho olhando por cima do ombro, exibindo o alinhamento das costuras e o desenho traseiro.',
+        whyItWorks: 'Vídeos que mostram o caimento traseiro e lateral geram os picos de maior retenção orgânica em vídeos de moda.',
+      },
+      {
+        id: `hook-rot2-3-${generationSeed}`,
+        category: 'Padrão de Grife',
+        spokenHook: `A gramatura e a textura d${g.article} ${g.noun} deixam claro que se trata de uma confecção com corte estruturado e tecido premium.`,
+        overlayText: `CORTE ESTRUTURADO: TEXTURA E TOQUE PREMIUM`,
+        visualAction: 'Deslizar a mão pela superfície do tecido revelando o relevo e a consistência da malha diante da luz.',
+        whyItWorks: 'Transmite autoridade estética e elegância imediata sem fazer qualquer menção a preço ou valores.',
+      },
+      {
+        id: `hook-rot2-4-${generationSeed}`,
+        category: 'Curiosidade Extrema',
+        spokenHook: `O motivo exato pelo qual todo mundo no TikTok está comentando sobre o caimento d${g.article} ${g.noun}... Olha como veste no espelho.`,
+        overlayText: `O MOTIVO D${g.article.toUpperCase()} ${g.noun.toUpperCase()} CHAMAR TANTA ATENÇÃO`,
+        visualAction: 'Dar um passo à frente com expressão de aprovação genuína e afastar para mostrar o conjunto do look.',
+        whyItWorks: 'Gatilho de prova social indireta e tendência de feed que induz o espectador a assistir até o fim.',
+      },
+      {
+        id: `hook-rot2-5-${generationSeed}`,
+        category: 'Composição de Estilo',
+        spokenHook: `Aquela peça coringa do guarda-roupa que você veste em dois minutos e já está pronta e elegante para sair.`,
+        overlayText: `PEÇA CORINGA: PRONTA E ELEGANTE EM DOIS MINUTOS`,
+        visualAction: 'Ajeitar o look com movimentos rápidos e fluidos, pegando a bolsa e conferindo o visual com segurança.',
+        whyItWorks: 'Resolve a dor da indecisão diária sobre o que vestir, valorizando a praticidade e sofisticação da peça.',
+      },
+      {
+        id: `hook-rot2-6-${generationSeed}`,
+        category: 'Modelagem & Caimento',
+        spokenHook: `Se você procura ${g.noun} que valorize a cintura com conforto absoluto o dia inteiro, essa modelagem é a resposta.`,
+        overlayText: `VALORIZA A CINTURA COM CONFORTO ABSOLUTO`,
+        visualAction: 'Colocar as mãos na cintura em postura alinhada, respirando e demonstrando que a peça não sufoca nem aperta.',
+        whyItWorks: 'Une os dois maiores anseios femininos: elegância estética sem abrir mão do bem-estar diário.',
+      },
+    ];
+
+  const pool2: ViralHook[] = [
+      {
+        id: `hook-rot3-1-${generationSeed}`,
+        category: 'Quebra de Objeção',
+        spokenHook: `Fiz o teste contra a luz para mostrar que ${g.demonstrative} ${g.noun} tem forro reforçado e zero transparência em qualquer ângulo.`,
+        overlayText: `TESTE CONTRA A LUZ: FORRO REFORÇADO E ZERO TRANSPARÊNCIA`,
+        visualAction: 'Posicionar a peça próxima à iluminação da janela esticando suavemente, provando opacidade completa.',
+        whyItWorks: 'Elimina qualquer receio de transparência com prova visual irrefutável nos instantes iniciais.',
+      },
+      {
+        id: `hook-rot3-2-${generationSeed}`,
+        category: 'Efeito Visual',
+        spokenHook: `Dificilmente uma peça veste tão bem logo na primeira prova. Olha o caimento d${g.article} ${g.noun} sem precisar de nenhum ajuste.`,
+        overlayText: `CAIMENTO IMPECÁVEL SEM PRECISAR DE NENHUM AJUSTE`,
+        visualAction: 'Dar uma volta completa no espelho com um sorriso espontâneo, admirando a fluidez do tecido no corpo.',
+        whyItWorks: 'Gera empatia instantânea pela sensação de encontrar uma roupa com caimento impecável de primeira.',
+      },
+      {
+        id: `hook-rot3-3-${generationSeed}`,
+        category: 'Padrão de Grife',
+        spokenHook: `O caimento dos ombros e a simetria das costuras d${g.article} ${g.noun} comprovam o nível de acabamento dessa confecção.`,
+        overlayText: `SIMETRIA E CORTE ALINHADO: NÍVEL DE ALTA COSTURA`,
+        visualAction: 'Ajustar os ombros ou decote com precisão no espelho, destacando o caimento simétrico e bem assentado.',
+        whyItWorks: 'Foca no refinamento dos detalhes construtivos da roupa, atraindo um público qualificado.',
+      },
+      {
+        id: `hook-rot3-4-${generationSeed}`,
+        category: 'Curiosidade Extrema',
+        spokenHook: `Aquele achadinho que você só encontra depois de pesquisar muito e que supera qualquer expectativa ao vivo.`,
+        overlayText: `O ACHADINHO QUE SUPEROU TODAS AS EXPECTATIVAS`,
+        visualAction: 'Expressão de quem fez uma descoberta incrível, recuando para mostrar o visual montado com harmonia.',
+        whyItWorks: 'O gatilho do achadinho secreto estimula o compartilhamento e o engajamento imediato.',
+      },
+      {
+        id: `hook-rot3-5-${generationSeed}`,
+        category: 'Composição de Estilo',
+        spokenHook: `Como usar ${g.demonstrative} ${g.noun} em ocasiões formais ou casuais apenas trocando os complementos do look.`,
+        overlayText: `VERSATILIDADE PURA: DO FORMAL AO CASUAL`,
+        visualAction: 'Demonstrar a postura da peça com braços soltos e passos leves, provando conforto em qualquer ambiente.',
+        whyItWorks: 'Multiplica a percepção de utilidade da peça no cotidiano da consumidora.',
+      },
+      {
+        id: `hook-rot3-6-${generationSeed}`,
+        category: 'Modelagem & Caimento',
+        spokenHook: `A estrutura dessa modelagem desenha as linhas do corpo com naturalidade e leveza. Simplesmente não dá vontade de tirar.`,
+        overlayText: `DESENHA AS CURVAS COM NATURALIDADE E LEVEZA`,
+        visualAction: 'Movimento suave de caminhar em direção à câmera, admirando a fluidez da peça em movimento.',
+        whyItWorks: 'Cria conexão sensorial com o prazer de vestir uma roupa confortável e visualmente encantadora.',
+      },
+    ];
+
+  const pool0: ViralHook[] = [
+    {
+      id: `hook-rot1-1-${generationSeed}`,
+      category: 'Quebra de Objeção',
+      spokenHook: `Se você tem receio de ${g.noun} marcar o corpo ou ficar transparente, olha a estrutura desse tecido no teste do espelho.`,
+      overlayText: `ZERO TRANSPARÊNCIA: O TESTE REAL D${g.article.toUpperCase()} ${g.noun.toUpperCase()}`,
+      visualAction: 'Dar dois passos para trás no espelho em silêncio, conferindo o caimento frontal e traseiro da peça sob luz natural.',
+      whyItWorks: 'Elimina de imediato a maior barreira de compra de vestuário online, demonstrando segurança de caimento sem tom comercial.',
+    },
+    {
+      id: `hook-rot1-2-${generationSeed}`,
+      category: 'Efeito Visual',
+      spokenHook: `Olha o que o corte d${g.article} ${g.noun} faz com a silhueta no corpo. O caimento assenta com perfeição sem apertar nada.`,
+      overlayText: `O CAIMENTO D${g.article.toUpperCase()} ${g.noun.toUpperCase()} QUE VALORIZA A SILHUETA`,
+      visualAction: 'Passar as mãos contornando suavemente a cintura no espelho e realizar um giro suave de 360 graus mostrando o desenho da peça.',
+      whyItWorks: 'Apresenta o movimento real do look no corpo, retendo o espectador no feed pelo impacto estético imediato.',
+    },
+    {
+      id: `hook-rot1-3-${generationSeed}`,
+      category: 'Padrão de Grife',
+      spokenHook: `O acabamento e a costura d${g.article} ${g.noun} têm exatamente o mesmo padrão de peças estruturadas de alta costura.`,
+      overlayText: `PADRÃO DE ALTA COSTURA: ACABAMENTO E COSTURA REFORÇADA`,
+      visualAction: 'Aproximar o tecido da câmera mostrando o forro duplo, as costuras embutidas e a firmeza da barra.',
+      whyItWorks: 'Ancoragem de sofisticação e qualidade técnica de confecção sem fazer qualquer menção a preço ou valores.',
+    },
+    {
+      id: `hook-rot1-4-${generationSeed}`,
+      category: 'Curiosidade Extrema',
+      spokenHook: `Não use ${g.demonstrative} ${g.noun} se você não gosta que as pessoas fiquem perguntando de onde é a sua roupa o dia inteiro.`,
+      overlayText: `CUIDADO AO USAR: TODO MUNDO VAI PERGUNTAR DE ONDE É`,
+      visualAction: 'Começar com expressão intrigada diante da câmera e recuar revelando o look completo com postura confiante.',
+      whyItWorks: 'Psicologia reversa que ativa a curiosidade imediata para conferir todos os detalhes da peça até o final.',
+    },
+    {
+      id: `hook-rot1-5-${generationSeed}`,
+      category: 'Composição de Estilo',
+      spokenHook: `Três formas elegantes de compor ${g.demonstrative} ${g.noun} no seu dia a dia, do visual casual até produções sofisticadas.`,
+      overlayText: `1 PEÇA, 3 COMPOSIÇÕES ELEGANTES COM ${g.noun.toUpperCase()}`,
+      visualAction: 'Transição ágil demonstrando a versatilidade da peça com sobreposição de jaqueta e troca rápida de calçado.',
+      whyItWorks: 'Conteúdo de alta utilidade prática que evidencia a facilidade de criar looks completos com a mesma roupa.',
+    },
+    {
+      id: `hook-rot1-6-${generationSeed}`,
+      category: 'Modelagem & Caimento',
+      spokenHook: `A modelagem d${g.article} ${g.noun} veste como se tivesse sido feita sob medida no corpo. Veste ${g.adjective} do decote até a barra.`,
+      overlayText: `MODELAGEM QUE VESTE COMO SE FOSSE SOB MEDIDA`,
+      visualAction: 'Ajustar a peça no corpo com naturalidade diante do espelho, exibindo o caimento fluido sem vincos.',
+      whyItWorks: 'Ativa o desejo por modelagens precisas que valorizam a silhueta natural com extremo conforto.',
+    },
+  ];
+  return [...pool0, ...pool1, ...pool2, ...buildNameSpecificHooks(productName, g, generationSeed)];
+}
+
 export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void }) {
   // Passos: 'input' (seleção/upload) | 'analyzing' (laser scanner) | 'results' (hooks prontos)
   const [viewStep, setViewStep] = useState<'input' | 'analyzing' | 'results'>('input');
@@ -191,13 +489,27 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
   const [copiedAll, setCopiedAll] = useState(false);
   const [generationSeed, setGenerationSeed] = useState(1);
   const [aiHooks, setAiHooks] = useState<ViralHook[] | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const localHooks = useMemo(
+    () => pickLocalHooks(productName, getGenMemory(hooksMemoryKey(productName))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [productName, generationSeed]
+  );
 
   const requestBackendHooks = (
     nameTarget: string,
     catTarget: ClothingCategory,
     imgTarget: string,
-    seedTarget: number
+    _seedTarget?: number
   ) => {
+    const memKey = hooksMemoryKey(nameTarget);
+    const avoid = getGenMemory(memKey);
+    const randomSeed = Math.floor(Math.random() * 1_000_000);
+    const localBatch = pickLocalHooks(nameTarget, avoid);
+
+    setIsRegenerating(true);
+
     fetch('/api/generate-prompt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -205,38 +517,30 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
         mode: 'hooks',
         productName: nameTarget,
         clothingCategory: catTarget,
-        seed: seedTarget,
+        seed: randomSeed,
+        avoid,
         imageDataUrl: imgTarget?.startsWith('data:image/') ? imgTarget : undefined,
       }),
     })
       .then(async (res) => {
-        if (!res.ok) return;
+        if (!res.ok) {
+          addGenMemory(memKey, localBatch.map((h) => h.spokenHook));
+          return;
+        }
         const json = await res.json();
-        if (Array.isArray(json?.hooks) && json.hooks.length >= 4) {
-          const validCats: ViralHook['category'][] = [
-            'Quebra de Objeção',
-            'Efeito Visual',
-            'Padrão de Grife',
-            'Curiosidade Extrema',
-            'Composição de Estilo',
-            'Modelagem & Caimento',
-          ];
-          setAiHooks(
-            json.hooks.map((h: any, idx: number) => ({
-              id: `hook-ai-${seedTarget}-${idx}`,
-              category: validCats.includes(h.category)
-                ? h.category
-                : validCats[idx % validCats.length],
-              spokenHook: String(h.spokenHook || '').trim(),
-              overlayText: String(h.overlayText || '').trim(),
-              visualAction: String(h.visualAction || '').trim(),
-              whyItWorks: String(h.whyItWorks || '').trim(),
-            }))
-          );
+        const normalized = normalizeAiHooks(json?.hooks, localBatch, String(randomSeed));
+        if (normalized) {
+          setAiHooks(normalized);
+          addGenMemory(memKey, normalized.map((h) => h.spokenHook));
+        } else {
+          addGenMemory(memKey, localBatch.map((h) => h.spokenHook));
         }
       })
       .catch(() => {
-        // Fallback automático para a engine local
+        addGenMemory(memKey, localBatch.map((h) => h.spokenHook));
+      })
+      .finally(() => {
+        setIsRegenerating(false);
       });
   };
 
@@ -386,171 +690,7 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
   };
 
   // Gerador de Hooks Virais ultra-especializados com base no produto analisado (100% focado no nome da peça, ZERO menção a preço)
-  const hooksList = useMemo<ViralHook[]>(() => {
-    if (aiHooks && aiHooks.length > 0) {
-      return aiHooks;
-    }
-    const g = extractPieceGrammar(productName);
-    const cycle = (generationSeed - 1) % 3;
-
-    if (cycle === 1) {
-      return [
-        {
-          id: `hook-rot2-1-${generationSeed}`,
-          category: 'Quebra de Objeção',
-          spokenHook: `O maior medo de comprar ${g.noun} pela internet é o tecido enrolar ou amassar fácil. Olha a densidade e o caimento reto dessa peça.`,
-          overlayText: `NÃO ENROLA E NÃO MARCA: O CAIMENTO D${g.article.toUpperCase()} ${g.noun.toUpperCase()}`,
-          visualAction: 'Pressionar suavemente o tecido com os dedos e soltar no espelho, comprovando que a peça não cria vincos e mantém a estrutura.',
-          whyItWorks: `Desmonta de imediato a desconfiança sobre durabilidade e firmeza do tecido de ${g.article} ${g.noun} sem artifícios comerciais.`,
-        },
-        {
-          id: `hook-rot2-2-${generationSeed}`,
-          category: 'Efeito Visual',
-          spokenHook: `Gravei esse vídeo só para mostrar as costas e o caimento lateral d${g.article} ${g.noun}. A postura no corpo fica impecável.`,
-          overlayText: `OLHA AS COSTAS E O CAIMENTO D${g.article.toUpperCase()} ${g.noun.toUpperCase()}`,
-          visualAction: 'Virar de costas para o espelho olhando por cima do ombro, exibindo o alinhamento das costuras e o desenho traseiro.',
-          whyItWorks: 'Vídeos que mostram o caimento traseiro e lateral geram os picos de maior retenção orgânica em vídeos de moda.',
-        },
-        {
-          id: `hook-rot2-3-${generationSeed}`,
-          category: 'Padrão de Grife',
-          spokenHook: `A gramatura e a textura d${g.article} ${g.noun} deixam claro que se trata de uma confecção com corte estruturado e tecido premium.`,
-          overlayText: `CORTE ESTRUTURADO: TEXTURA E TOQUE PREMIUM`,
-          visualAction: 'Deslizar a mão pela superfície do tecido revelando o relevo e a consistência da malha diante da luz.',
-          whyItWorks: 'Transmite autoridade estética e elegância imediata sem fazer qualquer menção a preço ou valores.',
-        },
-        {
-          id: `hook-rot2-4-${generationSeed}`,
-          category: 'Curiosidade Extrema',
-          spokenHook: `O motivo exato pelo qual todo mundo no TikTok está comentando sobre o caimento d${g.article} ${g.noun}... Olha como veste no espelho.`,
-          overlayText: `O MOTIVO D${g.article.toUpperCase()} ${g.noun.toUpperCase()} CHAMAR TANTA ATENÇÃO`,
-          visualAction: 'Dar um passo à frente com expressão de aprovação genuína e afastar para mostrar o conjunto do look.',
-          whyItWorks: 'Gatilho de prova social indireta e tendência de feed que induz o espectador a assistir até o fim.',
-        },
-        {
-          id: `hook-rot2-5-${generationSeed}`,
-          category: 'Composição de Estilo',
-          spokenHook: `Aquela peça coringa do guarda-roupa que você veste em dois minutos e já está pronta e elegante para sair.`,
-          overlayText: `PEÇA CORINGA: PRONTA E ELEGANTE EM DOIS MINUTOS`,
-          visualAction: 'Ajeitar o look com movimentos rápidos e fluidos, pegando a bolsa e conferindo o visual com segurança.',
-          whyItWorks: 'Resolve a dor da indecisão diária sobre o que vestir, valorizando a praticidade e sofisticação da peça.',
-        },
-        {
-          id: `hook-rot2-6-${generationSeed}`,
-          category: 'Modelagem & Caimento',
-          spokenHook: `Se você procura ${g.noun} que valorize a cintura com conforto absoluto o dia inteiro, essa modelagem é a resposta.`,
-          overlayText: `VALORIZA A CINTURA COM CONFORTO ABSOLUTO`,
-          visualAction: 'Colocar as mãos na cintura em postura alinhada, respirando e demonstrando que a peça não sufoca nem aperta.',
-          whyItWorks: 'Une os dois maiores anseios femininos: elegância estética sem abrir mão do bem-estar diário.',
-        },
-      ];
-    }
-
-    if (cycle === 2) {
-      return [
-        {
-          id: `hook-rot3-1-${generationSeed}`,
-          category: 'Quebra de Objeção',
-          spokenHook: `Fiz o teste contra a luz para mostrar que ${g.demonstrative} ${g.noun} tem forro reforçado e zero transparência em qualquer ângulo.`,
-          overlayText: `TESTE CONTRA A LUZ: FORRO REFORÇADO E ZERO TRANSPARÊNCIA`,
-          visualAction: 'Posicionar a peça próxima à iluminação da janela esticando suavemente, provando opacidade completa.',
-          whyItWorks: 'Elimina qualquer receio de transparência com prova visual irrefutável nos instantes iniciais.',
-        },
-        {
-          id: `hook-rot3-2-${generationSeed}`,
-          category: 'Efeito Visual',
-          spokenHook: `Dificilmente uma peça veste tão bem logo na primeira prova. Olha o caimento d${g.article} ${g.noun} sem precisar de nenhum ajuste.`,
-          overlayText: `CAIMENTO IMPECÁVEL SEM PRECISAR DE NENHUM AJUSTE`,
-          visualAction: 'Dar uma volta completa no espelho com um sorriso espontâneo, admirando a fluidez do tecido no corpo.',
-          whyItWorks: 'Gera empatia instantânea pela sensação de encontrar uma roupa com caimento impecável de primeira.',
-        },
-        {
-          id: `hook-rot3-3-${generationSeed}`,
-          category: 'Padrão de Grife',
-          spokenHook: `O caimento dos ombros e a simetria das costuras d${g.article} ${g.noun} comprovam o nível de acabamento dessa confecção.`,
-          overlayText: `SIMETRIA E CORTE ALINHADO: NÍVEL DE ALTA COSTURA`,
-          visualAction: 'Ajustar os ombros ou decote com precisão no espelho, destacando o caimento simétrico e bem assentado.',
-          whyItWorks: 'Foca no refinamento dos detalhes construtivos da roupa, atraindo um público qualificado.',
-        },
-        {
-          id: `hook-rot3-4-${generationSeed}`,
-          category: 'Curiosidade Extrema',
-          spokenHook: `Aquele achadinho que você só encontra depois de pesquisar muito e que supera qualquer expectativa ao vivo.`,
-          overlayText: `O ACHADINHO QUE SUPEROU TODAS AS EXPECTATIVAS`,
-          visualAction: 'Expressão de quem fez uma descoberta incrível, recuando para mostrar o visual montado com harmonia.',
-          whyItWorks: 'O gatilho do achadinho secreto estimula o compartilhamento e o engajamento imediato.',
-        },
-        {
-          id: `hook-rot3-5-${generationSeed}`,
-          category: 'Composição de Estilo',
-          spokenHook: `Como usar ${g.demonstrative} ${g.noun} em ocasiões formais ou casuais apenas trocando os complementos do look.`,
-          overlayText: `VERSATILIDADE PURA: DO FORMAL AO CASUAL`,
-          visualAction: 'Demonstrar a postura da peça com braços soltos e passos leves, provando conforto em qualquer ambiente.',
-          whyItWorks: 'Multiplica a percepção de utilidade da peça no cotidiano da consumidora.',
-        },
-        {
-          id: `hook-rot3-6-${generationSeed}`,
-          category: 'Modelagem & Caimento',
-          spokenHook: `A estrutura dessa modelagem desenha as linhas do corpo com naturalidade e leveza. Simplesmente não dá vontade de tirar.`,
-          overlayText: `DESENHA AS CURVAS COM NATURALIDADE E LEVEZA`,
-          visualAction: 'Movimento suave de caminhar em direção à câmera, admirando a fluidez da peça em movimento.',
-          whyItWorks: 'Cria conexão sensorial com o prazer de vestir uma roupa confortável e visualmente encantadora.',
-        },
-      ];
-    }
-
-    // cycle === 0 (Lote Base)
-    return [
-      {
-        id: `hook-rot1-1-${generationSeed}`,
-        category: 'Quebra de Objeção',
-        spokenHook: `Se você tem receio de ${g.noun} marcar o corpo ou ficar transparente, olha a estrutura desse tecido no teste do espelho.`,
-        overlayText: `ZERO TRANSPARÊNCIA: O TESTE REAL D${g.article.toUpperCase()} ${g.noun.toUpperCase()}`,
-        visualAction: 'Dar dois passos para trás no espelho em silêncio, conferindo o caimento frontal e traseiro da peça sob luz natural.',
-        whyItWorks: 'Elimina de imediato a maior barreira de compra de vestuário online, demonstrando segurança de caimento sem tom comercial.',
-      },
-      {
-        id: `hook-rot1-2-${generationSeed}`,
-        category: 'Efeito Visual',
-        spokenHook: `Olha o que o corte d${g.article} ${g.noun} faz com a silhueta no corpo. O caimento assenta com perfeição sem apertar nada.`,
-        overlayText: `O CAIMENTO D${g.article.toUpperCase()} ${g.noun.toUpperCase()} QUE VALORIZA A SILHUETA`,
-        visualAction: 'Passar as mãos contornando suavemente a cintura no espelho e realizar um giro suave de 360 graus mostrando o desenho da peça.',
-        whyItWorks: 'Apresenta o movimento real do look no corpo, retendo o espectador no feed pelo impacto estético imediato.',
-      },
-      {
-        id: `hook-rot1-3-${generationSeed}`,
-        category: 'Padrão de Grife',
-        spokenHook: `O acabamento e a costura d${g.article} ${g.noun} têm exatamente o mesmo padrão de peças estruturadas de alta costura.`,
-        overlayText: `PADRÃO DE ALTA COSTURA: ACABAMENTO E COSTURA REFORÇADA`,
-        visualAction: 'Aproximar o tecido da câmera mostrando o forro duplo, as costuras embutidas e a firmeza da barra.',
-        whyItWorks: 'Ancoragem de sofisticação e qualidade técnica de confecção sem fazer qualquer menção a preço ou valores.',
-      },
-      {
-        id: `hook-rot1-4-${generationSeed}`,
-        category: 'Curiosidade Extrema',
-        spokenHook: `Não use ${g.demonstrative} ${g.noun} se você não gosta que as pessoas fiquem perguntando de onde é a sua roupa o dia inteiro.`,
-        overlayText: `CUIDADO AO USAR: TODO MUNDO VAI PERGUNTAR DE ONDE É`,
-        visualAction: 'Começar com expressão intrigada diante da câmera e recuar revelando o look completo com postura confiante.',
-        whyItWorks: 'Psicologia reversa que ativa a curiosidade imediata para conferir todos os detalhes da peça até o final.',
-      },
-      {
-        id: `hook-rot1-5-${generationSeed}`,
-        category: 'Composição de Estilo',
-        spokenHook: `Três formas elegantes de compor ${g.demonstrative} ${g.noun} no seu dia a dia, do visual casual até produções sofisticadas.`,
-        overlayText: `1 PEÇA, 3 COMPOSIÇÕES ELEGANTES COM ${g.noun.toUpperCase()}`,
-        visualAction: 'Transição ágil demonstrando a versatilidade da peça com sobreposição de jaqueta e troca rápida de calçado.',
-        whyItWorks: 'Conteúdo de alta utilidade prática que evidencia a facilidade de criar looks completos com a mesma roupa.',
-      },
-      {
-        id: `hook-rot1-6-${generationSeed}`,
-        category: 'Modelagem & Caimento',
-        spokenHook: `A modelagem d${g.article} ${g.noun} veste como se tivesse sido feita sob medida no corpo. Veste ${g.adjective} do decote até a barra.`,
-        overlayText: `MODELAGEM QUE VESTE COMO SE FOSSE SOB MEDIDA`,
-        visualAction: 'Ajustar a peça no corpo com naturalidade diante do espelho, exibindo o caimento fluido sem vincos.',
-        whyItWorks: 'Ativa o desejo por modelagens precisas que valorizam a silhueta natural com extremo conforto.',
-      },
-    ];
-  }, [productName, generationSeed]);
+  const hooksList = aiHooks && aiHooks.length > 0 ? aiHooks : localHooks;
 
   // Filtragem dos hooks pelo estilo
   const filteredHooks = useMemo(() => {
@@ -562,7 +702,7 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
   const copyHookContent = (hook: ViralHook) => {
     const textToCopy = `HOOK VIRAL (${hook.category.toUpperCase()})\n\nFala (0 a 3s):\n"${hook.spokenHook}"\n\nTexto na Tela (Overlay):\n${hook.overlayText}\n\nAção de Câmera:\n${hook.visualAction}\n\nGatilho Psicológico:\n${hook.whyItWorks}`;
 
-    navigator.clipboard.writeText(textToCopy);
+    copyToClipboard(textToCopy);
     setCopiedId(hook.id);
     setTimeout(() => {
       setCopiedId(null);
@@ -578,7 +718,7 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
       )
       .join('\n──────────────────────────────────────\n\n');
 
-    navigator.clipboard.writeText(fullText);
+    copyToClipboard(fullText);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2200);
   };
@@ -1003,10 +1143,11 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
             <div className="flex flex-wrap items-center gap-2.5">
               <button
                 onClick={handleRegenerate}
-                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[11.5px] font-bold text-white/80 transition hover:border-white/30 hover:text-white"
+                disabled={isRegenerating}
+                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[11.5px] font-bold text-white/80 transition hover:border-white/30 hover:text-white disabled:opacity-60"
               >
-                <RefreshCw size={13} />
-                <span>Gerar Mais Variações</span>
+                <RefreshCw size={13} className={isRegenerating ? 'animate-spin text-[var(--mvz-gold)]' : ''} />
+                <span>{isRegenerating ? 'Gerando Inéditos...' : 'Gerar Mais Variações'}</span>
               </button>
 
               <button

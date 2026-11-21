@@ -12,7 +12,8 @@ SUAS REGRAS DE OURO:
      - Dica rápida de uso (aspect ratio 9:16, CFG/criatividade recomendada de 0.5).
 2. Se o usuário pedir um AJUSTE no prompt anterior (ex: "muda a cor para preto", "coloca na praia", "faz ela girando") ou fizer uma PERGUNTA técnica sobre como usar o prompt no Kling, Flow, Midjourney ou TikTok Shop:
    - Entenda o contexto da conversa, responda diretamente à dúvida dele de forma clara e entregue o prompt atualizado se aplicável.
-3. NUNCA use emojis em nenhuma hipótese.`;
+3. NUNCA use emojis em nenhuma hipótese.
+4. ZERO REPETIÇÃO: mesmo que o usuário peça a mesma ideia de novo, crie uma composição nova (outro enquadramento, outra iluminação, outro movimento de câmera, outro cenário e outras palavras), sempre fiel ao pedido e específica para o produto/cena citados. Nada genérico.`;
 
 const TURBO_NOVELINHA_SYSTEM_PROMPT = `Você é o Diretor Criativo de Novelinhas Virais 3D da Orbiex AI (Especialista em vídeos de frutas antropomórficas estilo Pixar/Disney 3D para explodir seguidores no TikTok).
 
@@ -71,7 +72,27 @@ const ACTIVE_GEMINI_KEY = Buffer.from(
   'base64'
 ).toString('utf8');
 
-async function callGeminiJSON(systemPrompt, userText, geminiKey, imageDataUrl) {
+const VARIATION_ANGLES = [
+  'dor do cliente', 'curiosidade e segredo', 'prova social', 'comparação de valor', 'antes e depois',
+  'rotina real', 'humor leve', 'escassez natural', 'detalhe técnico escondido', 'erro comum',
+  'quebra de crença', 'storytelling em primeira pessoa', 'teste prático', 'presente / ocasião especial',
+];
+
+function variationBlock(avoid) {
+  const a = [...VARIATION_ANGLES].sort(() => Math.random() - 0.5).slice(0, 2);
+  const list = (Array.isArray(avoid) ? avoid : [])
+    .map((s) => String(s).replace(/\s+/g, ' ').trim().slice(0, 200))
+    .filter(Boolean)
+    .slice(-40);
+  return (
+    `\n\nVARIAÇÃO #${Math.floor(Math.random() * 1e6)} — ângulos desta geração: ${a.join(' + ')}. ` +
+    'Gere conteúdo 100% inédito, específico para este item, diferente de qualquer geração anterior (novas frases, novas estruturas, novas ideias).' +
+    (list.length ? `\nNÃO REPITA nem parafraseie estes resultados já entregues:\n- ${list.join('\n- ')}` : '')
+  );
+}
+
+async function callGeminiJSON(systemPrompt, userTextRaw, geminiKey, imageDataUrl, avoid) {
+  const userText = userTextRaw + variationBlock(avoid);
   const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash'];
   const parts = [];
 
@@ -94,7 +115,7 @@ async function callGeminiJSON(systemPrompt, userText, geminiKey, imageDataUrl) {
           contents: [{ role: 'user', parts }],
           systemInstruction: { parts: [{ text: systemPrompt }] },
           generationConfig: {
-            temperature: 0.55,
+            temperature: 1.0,
             responseMimeType: 'application/json',
             thinkingConfig: { thinkingBudget: 0 },
             maxOutputTokens: 2000,
@@ -127,7 +148,7 @@ async function callGeminiJSON(systemPrompt, userText, geminiKey, imageDataUrl) {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userText },
         ],
-        temperature: 0.5,
+        temperature: 1,
       }),
     });
     if (relayRes.ok) {
@@ -254,7 +275,7 @@ OBJETIVO DO CTA: ${
 
 Gere o JSON completo com o prompt de animação Image-to-Video (em inglês e em português) fiel à ideia do usuário e o roteiro de 0 a 30 segundos.`;
 
-      const aiResult = await callGeminiJSON(TURBO_NOVELINHA_SYSTEM_PROMPT, userPayload, geminiKey);
+      const aiResult = await callGeminiJSON(TURBO_NOVELINHA_SYSTEM_PROMPT, userPayload, geminiKey, undefined, body.avoid);
       if (aiResult && aiResult.parsed && aiResult.parsed.promptMotionEnglish) {
         return res.status(200).json({
           success: true,
@@ -305,7 +326,7 @@ Gere o JSON completo com o prompt de animação Image-to-Video (em inglês e em 
       const userPayload = `PEÇA: "${clothingName}" (Categoria/Tipo: ${pieceType}) | Lote de Variação #${seed}.
 Gere 10 headlines POV inéditas, ultra persuasivas e orgânicas de 2 linhas para TikTok Shop.`;
 
-      const aiResult = await callGeminiJSON(HEADLINES_SYSTEM_PROMPT, userPayload, geminiKey, imageDataUrl);
+      const aiResult = await callGeminiJSON(HEADLINES_SYSTEM_PROMPT, userPayload, geminiKey, imageDataUrl, body.avoid);
       if (aiResult && aiResult.parsed && Array.isArray(aiResult.parsed.headlines)) {
         return res.status(200).json({
           success: true,
@@ -324,7 +345,7 @@ Gere 10 headlines POV inéditas, ultra persuasivas e orgânicas de 2 linhas para
       const userPayload = `PEÇA: "${productName}" (Categoria: ${clothingCategory}) | Lote #${seed}.
 Gere 6 hooks virais magnéticos de 0 a 3 segundos (1 para cada categoria oficial) para TikTok Shop.`;
 
-      const aiResult = await callGeminiJSON(HOOKS_SYSTEM_PROMPT, userPayload, geminiKey, imageDataUrl);
+      const aiResult = await callGeminiJSON(HOOKS_SYSTEM_PROMPT, userPayload, geminiKey, imageDataUrl, body.avoid);
       if (aiResult && aiResult.parsed && Array.isArray(aiResult.parsed.hooks)) {
         return res.status(200).json({
           success: true,
@@ -345,7 +366,7 @@ MOTOR ALVO: ${engineName}
 BASE CINÉTICA: ${basePrompt}
 Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de câmera.`;
 
-      const aiResult = await callGeminiJSON(MOTION_SYSTEM_PROMPT, userPayload, geminiKey);
+      const aiResult = await callGeminiJSON(MOTION_SYSTEM_PROMPT, userPayload, geminiKey, undefined, body.avoid);
       if (aiResult && aiResult.parsed && aiResult.parsed.promptEnglish) {
         return res.status(200).json({
           success: true,
@@ -402,7 +423,7 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
                 parts: [{ text: PROMPT_ARCHITECT_SYSTEM_PROMPT }],
               },
               generationConfig: {
-                temperature: 0.35,
+                temperature: 0.85,
                 thinkingConfig: { thinkingBudget: 0 },
                 maxOutputTokens: 1400,
               },
@@ -446,7 +467,7 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: groqMessages,
-            temperature: 0.4,
+            temperature: 0.85,
             max_tokens: 2000,
           }),
         });
@@ -484,7 +505,7 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
           body: JSON.stringify({
             model: 'gpt-4o-mini',
             messages: openAiMessages,
-            temperature: 0.4,
+            temperature: 0.85,
             max_tokens: 2000,
           }),
         });
@@ -518,7 +539,7 @@ Gere o prompt técnico em inglês, a timeline de 3 estágios e os detalhes de c�
         body: JSON.stringify({
           model: 'openai',
           messages: relayMessages,
-          temperature: 0.35,
+          temperature: 0.85,
         }),
       });
 

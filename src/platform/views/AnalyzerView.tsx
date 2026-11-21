@@ -1,7 +1,7 @@
 import { Gauge, Loader2, Radar, RotateCcw, ScanSearch, Sparkles, Store, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { Tone, ViewId } from '../data';
-import { analyze } from '../mock';
+import { aiGenerateJSON, jitter, pickOne, shuffle } from '../aiGenerate';
 import { Eyebrow, IconBox, PageHeader, Pill, Ring, TONE } from '../ui';
 
 interface Config {
@@ -73,6 +73,77 @@ const CONFIGS: Partial<Record<ViewId, Config>> = {
   },
 };
 
+type Kind = 'product' | 'store' | 'scanner';
+
+interface AnalysisResult {
+  q: string;
+  values: number[];
+  score: number;
+  insights: string[];
+  source: 'ai' | 'local';
+}
+
+/** Pools de insights para o fallback local — sempre citam o alvo e são embaralhados a cada clique. */
+const INSIGHT_POOLS: Record<Kind, ((x: string) => string)[]> = {
+  product: [
+    (x) => `“${x}” tem uma dor clara que dá para demonstrar nos 3 primeiros segundos — abra o vídeo com o problema, não com o produto.`,
+    (x) => `Poucos criativos de “${x}” passam de 50% de retenção: um gancho de antes/depois tende a se destacar rápido.`,
+    (x) => `Teste “${x}” com unboxing em POV + close nos detalhes; esse formato costuma converter melhor que review falado.`,
+    (x) => `A margem de “${x}” comporta cupom de primeira compra sem matar a comissão — use como gatilho de urgência.`,
+    (x) => `Comentários de dúvida sobre “${x}” (tamanho, durabilidade, entrega) são roteiro pronto: responda em vídeo.`,
+    (x) => `Grave 3 variações de gancho para “${x}” no mesmo dia e mantenha só a de maior retenção após 48h.`,
+    (x) => `“${x}” funciona melhor em vídeos de 15–25s com demonstração contínua, sem cortes longos de fala.`,
+    (x) => `Compare “${x}” com uma alternativa cara do mercado — o ângulo de custo-benefício ainda está pouco explorado.`,
+    (x) => `Mostrar “${x}” sendo usado no dia a dia real (casa, rua, trabalho) aumenta a percepção de utilidade.`,
+    (x) => `Use prova social nos primeiros segundos: print de avaliação de “${x}” na tela gera confiança imediata.`,
+    (x) => `Horário sugerido para postar “${x}”: entre 19h e 22h, quando o público de compra por impulso está mais ativo.`,
+    (x) => `Evite prometer resultado exagerado com “${x}”; demonstração honesta reduz devolução e mantém a conta saudável.`,
+  ],
+  store: [
+    (x) => `A loja “${x}” ganha força concentrando o tráfego em 1 produto âncora por categoria.`,
+    (x) => `Os produtos de ticket baixo de “${x}” são a porta de entrada — use-os para alimentar o remarketing.`,
+    (x) => `Faltam avaliações com foto nos itens mais visitados de “${x}”; peça UGC aos primeiros compradores.`,
+    (x) => `Padronize as capas dos produtos de “${x}” (fundo, luz, ângulo) para elevar a percepção de marca.`,
+    (x) => `Crie um combo em “${x}” com os 2 itens mais comprados juntos para aumentar o ticket médio.`,
+    (x) => `Títulos de “${x}” podem incluir palavras de busca reais (benefício + uso) para melhorar a descoberta.`,
+    (x) => `Lives curtas de 30 min mostrando o catálogo de “${x}” tendem a destravar conversão em produtos parados.`,
+    (x) => `Revise o preço dos itens de “${x}” que estão acima da média da categoria sem diferencial visível.`,
+    (x) => `Afiliados ainda não exploram bem “${x}”: amostras grátis para 5 criadores do nicho podem multiplicar alcance.`,
+    (x) => `Responder dúvidas nos comentários em até 2h aumenta a confiança na loja “${x}”.`,
+    (x) => `Os produtos sem vídeo na página de “${x}” convertem menos — priorize um vídeo curto para cada um.`,
+  ],
+  scanner: [
+    (x) => `Os concorrentes de “${x}” repetem os mesmos 2 ângulos — teste um ângulo de humor ou bastidor.`,
+    (x) => `Em “${x}”, o pico de engajamento costuma ficar entre 19h e 22h; poste fora do horário saturado para testar.`,
+    (x) => `Pouca gente em “${x}” usa prova social em vídeo (prints, reações); é uma brecha clara.`,
+    (x) => `Os vídeos mais fortes de “${x}” mostram o resultado no primeiro segundo — copie a estrutura, não o texto.`,
+    (x) => `Há espaço em “${x}” para conteúdo sem rosto em POV com legenda grande; quase ninguém faz bem.`,
+    (x) => `Concorrentes de “${x}” quase não respondem comentários em vídeo — use isso para criar série de conteúdo.`,
+    (x) => `O preço médio em “${x}” deixa margem para um bundle ou brinde que diferencie sua oferta.`,
+    (x) => `Criativos de “${x}” estão longos demais; versões de 12–18s tendem a reter melhor.`,
+    (x) => `Explore comparações diretas em “${x}” (esse vs aquele) — formato pouco usado e com alto compartilhamento.`,
+    (x) => `Os perfis de “${x}” postam em rajadas e somem; constância diária pode tomar o espaço deles.`,
+  ],
+};
+
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, Math.round(n)));
+
+function localAnalysis(kind: Kind, q: string, metrics: string[], prev?: number[]): Omit<AnalysisResult, 'q'> {
+  const center = jitter(72, 12, 52, 88);
+  const values = metrics.map((_, i) => {
+    let v = jitter(center, 16, 35, 97);
+    // evita repetir exatamente o valor anterior da mesma métrica
+    if (prev && prev[i] === v) v = clamp(v + pickOne([-3, -2, 2, 3]), 35, 97);
+    return v;
+  });
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const score = jitter(avg, 2, 30, 98);
+  const insights = shuffle(INSIGHT_POOLS[kind])
+    .slice(0, 3)
+    .map((f) => f(q));
+  return { values, score, insights, source: 'local' };
+}
+
 function verdict(score: number): { text: string; tone: Tone } {
   if (score >= 85) return { text: 'Excelente', tone: 'green' };
   if (score >= 72) return { text: 'Promissor', tone: 'cyan' };
@@ -80,29 +151,77 @@ function verdict(score: number): { text: string; tone: Tone } {
   return { text: 'Arriscado', tone: 'pink' };
 }
 
-export function AnalyzerView({ kind }: { kind: 'product' | 'store' | 'scanner' }) {
+export function AnalyzerView({ kind }: { kind: Kind }) {
   const cfg = CONFIGS[kind]!;
   const Icon = cfg.icon;
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ q: string; values: number[]; score: number } | null>(null);
-  const timer = useRef<number>(0);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const reqId = useRef(0);
+  const lastValues = useRef<number[] | undefined>(undefined);
 
   useEffect(() => {
     setQ('');
     setResult(null);
     setLoading(false);
-    return () => clearTimeout(timer.current);
+    reqId.current++;
+    return () => {
+      reqId.current++;
+    };
   }, [kind]);
 
-  const run = () => {
-    if (!q.trim() || loading) return;
+  const run = async (target?: string) => {
+    const query = (target ?? q).trim();
+    if (!query || loading) return;
+    const id = ++reqId.current;
     setLoading(true);
     setResult(null);
-    timer.current = window.setTimeout(() => {
-      setResult({ q: q.trim(), ...analyze(q, cfg.metrics) });
-      setLoading(false);
-    }, 1600);
+
+    const metrics = cfg.metrics;
+    const local = localAnalysis(kind, query, metrics, lastValues.current);
+    const tipo =
+      kind === 'product'
+        ? 'análise de viabilidade de um produto para vender como afiliado no TikTok Shop Brasil'
+        : kind === 'store'
+          ? 'diagnóstico de uma loja do TikTok Shop Brasil'
+          : 'scanner de concorrentes/nicho no TikTok Shop Brasil';
+
+    const ai = await aiGenerateJSON<{ values?: unknown; score?: unknown; insights?: unknown }>({
+      memoryKey: `analyzer-${kind}:${query}`,
+      task:
+        `Faça uma ${tipo} para "${query}". Dê uma nota de 0 a 100 para CADA métrica, na ordem exata ` +
+        `(${metrics.join(', ')}), coerente com o tipo de produto/loja/nicho informado, e uma nota final (score) coerente com essas notas. ` +
+        'Escreva 3 insights acionáveis e ESPECÍFICOS para esse alvo (cite o nome, o público, a dor, o formato de vídeo ou a faixa de preço quando fizer sentido), ' +
+        'em português do Brasil, cada um com no máximo 2 frases. Nada genérico. Use ângulos diferentes das análises anteriores.',
+      input: { tipo: kind, alvo: query, metricas: metrics },
+      format:
+        `{"values": [${metrics.map(() => 'number').join(', ')}], "score": number, "insights": ["string", "string", "string"]}` +
+        ` — "values" deve ter exatamente ${metrics.length} números inteiros de 0 a 100, na ordem: ${metrics.join(', ')}.`,
+      remember: (d) => (Array.isArray(d?.insights) ? d.insights.map(String) : []),
+    });
+    if (id !== reqId.current) return;
+
+    let next: AnalysisResult;
+    if (ai) {
+      const rawValues: unknown[] = Array.isArray(ai.values) ? ai.values : [];
+      const values = metrics.map((_, i) => {
+        const n = Number(rawValues[i]);
+        return Number.isFinite(n) ? clamp(n, 5, 99) : local.values[i];
+      });
+      const avg = values.reduce((a, b) => a + b, 0) / values.length;
+      const sc = Number(ai.score);
+      const score = Number.isFinite(sc) ? clamp(sc, 5, 99) : Math.round(avg);
+      const aiInsights = Array.isArray(ai.insights)
+        ? ai.insights.map((x) => String(x ?? '').trim()).filter(Boolean)
+        : [];
+      const insights = [...aiInsights, ...local.insights].slice(0, Math.max(3, Math.min(aiInsights.length, 5)));
+      next = { q: query, values, score, insights, source: 'ai' };
+    } else {
+      next = { q: query, ...local };
+    }
+    lastValues.current = next.values;
+    setResult(next);
+    setLoading(false);
   };
 
   const v = result ? verdict(result.score) : null;
@@ -175,11 +294,17 @@ export function AnalyzerView({ kind }: { kind: 'product' | 'store' | 'scanner' }
             <Pill tone={v.tone}>{v.text}</Pill>
             <p className="mt-3 line-clamp-2 max-w-full text-[12.5px] text-[var(--mvz-muted)]">“{result.q}”</p>
             <button
+              onClick={() => run(result.q)}
+              className="mt-5 flex items-center gap-1.5 text-[12px] font-semibold text-[var(--mvz-muted)] hover:text-white"
+            >
+              <Sparkles size={12} /> Reanalisar com novos insights
+            </button>
+            <button
               onClick={() => {
                 setResult(null);
                 setQ('');
               }}
-              className="mt-5 flex items-center gap-1.5 text-[12px] font-semibold text-[var(--mvz-muted)] hover:text-white"
+              className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[var(--mvz-muted)] hover:text-white"
             >
               <RotateCcw size={12} /> Nova análise
             </button>
@@ -216,15 +341,17 @@ export function AnalyzerView({ kind }: { kind: 'product' | 'store' | 'scanner' }
                 <Radar size={15} className="text-[var(--mvz-cyan)]" /> Insights do agente
               </div>
               <ul className="space-y-3">
-                {cfg.insights.map((i) => (
-                  <li key={i} className="flex gap-3 text-[13px] leading-relaxed text-white/75">
+                {result.insights.map((i, idx) => (
+                  <li key={idx} className="flex gap-3 text-[13px] leading-relaxed text-white/75">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: t.hex }} />
                     {i}
                   </li>
                 ))}
               </ul>
               <p className="mt-4 border-t border-[var(--mvz-line)] pt-3 text-[11px] text-[var(--mvz-dim)]">
-                Resultado ilustrativo — conecte seus dados reais para análises verdadeiras.
+                {result.source === 'ai'
+                  ? 'Análise gerada pela IA Orbiex a partir do que você informou — estimativas, não dados oficiais do TikTok.'
+                  : 'Resultado ilustrativo — conecte seus dados reais para análises verdadeiras.'}
               </p>
             </div>
           </div>

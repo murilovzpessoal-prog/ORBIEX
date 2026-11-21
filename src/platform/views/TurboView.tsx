@@ -13,6 +13,8 @@ import {
   RotateCcw,
   Loader2,
 } from 'lucide-react';
+import { copyText as safeCopy } from '../clipboard';
+import { getGenMemory, addGenMemory, pickOne } from '../aiGenerate';
 
 export interface Mascot {
   id: string;
@@ -270,30 +272,120 @@ function buildDynamicTurboPack(
   const cleanIdea = userIdea.trim() || mascot.defaultIdea;
   const cleanEpisode = episodeTitle.trim() || mascot.defaultEpisode;
   const cleanTwist = plotTwist.trim() || mascot.defaultClimax;
+  const shortIdea = cleanIdea.length > 70 ? `${cleanIdea.slice(0, 70)}...` : cleanIdea;
+  const twist = cleanTwist.replace(/\.$/, '');
 
   const baseVisual = mascot.promptMotionEnglish.replace(/\.$/, '');
 
-  const promptMotionEnglish = `${baseVisual}. CUSTOM STORY SCENE ("${cleanEpisode}"): The character is acting out the exact user story: "${cleanIdea}", reacting with intense 3D Pixar emotional facial expressions, dramatic hand gestures, dynamic eyebrows, and synchronized lip-sync speech, building tension toward the climax: "${cleanTwist}". Vertical 9:16 TikTok soap-opera framing, cinematic warm rim lighting, shallow depth of field (35mm f/1.8), smooth handheld camera push-in to an extreme close-up on the character's shocked face, ultra-detailed 4K 60fps animation.`;
+  // Pares EN/PT alinhados para que os dois prompts descrevam a mesma cena
+  const cameras: [string, string][] = [
+    ["smooth handheld camera push-in to an extreme close-up on the character's shocked face", 'câmera aproximando lentamente (push-in) até fechar no rosto chocado'],
+    ['slow dolly-in from medium shot to tight close-up, then a sudden snap zoom on the eyes', 'travelling lento até o close e um zoom seco nos olhos no gancho final'],
+    ['orbiting 180-degree arc shot around the character ending on a dramatic low angle', 'câmera girando 180° em volta do personagem e terminando em contra-plongée dramático'],
+    ['whip-pan reveal into the scene followed by a shaky crash zoom at the climax', 'chicote de câmera (whip-pan) revelando a cena e crash zoom tremido no clímax'],
+    ["over-the-shoulder shot that racks focus onto the character's face as the truth lands", 'plano por cima do ombro que muda o foco para o rosto no momento da revelação'],
+    ['static tripod framing that suddenly breaks into a frantic handheld push when the twist hits', 'enquadramento fixo que explode em câmera na mão frenética quando a reviravolta acontece'],
+  ];
+  const lights: [string, string][] = [
+    ['cinematic warm golden rim lighting', 'Luz de recorte dourada cinematográfica'],
+    ['moody teal-and-orange soap-opera lighting with hard shadows', 'Iluminação de novela em azul-petróleo e laranja com sombras duras'],
+    ['flickering neon practical lights and volumetric haze', 'Neon piscando e névoa volumétrica'],
+    ['high-contrast noir key light with deep blacks', 'Luz noir de alto contraste com pretos profundos'],
+    ['soft window daylight that turns cold blue at the climax', 'Luz natural de janela que esfria para azul no clímax'],
+    ['pulsing red emergency light accents for tension', 'Flashes vermelhos de alerta aumentando a tensão'],
+  ];
+  const acting: [string, string][] = [
+    ['reacting with intense 3D Pixar emotional facial expressions, dramatic hand gestures and synchronized lip-sync speech', 'expressões faciais dramáticas, gesticulação expressiva e sincronia labial perfeita'],
+    ['switching between disbelief, anger and tears with exaggerated cartoon body language and precise lip-sync', 'alternando entre descrença, raiva e lágrimas com linguagem corporal exagerada e lip-sync preciso'],
+    ['whispering then exploding in emotion, eyebrows and hands fully animated, perfect mouth sync', 'sussurros que viram explosão de emoção, sobrancelhas e mãos vivas e boca sincronizada'],
+    ['pacing around the set, pointing at the camera and gesturing wildly while speaking in perfect lip-sync', 'andando pelo cenário, apontando para a câmera e gesticulando muito com lip-sync perfeito'],
+  ];
+  const [camEn, camPt] = pickOne(cameras);
+  const [lightEn, lightPt] = pickOne(lights);
+  const [actEn, actPt] = pickOne(acting);
+  const lens = pickOne(['35mm f/1.8', '50mm f/1.4', '24mm wide f/2.0', '85mm f/1.2', '28mm anamorphic']);
 
-  const promptMotionPortuguese = `Animação 3D hiper-realista estilo Pixar/Disney em formato vertical 9:16 do personagem ${mascot.name} (${mascot.fruit}). CENA BASEADA NA SUA IDEIA ("${cleanEpisode}"): O ${mascot.name} atua intensamente vivendo a seguinte cena: "${cleanIdea}", com expressões faciais dramáticas, gesticulação expressiva de braços e mãos, olhos vivos e sincronia labial perfeita (lip-sync) enquanto narra o acontecimento até o clímax: "${cleanTwist}". Iluminação cinematográfica dramática com luz de recorte dourada, câmera aproximando lentamente (push-in) até fechar no rosto chocado do ${mascot.name} no gancho final, altíssima definição 4K.`;
+  const promptMotionEnglish = `${baseVisual}. CUSTOM STORY SCENE ("${cleanEpisode}"): The character is acting out the exact user story: "${cleanIdea}", ${actEn}, building tension toward the climax: "${twist}". Vertical 9:16 TikTok soap-opera framing, ${lightEn}, shallow depth of field (${lens}), ${camEn}, ultra-detailed 4K ${pickOne(['60fps', '50fps', '60fps with slow-motion accents'])} animation.`;
 
-  const ctaSpeech =
-    ctaType === 'follow'
-      ? `Clica agora no botão de seguir aqui do lado para não perder a Parte 2 de "${cleanEpisode}", onde toda a verdade sobre isso vai aparecer!`
-      : ctaType === 'comment'
-      ? `Comenta aqui embaixo quem você acha que tá certo nessa história antes de eu soltar a Parte 2!`
-      : `Compartilha esse vídeo agora com aquele amigo que ama uma fofoca pesada e já segue o perfil para ver o desfecho!`;
+  const promptMotionPortuguese = `Animação 3D hiper-realista estilo Pixar/Disney em formato vertical 9:16 do personagem ${mascot.name} (${mascot.fruit}). CENA BASEADA NA SUA IDEIA ("${cleanEpisode}"): O ${mascot.name} ${pickOne([
+    'atua intensamente vivendo a cena',
+    'encena com exagero cômico',
+    'vive com drama total',
+    'interpreta cheio de emoção',
+  ])}: "${cleanIdea}", com ${actPt}, até o clímax: "${twist}". ${lightPt}, ${camPt} do ${mascot.name}, lente ${lens}, altíssima definição 4K.`;
+
+  const ctaPools: Record<'follow' | 'comment' | 'share', string[]> = {
+    follow: [
+      `Clica agora no botão de seguir aqui do lado para não perder a Parte 2 de "${cleanEpisode}", onde toda a verdade vai aparecer!`,
+      `Se você quer saber o que aconteceu depois de "${twist}", segue agora, porque a Parte 2 sai já já!`,
+      `Me segue que no próximo vídeo eu conto o desfecho de "${cleanEpisode}" — e você não tá preparado!`,
+      `Quem me seguir agora vê primeiro a Parte 2. Depois não diz que o ${mascot.name} não avisou!`,
+    ],
+    comment: [
+      `Comenta aqui embaixo quem você acha que tá certo nessa história antes de eu soltar a Parte 2!`,
+      `Escreve "PARTE 2" nos comentários que eu conto o que aconteceu depois de "${twist}"!`,
+      `Você teria feito o que o ${mascot.name} fez? Me fala nos comentários, quero ver quem me defende!`,
+      `Comenta um emoji pra cada vez que você ficou chocado em "${cleanEpisode}". Bora ver!`,
+    ],
+    share: [
+      `Compartilha esse vídeo agora com aquele amigo que ama uma fofoca pesada e já segue o perfil para ver o desfecho!`,
+      `Manda pra quem precisa ver o barraco de "${cleanEpisode}" e segue pra não perder a continuação!`,
+      `Envia pro amigo que sempre sabe das tretas antes de todo mundo — e segue pra Parte 2!`,
+      `Compartilha antes que apaguem! E me segue que o próximo episódio do ${mascot.name} é pior ainda.`,
+    ],
+  };
 
   return {
     promptMotionEnglish,
     promptMotionPortuguese,
-    hookSpeech: `Para tudo o que você tá fazendo agora! ${mascot.catchphrase} Olha o que acabou de acontecer comigo em "${cleanEpisode}"!`,
-    hookAction: `Zoom in rápido no rosto do ${mascot.name} já inserido no contexto da cena ("${cleanIdea.slice(0, 65)}..."), com expressão de choque imediato e corte seco.`,
+    hookSpeech: `${pickOne([
+      'Para tudo o que você tá fazendo agora!',
+      'Ninguém tá preparado pro que eu vou contar!',
+      'Gente, eu preciso desabafar AGORA!',
+      'Não pula esse vídeo, por favor!',
+      'Eu juro que não ia contar isso aqui...',
+      'Vocês não vão acreditar no que aconteceu!',
+    ])} ${mascot.catchphrase} ${pickOne([
+      `Olha o que acabou de acontecer comigo em "${cleanEpisode}"!`,
+      `Isso aqui é sobre "${cleanEpisode}" e vai te deixar chocado!`,
+      `Senta que lá vem "${cleanEpisode}"!`,
+    ])}`,
+    hookAction: `${pickOne([
+      'Zoom in rápido no rosto',
+      'Entrada brusca em close',
+      'Corte seco direto para o rosto',
+      'Câmera tremida que fecha no olhar',
+    ])} do ${mascot.name} já inserido no contexto da cena ("${shortIdea}"), com expressão de ${pickOne([
+      'choque imediato',
+      'pânico cômico',
+      'indignação total',
+      'olhos arregalados e boca aberta',
+    ])}.`,
     bodySpeech: cleanIdea,
-    bodyAction: `O ${mascot.name} gesticula intensamente encenando cada detalhe de "${cleanIdea}", alternando entre indignação, emoção e sincronia labial 3D expressiva.`,
-    climaxSpeech: `${cleanTwist}! E se você achou isso inacreditável, você não faz ideia do que aconteceu logo depois...`,
-    climaxAction: `Câmera faz um zoom dramático no rosto do ${mascot.name} no exato momento da revelação ("${cleanTwist}"), cortando no auge do suspense.`,
-    ctaSpeech,
+    bodyAction: `O ${mascot.name} ${pickOne([
+      'gesticula intensamente encenando cada detalhe',
+      'anda de um lado para o outro revivendo cada parte',
+      'aponta para a câmera enquanto narra cada detalhe',
+      'alterna entre sussurro e grito ao contar cada detalhe',
+    ])} de "${shortIdea}", com ${pickOne([
+      'indignação, emoção e sincronia labial 3D expressiva',
+      'lágrimas cômicas, pausas dramáticas e lip-sync preciso',
+      'caretas exageradas, mãos agitadas e boca sincronizada',
+    ])}.`,
+    climaxSpeech: `${twist}! ${pickOne([
+      'E se você achou isso inacreditável, você não faz ideia do que aconteceu logo depois...',
+      'Eu fiquei sem chão. E o pior ainda estava por vir...',
+      'Naquele momento eu entendi que nada mais seria igual...',
+      'Só que ninguém esperava o que veio a seguir...',
+      'E foi aí que tudo desmoronou de vez...',
+    ])}`,
+    climaxAction: `${pickOne([
+      'Câmera faz um zoom dramático',
+      'Corte em câmera lenta',
+      'Close extremo com tremor',
+      'A luz apaga e acende em close',
+    ])} no rosto do ${mascot.name} no exato momento da revelação ("${twist}"), cortando no auge do suspense.`,
+    ctaSpeech: pickOne(ctaPools[ctaType]),
   };
 }
 
@@ -360,7 +452,7 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
   // Copiar com feedback
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
+    safeCopy(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2500);
   };
@@ -471,6 +563,9 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
     const minDelay = new Promise((resolve) => setTimeout(resolve, 2600));
 
+    const memoryKey = `turbo:${currentMascot.name}:${userIdea.trim().toLowerCase().slice(0, 80)}`;
+    const localPack = buildDynamicTurboPack(currentMascot, userIdea, episodeTitle, plotTwist, ctaType);
+
     const aiRequest = fetch('/api/generate-prompt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -485,11 +580,14 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
         episodeTitle,
         plotTwist,
         ctaType,
+        avoid: getGenMemory(memoryKey),
       }),
     })
       .then(async (res) => {
         if (!res.ok) return null;
         const json = await res.json();
+        // Quando a IA falha o servidor devolve um modelo fixo — preferimos o fallback local variado
+        if (!json?.success || json?.provider === 'orbiex-neural-turbo') return null;
         return json?.data || null;
       })
       .catch(() => null);
@@ -500,41 +598,24 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
     clearTimeout(t2);
     clearTimeout(t3);
 
-    if (aiData && aiData.promptMotionEnglish) {
-      setGeneratedPack({
-        promptMotionEnglish: aiData.promptMotionEnglish,
-        promptMotionPortuguese:
-          aiData.promptMotionPortuguese ||
-          buildDynamicTurboPack(currentMascot, userIdea, episodeTitle, plotTwist, ctaType)
-            .promptMotionPortuguese,
-        hookSpeech:
-          aiData.hookSpeech || `Para tudo o que você tá fazendo agora! ${currentMascot.catchphrase}`,
-        hookAction:
-          aiData.hookAction ||
-          `Zoom in rápido no rosto do ${currentMascot.name} com expressão de choque na cena de "${episodeTitle}", seguido de corte seco.`,
-        bodySpeech: aiData.bodySpeech || userIdea,
-        bodyAction:
-          aiData.bodyAction ||
-          `O ${currentMascot.name} atua intensamente na cena ("${userIdea.slice(0, 90)}") com sincronia labial 3D e gestos dramáticos.`,
-        climaxSpeech:
-          aiData.climaxSpeech ||
-          `${plotTwist}! E se você achou isso inacreditável, você não faz ideia do que vem a seguir...`,
-        climaxAction:
-          aiData.climaxAction ||
-          `Câmera faz um zoom dramático rápido no rosto do ${currentMascot.name} exatamente no momento de "${plotTwist}" antes do corte final.`,
-        ctaSpeech:
-          aiData.ctaSpeech ||
-          (ctaType === 'follow'
-            ? 'Clica no botão de seguir aqui do lado para não perder a Parte 2 onde a verdade vai aparecer!'
-            : ctaType === 'comment'
-            ? 'Comenta aqui embaixo quem você acha que tá certo antes de ver a continuação!'
-            : 'Compartilha esse vídeo com aquele amigo que ama uma fofoca e segue pra ver o desfecho!'),
-      });
-    } else {
-      setGeneratedPack(
-        buildDynamicTurboPack(currentMascot, userIdea, episodeTitle, plotTwist, ctaType)
-      );
-    }
+    const str = (v: unknown, fb: string) => (typeof v === 'string' && v.trim() ? v.trim() : fb);
+    const finalPack: GeneratedTurboPack =
+      aiData && typeof aiData.promptMotionEnglish === 'string' && aiData.promptMotionEnglish.trim()
+        ? {
+            promptMotionEnglish: str(aiData.promptMotionEnglish, localPack.promptMotionEnglish),
+            promptMotionPortuguese: str(aiData.promptMotionPortuguese, localPack.promptMotionPortuguese),
+            hookSpeech: str(aiData.hookSpeech, localPack.hookSpeech),
+            hookAction: str(aiData.hookAction, localPack.hookAction),
+            bodySpeech: str(aiData.bodySpeech, localPack.bodySpeech),
+            bodyAction: str(aiData.bodyAction, localPack.bodyAction),
+            climaxSpeech: str(aiData.climaxSpeech, localPack.climaxSpeech),
+            climaxAction: str(aiData.climaxAction, localPack.climaxAction),
+            ctaSpeech: str(aiData.ctaSpeech, localPack.ctaSpeech),
+          }
+        : localPack;
+
+    addGenMemory(memoryKey, [finalPack.hookSpeech, finalPack.climaxSpeech, finalPack.ctaSpeech]);
+    setGeneratedPack(finalPack);
 
     setIsGenerating(false);
     setStep(3);

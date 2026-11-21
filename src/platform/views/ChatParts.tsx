@@ -2,14 +2,10 @@ import { Check, Copy } from 'lucide-react';
 import { Fragment, useState, type ReactNode } from 'react';
 import type { Card } from '../agentBrain';
 import { Pill, Ring, ScoreBadge, TONE } from '../ui';
+import { copyText as copyToClipboard } from '../clipboard';
 
 export async function copyText(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
+  return copyToClipboard(text);
 }
 
 /* ───────── inline markdown: **bold** and `code` ───────── */
@@ -65,11 +61,11 @@ export function Rich({ text, streaming }: { text: string; streaming?: boolean })
   while (i < lines.length) {
     const line = lines[i];
 
-    if (line.startsWith('```')) {
-      const lang = line.slice(3).trim();
+    if (line.trim().startsWith('```')) {
+      const lang = line.trim().slice(3).replace(/:$/, '').trim();
       const buf: string[] = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith('```')) buf.push(lines[i++]);
+      while (i < lines.length && !lines[i].trim().startsWith('```')) buf.push(lines[i++]);
       i++; // closing fence (or end while streaming)
       out.push(<CodeBlock key={k++} lang={lang} code={buf.join('\n')} />);
       continue;

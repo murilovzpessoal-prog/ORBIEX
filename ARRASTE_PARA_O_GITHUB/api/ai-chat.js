@@ -335,7 +335,7 @@ module.exports = async function handler(req, res) {
                 parts: [{ text: effectiveSystemPrompt }],
               },
               generationConfig: {
-                temperature: isPro ? 0.45 : 0.35,
+                temperature: isPro ? 0.8 : 0.75,
                 thinkingConfig: { thinkingBudget: 0 },
                 maxOutputTokens: isPro ? 1800 : 900,
               },
@@ -381,7 +381,7 @@ module.exports = async function handler(req, res) {
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: groqMessages,
-            temperature: isPro ? 0.45 : 0.35,
+            temperature: isPro ? 0.8 : 0.75,
             max_tokens: isPro ? 1800 : 900,
           }),
         });
@@ -421,7 +421,7 @@ module.exports = async function handler(req, res) {
           body: JSON.stringify({
             model: isPro ? 'gpt-4o' : 'gpt-4o-mini',
             messages: openAiMessages,
-            temperature: isPro ? 0.45 : 0.35,
+            temperature: isPro ? 0.8 : 0.75,
             max_tokens: isPro ? 1800 : 900,
           }),
         });
@@ -460,7 +460,7 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify({
           model: 'openai',
           messages: relayMessages,
-          temperature: isPro ? 0.45 : 0.35,
+          temperature: isPro ? 0.8 : 0.75,
         }),
       });
 

@@ -25,6 +25,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { CourseData, Lesson, LessonAttachment, LessonComment } from './types';
+import { copyText as copyToClipboard } from '../platform/clipboard';
 
 interface ClassroomViewProps {
   course: CourseData;
@@ -269,7 +270,7 @@ export function ClassroomView({
           <button
             type="button"
             onClick={() => {
-              navigator.clipboard.writeText(att.token!);
+              copyToClipboard(att.token!);
               showToast(`Token ${att.token} copiado para a área de transferência!`);
             }}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-[12px] font-black uppercase text-white hover:bg-white/20 transition"
@@ -648,7 +649,7 @@ export function ClassroomView({
                     <button
                       type="button"
                       onClick={() => {
-                        navigator.clipboard.writeText(notes);
+                        copyToClipboard(notes);
                         showToast('Anotações copiadas para a área de transferência!');
                       }}
                       className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11.5px] font-bold text-white/70 hover:text-white transition"

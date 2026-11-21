@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Package, ExternalLink, Sparkles, ArrowRight, X, Copy, Check, ShieldCheck, Plus, Trash2 } from 'lucide-react';
+import { Package, ExternalLink, Sparkles, ArrowRight, X, Copy, Check, ShieldCheck, Plus, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { Pill } from '../ui';
 import type { ViewId } from '../data';
 import {
@@ -10,6 +10,50 @@ import {
   type WinningProduct,
   type ProductCategory,
 } from '../productsStore';
+import { copyText as copyToClipboard } from '../clipboard';
+import { aiGenerateJSON, getGenMemory, addGenMemory, shuffle } from '../aiGenerate';
+
+/* ───── Ângulo + hook gerados por produto (IA + fallback local variado) ───── */
+
+interface AngleHook {
+  angle: string;
+  hook: string;
+}
+
+const ANGLE_POOL: ((p: WinningProduct) => string)[] = [
+  (p) => `Custo-benefício: mostrar ${p.name} lado a lado com uma peça de shopping e revelar o preço de ${p.suggestedPrice} só no final.`,
+  (p) => `Prova no corpo: provador rápido de ${p.name} em 3 tipos de movimento (andar, sentar, agachar) para provar o caimento.`,
+  (p) => `Quebra de objeção: responder em vídeo a dúvida nº 1 de quem pensa em comprar ${p.name} (tamanho, tecido ou transparência).`,
+  (p) => `Transformação: antes com a peça antiga x depois com ${p.name}, destacando o benefício principal de ${String(p.category).toLowerCase()}.`,
+  (p) => `Versatilidade: 3 looks diferentes com ${p.name} em menos de 20 segundos, cada um para uma ocasião.`,
+  (p) => `Detalhe que vende: close em costura, tecido e acabamento de ${p.name} com legenda grande explicando o diferencial.`,
+  (p) => `POV de cliente: "chegou: ${p.name}" com unboxing real e reação sincera no primeiro uso.`,
+  (p) => `Prova social: prints de avaliações de ${p.name} na tela enquanto a peça é mostrada no corpo.`,
+  (p) => `Urgência honesta: ${p.name} entre os mais vendidos de ${String(p.category).toLowerCase()} — mostrar que esgota e repõe.`,
+  (p) => `Rotina real: ${p.name} usado do começo ao fim do dia, mostrando conforto e que não perde a forma.`,
+];
+
+const HOOK_POOL: ((p: WinningProduct) => string)[] = [
+  (p) => `Eu não acreditei que ${p.name} custava só ${p.suggestedPrice} até chegar aqui em casa.`,
+  (p) => `Para de rolar: esse achado de ${String(p.category).toLowerCase()} tá esgotando no TikTok Shop.`,
+  (p) => `Comprei ${p.name} com medo e olha o resultado no corpo.`,
+  (p) => `Se você tem dúvida no tamanho, assiste esse provador de ${p.name}.`,
+  (p) => `3 motivos pra ${p.name} ser a peça mais pedida da semana.`,
+  (p) => `Peça de shopping ou TikTok Shop? Olha o acabamento de ${p.name}.`,
+  (p) => `Fiz o teste mais difícil com ${p.name} — e passou.`,
+  (p) => `Ninguém me contou que ${p.name} vestia tão bem assim.`,
+  (p) => `O achado de ${p.suggestedPrice} que parece peça de grife.`,
+  (p) => `Antes de comprar qualquer peça de ${String(p.category).toLowerCase()}, olha esse detalhe aqui.`,
+  (p) => `POV: você finalmente achou ${p.name} e não quer contar pra ninguém.`,
+  (p) => `Vocês pediram tanto o link de ${p.name} que eu trouxe de perto.`,
+];
+
+function localAngleHook(p: WinningProduct, avoid: string[]): AngleHook {
+  const avoidSet = new Set(avoid.map((s) => s.toLowerCase()));
+  const angle = shuffle(ANGLE_POOL).map((f) => f(p)).find((a) => !avoidSet.has(a.toLowerCase())) ?? ANGLE_POOL[0](p);
+  const hook = shuffle(HOOK_POOL).map((f) => f(p)).find((h) => !avoidSet.has(h.toLowerCase())) ?? HOOK_POOL[0](p);
+  return { angle, hook };
+}
 
 export type { ProductCategory, WinningProduct };
 export const WINNING_PRODUCTS: WinningProduct[] = BASE_WINNING_PRODUCTS;
@@ -59,10 +103,72 @@ export function WinningProductsView({
   );
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
+    copyToClipboard(text);
     setCopiedHook(true);
     setTimeout(() => setCopiedHook(false), 2000);
   };
+
+  const [gen, setGen] = useState<AngleHook | null>(null);
+  const [genLoading, setGenLoading] = useState(false);
+  const genReq = useRef(0);
+
+  const generateAngleHook = async (p: WinningProduct) => {
+    const id = ++genReq.current;
+    setGenLoading(true);
+    setGen(null);
+    setCopiedHook(false);
+    const memoryKey = `winning-angle-hook:${p.name}`;
+    const comm = computeAffiliateCommission(p.suggestedPrice, p.commissionRate);
+    const ai = await aiGenerateJSON<{ angle?: unknown; hook?: unknown }>({
+      memoryKey,
+      task:
+        `Você é estrategista de vendas para afiliados do TikTok Shop Brasil. Para o produto "${p.name}" (categoria ${p.category}, ` +
+        `preço ${p.suggestedPrice}), crie 1 ÂNGULO DE VENDA novo (a ideia central do vídeo: qual benefício/dor explorar e como mostrar, 1–2 frases) ` +
+        'e 1 HOOK para os 3 primeiros segundos (frase falada, máximo 18 palavras) coerente com esse ângulo. ' +
+        'Seja específico para esta peça (tecido, caimento, ocasião, público, preço). Não reutilize o ângulo e o hook de referência nem os anteriores; ' +
+        'escolha um gatilho diferente (curiosidade, prova, objeção, comparação, POV, urgência, humor). Português do Brasil, sem hashtags e sem emojis.',
+      input: {
+        produto: p.name,
+        categoria: p.category,
+        preco: p.suggestedPrice,
+        comissao: p.commissionRate || comm.rate,
+        lucroPorVenda: p.commissionAmount || comm.amount,
+        vendas: p.sales,
+        anguloDeReferencia: p.angle,
+        hookDeReferencia: p.hook,
+      },
+      format: '{"angle": "string", "hook": "string"}',
+      remember: (d) => [String(d?.angle ?? ''), String(d?.hook ?? '')],
+    });
+    if (id !== genReq.current) return;
+    const clean = (v: unknown) => String(v ?? '').replace(/^["“]|["”]$/g, '').trim();
+    const aiAngle = clean(ai?.angle);
+    const aiHook = clean(ai?.hook);
+    let result: AngleHook;
+    if (aiAngle && aiHook) {
+      result = { angle: aiAngle, hook: aiHook };
+    } else {
+      const local = localAngleHook(p, [...getGenMemory(memoryKey), p.angle, p.hook]);
+      result = { angle: aiAngle || local.angle, hook: aiHook || local.hook };
+      addGenMemory(memoryKey, [result.angle, result.hook]);
+    }
+    setGen(result);
+    setGenLoading(false);
+  };
+
+  useEffect(() => {
+    if (activeModal) {
+      generateAngleHook(activeModal);
+    } else {
+      genReq.current++;
+      setGen(null);
+      setGenLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeModal]);
+
+  const currentAngle = gen?.angle ?? activeModal?.angle ?? '';
+  const currentHook = gen?.hook ?? activeModal?.hook ?? '';
 
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
@@ -284,12 +390,29 @@ export function WinningProductsView({
               {/* Angle & Hook section */}
               <div className="space-y-4 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-4">
                 <div>
-                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
-                    Ângulo de Venda Campeão
-                  </span>
-                  <p className="mt-1 text-[13px] leading-relaxed text-white/85">
-                    {activeModal.angle}
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
+                      Ângulo de Venda Campeão
+                    </span>
+                    <button
+                      onClick={() => generateAngleHook(activeModal)}
+                      disabled={genLoading}
+                      className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[var(--mvz-muted)] hover:text-white disabled:opacity-50"
+                    >
+                      {genLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                      {genLoading ? 'Gerando…' : 'Gerar novo'}
+                    </button>
+                  </div>
+                  {genLoading ? (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="mvz-shimmer h-4 rounded-md" />
+                      <div className="mvz-shimmer h-4 w-2/3 rounded-md" />
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-[13px] leading-relaxed text-white/85">
+                      {currentAngle}
+                    </p>
+                  )}
                 </div>
 
                 <div className="border-t border-[var(--mvz-line)] pt-3">
@@ -298,16 +421,21 @@ export function WinningProductsView({
                       Hook Recomendado (3 Primeiros Segundos)
                     </span>
                     <button
-                      onClick={() => handleCopy(activeModal.hook)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-[var(--mvz-muted)] hover:text-white"
+                      onClick={() => handleCopy(currentHook)}
+                      disabled={genLoading}
+                      className="flex items-center gap-1 text-[11px] font-semibold text-[var(--mvz-muted)] hover:text-white disabled:opacity-50"
                     >
                       {copiedHook ? <Check size={12} className="text-[#7fcf9f]" /> : <Copy size={12} />}
                       {copiedHook ? 'Copiado' : 'Copiar'}
                     </button>
                   </div>
-                  <p className="mt-1 font-medium italic text-[13px] text-white">
-                    “{activeModal.hook}”
-                  </p>
+                  {genLoading ? (
+                    <div className="mvz-shimmer mt-2 h-4 w-4/5 rounded-md" />
+                  ) : (
+                    <p className="mt-1 font-medium italic text-[13px] text-white">
+                      “{currentHook}”
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -315,7 +443,7 @@ export function WinningProductsView({
               <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
                 <button
                   onClick={() => {
-                    onUseInAgent(`Crie um roteiro completo de 30s sem aparecer para o produto vencedor: "${activeModal.name}". Use o gancho: "${activeModal.hook}"`);
+                    onUseInAgent(`Crie um roteiro completo de 30s sem aparecer para o produto vencedor: "${activeModal.name}" (${activeModal.category}, ${activeModal.suggestedPrice}). Ângulo: "${currentAngle}". Use o gancho: "${currentHook}"`);
                     setActiveModal(null);
                   }}
                   className="mvz-btn-grad flex h-11 flex-1 items-center justify-center gap-2 text-[12.5px]"

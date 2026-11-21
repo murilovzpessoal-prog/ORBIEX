@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowRight, CheckCircle2, ShieldCheck, Key, Mail, Sparkles, Copy, Check, ExternalLink } from 'lucide-react';
+import { copyText as copyToClipboard } from '../clipboard';
 
 interface AccessInstructionsViewProps {
   onGoToLogin: () => void;
@@ -11,7 +12,7 @@ export function AccessInstructionsView({ onGoToLogin }: AccessInstructionsViewPr
 
   const handleCopyPassword = () => {
     try {
-      navigator.clipboard.writeText(masterPassword);
+      copyToClipboard(masterPassword);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {}

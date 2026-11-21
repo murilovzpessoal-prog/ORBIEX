@@ -19,7 +19,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Ring, Pill } from '../ui';
-import { auditStore, type StoreAuditResult } from '../storeAuditor';
+import { auditStore, auditStoreAI, type StoreAuditResult } from '../storeAuditor';
+import { copyText as copyToClipboard } from '../clipboard';
 
 export function StoreScoreView({
   onUseInAgent,
@@ -39,8 +40,10 @@ export function StoreScoreView({
 
   const [copiedScript, setCopiedScript] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const runIdRef = useRef(0);
 
   const handleClear = () => {
+    runIdRef.current++;
     setStoreLink('');
     setStoreName('');
     setItemsSold(3500);
@@ -52,38 +55,40 @@ export function StoreScoreView({
     setStepIndex(0);
   };
 
-  const handleAudit = () => {
+  const handleAudit = async () => {
+    if (loading) return;
+    const runId = ++runIdRef.current;
     setLoading(true);
     setResult(null);
     setStepIndex(0);
 
-    // Realistic progressive multi-step audit pipeline
-    setTimeout(() => setStepIndex(1), 600);
-    setTimeout(() => setStepIndex(2), 1200);
-    setTimeout(() => setStepIndex(3), 1800);
+    // Progressive multi-step pipeline while the AI generates a fresh, personalized audit
+    const timers = [600, 1200, 1800].map((ms, i) => window.setTimeout(() => {
+      if (runIdRef.current === runId) setStepIndex(i + 1);
+    }, ms));
+
+    const req = { storeName, storeLink, itemsSold, responseRate, onTimeRate, freeSampleAvailable };
+    const minDelay = new Promise((r) => window.setTimeout(r, 2400));
+    let audit: StoreAuditResult;
+    try {
+      [audit] = await Promise.all([auditStoreAI(req), minDelay]);
+    } catch {
+      audit = auditStore(req);
+    }
+    timers.forEach((t) => window.clearTimeout(t));
+    if (runIdRef.current !== runId) return; // cleared / superseded
+
+    setLoading(false);
+    setResult(audit);
 
     setTimeout(() => {
-      const audit = auditStore({
-        storeName,
-        storeLink,
-        itemsSold,
-        responseRate,
-        onTimeRate,
-        freeSampleAvailable,
-      });
-
-      setLoading(false);
-      setResult(audit);
-
-      setTimeout(() => {
-        reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }, 2400);
+      reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const copyScript = () => {
     if (!result) return;
-    navigator.clipboard.writeText(result.partnershipScript);
+    copyToClipboard(result.partnershipScript);
     setCopiedScript(true);
     setTimeout(() => setCopiedScript(false), 2000);
   };

@@ -11,6 +11,35 @@ function isOrbiexUrl(url = '') {
   return /https?:\/\/([a-z0-9-]+\.)?orbiex\.io/i.test(url) || /http:\/\/localhost:/i.test(url);
 }
 
+// Injeta imediatamente a ponte em qualquer aba da Orbiex que já estivesse aberta antes de instalar a extensão!
+async function injectBridgeIntoOpenOrbiexTabs() {
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (tab.id && isOrbiexUrl(tab.url || '')) {
+        orbiexTabId = tab.id;
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['orbiex-bridge.js'],
+          });
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  injectBridgeIntoOpenOrbiexTabs();
+});
+chrome.runtime.onStartup.addListener(() => {
+  injectBridgeIntoOpenOrbiexTabs();
+});
+
 function waitForTabComplete(tabId, timeoutMs = 10000) {
   return new Promise((resolve) => {
     let done = false;

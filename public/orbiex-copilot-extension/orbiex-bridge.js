@@ -24,7 +24,6 @@
   window.addEventListener('load', announceReady);
 
   window.addEventListener('message', (event) => {
-    if (event.source !== window) return;
     const data = event.data;
     if (!data || data.source !== 'orbiex-web-cmd') return;
 

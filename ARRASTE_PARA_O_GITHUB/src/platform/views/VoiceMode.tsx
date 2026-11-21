@@ -6,6 +6,7 @@ import {
   copilotInteractPage,
   copilotOpenTab,
   isCopilotInstalled,
+  pingCopilot,
   useCopilotStatus,
 } from '../copilotBridge';
 import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
@@ -721,6 +722,8 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
           // Execução em tempo real de comandos de voz (abrir sites, clicar em botões no Flow/TikTok, digitar prompts e rolar páginas!)
           if (msg.toolCall && Array.isArray(msg.toolCall.functionCalls)) {
+            const hasExt = isCopilotInstalled() || (await pingCopilot());
+
             const functionResponses = await Promise.all(
               msg.toolCall.functionCalls.map(async (call: any) => {
                 const fnName = call?.name;
@@ -728,14 +731,14 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
                 // 1. Clicar em botão na interface da aba aberta (ex: "Criar novo projeto" no Google Flow)
                 if (fnName === 'click_element_on_page') {
-                  if (!isCopilotInstalled()) {
+                  if (!hasExt) {
                     openCopilotInstallModal();
                     return {
                       id: call.id,
                       name: fnName,
                       response: {
                         result:
-                          'A Extensão Orbiex Copilot ainda não está ativa no navegador. Já abri a janela na tela para o usuário ativar a extensão gratuita em 20 segundos.',
+                          'A Extensão Orbiex Copilot ainda não foi detectada nesta aba. Peça ao usuário para atualizar a página da Orbiex (F5 ou Cmd+R) caso tenha acabado de instalar a extensão.',
                       },
                     };
                   }
@@ -760,14 +763,14 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
                 // 2. Digitar prompt / texto em um campo da página aberta
                 if (fnName === 'type_text_on_page') {
-                  if (!isCopilotInstalled()) {
+                  if (!hasExt) {
                     openCopilotInstallModal();
                     return {
                       id: call.id,
                       name: fnName,
                       response: {
                         result:
-                          'Para preencher campos dentro de sites externos, ative a Extensão Orbiex Copilot que acabei de exibir na tela.',
+                          'Para preencher campos dentro de sites externos, atualize a aba da Orbiex (Cmd+R) após instalar a Extensão Orbiex Copilot.',
                       },
                     };
                   }
@@ -789,12 +792,12 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                 // 3. Rolar página, escanear tela ou voltar foco para a Orbiex
                 if (fnName === 'scroll_or_control_page') {
                   const act = String(args.action || 'scroll').toLowerCase();
-                  if (!isCopilotInstalled()) {
+                  if (!hasExt) {
                     openCopilotInstallModal();
                     return {
                       id: call.id,
                       name: fnName,
-                      response: { result: 'Extensão Orbiex Copilot necessária — janela de ativação aberta na tela.' },
+                      response: { result: 'Atualize a página da Orbiex para conectar à extensão recém-instalada.' },
                     };
                   }
                   if (act === 'focus_orbiex') {
@@ -833,7 +836,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                 setActionBanner({ label: `Abrindo ${dest.label}...`, url: dest.url, openedAuto: true });
 
                 // Se a Extensão Orbiex Copilot estiver ativa, abre via chrome.tabs.create mantendo o Agente de Voz vivo em segundo plano!
-                if (isCopilotInstalled()) {
+                if (hasExt) {
                   const extOpen = await copilotOpenTab(dest.url);
                   window.setTimeout(() => setActionBanner(null), 4000);
                   if (extOpen.ok) {

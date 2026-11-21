@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Orbiex Copilot — Agente de Voz & Controle de Tela",
   "short_name": "Orbiex Copilot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Conecta o Agente de Voz da Orbiex ao seu navegador para abrir ferramentas (Google Flow, TikTok, Kling AI) e clicar em botões por comando de voz.",
   "permissions": [
     "tabs",

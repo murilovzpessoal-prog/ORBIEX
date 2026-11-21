@@ -9,7 +9,23 @@
 
   /* ───── Dicionário Bilíngue PT ⇄ EN para Interfaces (Google Flow, Kling, TikTok, etc.) ───── */
   const SYNONYM_GROUPS = [
-    ['novo projeto', 'criar novo projeto', 'criar projeto', 'new project', 'create project', 'create new', '+ novo', '+ new', 'start project', 'novo', 'new'],
+    [
+      'novo projeto',
+      'criar novo projeto',
+      'criar projeto',
+      'new project',
+      'create project',
+      'create new',
+      '+ novo projeto',
+      '+ new project',
+      '+ novo',
+      '+ new',
+      'start project',
+      'criar com o flow',
+      'create with flow',
+      'novo',
+      'new',
+    ],
     ['gerar', 'criar', 'criar video', 'gerar video', 'generate', 'create', 'run', 'submit', 'enviar', 'make'],
     ['comecar', 'iniciar', 'entrar no flow', 'abrir flow', 'get started', 'start', 'launch', 'try now', 'open', 'explore'],
     ['baixar', 'download', 'exportar', 'export', 'salvar', 'save'],

@@ -1,9 +1,11 @@
 import { getUserDisplayName } from './useUserProfile';
-import { aiGenerateJSON, shuffle, pickOne, jitter } from './aiGenerate';
+import { aiDeepAuditJSON, type LinkIntel } from './aiGenerate';
 
 export interface StoreAuditRequest {
   storeName: string;
   storeLink: string;
+  storeNiche?: string;
+  metricsMode?: 'auto' | 'manual';
   itemsSold: number;
   responseRate: number;
   onTimeRate: number;
@@ -25,6 +27,11 @@ export interface OperationalPillar {
 
 export interface StoreAuditResult {
   name: string;
+  sourceSummary?: string;
+  detectedNiche: string;
+  storeProfileType: string;
+  recommendedCommissionTarget: string;
+  bestProductsToRequestSample: string[];
   score: number;
   badge: 'Diamante' | 'Ouro' | 'Prata' | 'Alerta';
   verdict: string;
@@ -41,611 +48,524 @@ type MetricStatus = MetricDiagnostic['status'];
 type PillarStatus = OperationalPillar['status'];
 type Badge = StoreAuditResult['badge'];
 
-export function extractStoreTitle(rawName: string, rawLink: string): string {
-  const trimmedName = rawName.trim();
-  if (trimmedName) return trimmedName;
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h >>> 0);
+}
 
-  const trimmedLink = rawLink.trim();
-  if (trimmedLink) {
-    try {
-      const clean = trimmedLink.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-      const parts = clean.split('/').filter(Boolean);
-      // Look for @handle
-      const handlePart = parts.find((p) => p.startsWith('@'));
-      if (handlePart) {
-        const cleanHandle = handlePart.replace('@', '').replace(/[_-]/g, ' ');
-        return cleanHandle.charAt(0).toUpperCase() + cleanHandle.slice(1);
-      }
-      if (parts.length > 0) {
-        const last = parts[parts.length - 1];
-        if (last.length > 2) {
-          const decoded = decodeURIComponent(last).replace(/[-_]+/g, ' ');
-          return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-        }
-      }
-    } catch {
-      // ignore
+function parseStoreLinkLocally(rawLink: string): {
+  domain: string;
+  handle: string;
+  slug: string;
+  platform: string;
+} {
+  const trimmed = rawLink.trim();
+  if (!trimmed) return { domain: '', handle: '', slug: '', platform: '' };
+  if (trimmed.startsWith('@') && !trimmed.includes('/')) {
+    return { domain: 'tiktok.com', handle: trimmed, slug: trimmed.slice(1), platform: 'TikTok Shop' };
+  }
+  try {
+    const u = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    const domain = u.hostname.replace(/^www\./i, '');
+    const platform = domain.includes('tiktok')
+      ? 'TikTok Shop'
+      : domain.includes('shopee')
+      ? 'Shopee'
+      : domain.includes('mercadolivre')
+      ? 'Mercado Livre'
+      : domain.includes('instagram')
+      ? 'Instagram / Loja'
+      : domain;
+    const parts = u.pathname.split('/').filter(Boolean);
+    const handle = parts.find((p) => p.startsWith('@')) || '';
+    const slug =
+      parts
+        .filter((p) => !p.startsWith('@') && !/^\d+$/.test(p) && !['shop', 'store', 'loja', 'perfil'].includes(p.toLowerCase()))
+        .pop() || '';
+    return { domain, handle, slug: decodeURIComponent(slug).replace(/[-_]+/g, ' ').trim(), platform };
+  } catch {
+    return { domain: '', handle: '', slug: trimmed, platform: '' };
+  }
+}
+
+export function extractStoreTitle(rawName: string, rawLink: string, linkIntel?: LinkIntel | null): string {
+  if (rawName.trim()) return rawName.trim();
+
+  if (linkIntel) {
+    if (linkIntel.oembedAuthor && linkIntel.handle) {
+      return `${linkIntel.oembedAuthor} (${linkIntel.handle})`;
     }
-    return 'Lojista TikTok Shop';
+    if (linkIntel.oembedAuthor) return linkIntel.oembedAuthor;
+    if (linkIntel.handle) return linkIntel.handle;
+    if (linkIntel.pageTitle) {
+      const cleaned = linkIntel.pageTitle
+        .replace(/\|\s*(TikTok|Shopee|Mercado Livre|Instagram).*$/i, '')
+        .replace(/-\s*(TikTok|Shopee).*$/i, '')
+        .trim();
+      if (cleaned.length >= 3 && !/^(tiktok|entrar|login)$/i.test(cleaned)) {
+        return cleaned.slice(0, 70);
+      }
+    }
   }
 
-  return 'Loja Oficial TikTok Shop';
+  const parsed = parseStoreLinkLocally(rawLink);
+  if (parsed.handle) return parsed.handle;
+  if (parsed.slug && parsed.slug.length >= 3) {
+    return parsed.slug
+      .split(' ')
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+      .join(' ')
+      .slice(0, 70);
+  }
+  if (parsed.domain) return parsed.domain;
+  return 'Lojista Auditado';
 }
 
-/* ───────────────────────── Base determinística (coerência) ───────────────────────── */
-
-interface BaseScores {
-  onTimePoints: number;
-  onTimeStatus: MetricStatus;
-  responsePoints: number;
-  responseStatus: MetricStatus;
-  salesPoints: number;
-  salesStatus: MetricStatus;
-  samplePoints: number;
-  total: number;
-  badge: Badge;
-}
-
-function computeBase(req: StoreAuditRequest): BaseScores {
-  let onTimePoints = 5;
-  let onTimeStatus: MetricStatus = 'Crítico';
-  if (req.onTimeRate >= 98) [onTimePoints, onTimeStatus] = [40, 'Excelente'];
-  else if (req.onTimeRate >= 95) [onTimePoints, onTimeStatus] = [36, 'Excelente'];
-  else if (req.onTimeRate >= 90) [onTimePoints, onTimeStatus] = [26, 'Bom'];
-  else if (req.onTimeRate >= 80) [onTimePoints, onTimeStatus] = [15, 'Alerta'];
-
-  let responsePoints = 5;
-  let responseStatus: MetricStatus = 'Crítico';
-  if (req.responseRate >= 96) [responsePoints, responseStatus] = [25, 'Excelente'];
-  else if (req.responseRate >= 90) [responsePoints, responseStatus] = [20, 'Bom'];
-  else if (req.responseRate >= 80) [responsePoints, responseStatus] = [12, 'Alerta'];
-
-  let salesPoints = 6;
-  let salesStatus: MetricStatus = 'Alerta';
-  if (req.itemsSold >= 8000) [salesPoints, salesStatus] = [25, 'Excelente'];
-  else if (req.itemsSold >= 3000) [salesPoints, salesStatus] = [22, 'Excelente'];
-  else if (req.itemsSold >= 1000) [salesPoints, salesStatus] = [18, 'Bom'];
-  else if (req.itemsSold >= 300) [salesPoints, salesStatus] = [12, 'Bom'];
-
-  const samplePoints = req.freeSampleAvailable ? 10 : 3;
-  const total = Math.min(100, Math.max(15, onTimePoints + responsePoints + salesPoints + samplePoints));
-
-  return {
-    onTimePoints,
-    onTimeStatus,
-    responsePoints,
-    responseStatus,
-    salesPoints,
-    salesStatus,
-    samplePoints,
-    total,
-    badge: badgeFor(total),
-  };
+function buildSourceSummary(rawLink: string, mode: 'auto' | 'manual', linkIntel?: LinkIntel | null): string {
+  const parts: string[] = [];
+  if (rawLink.trim()) {
+    const local = parseStoreLinkLocally(rawLink);
+    const plat = linkIntel?.platform || local.platform || linkIntel?.domain || local.domain;
+    if (plat) parts.push(`Canal: ${plat}`);
+    if (linkIntel?.handle || local.handle) parts.push(`Perfil: ${linkIntel?.handle || local.handle}`);
+    if (linkIntel?.detectedSoldOrFollowers) parts.push(linkIntel.detectedSoldOrFollowers);
+  }
+  parts.push(mode === 'manual' ? 'Métricas Exatas do App' : 'Diagnóstico Inteligente de Perfil');
+  return parts.join(' • ');
 }
 
 function badgeFor(score: number): Badge {
-  if (score >= 90) return 'Diamante';
-  if (score >= 80) return 'Ouro';
-  if (score >= 68) return 'Prata';
+  if (score >= 88) return 'Diamante';
+  if (score >= 76) return 'Ouro';
+  if (score >= 60) return 'Prata';
   return 'Alerta';
 }
 
-const BADGE_BANDS: Record<Badge, [number, number]> = {
-  Diamante: [90, 100],
-  Ouro: [80, 89],
-  Prata: [68, 79],
-  Alerta: [15, 67],
-};
+function inferStoreProfileLocally(req: StoreAuditRequest, name: string, linkIntel?: LinkIntel | null) {
+  const text = `${name} ${req.storeLink} ${req.storeNiche || ''} ${linkIntel?.pageTitle || ''} ${
+    linkIntel?.pageDescription || ''
+  } ${linkIntel?.oembedTitle || ''}`.toLowerCase();
+  const seed = hashStr(`${name.toLowerCase()}|${req.storeLink.toLowerCase()}|${req.storeNiche || ''}`);
 
-/** Score coerente: varia levemente em torno da base, sem trocar de faixa/selo. */
-function coherentScore(base: BaseScores, proposed?: number): number {
-  const [lo, hi] = BADGE_BANDS[base.badge];
-  const raw = typeof proposed === 'number' && Number.isFinite(proposed) ? proposed : jitter(base.total, 3, 15, 100);
-  const nearBase = Math.max(base.total - 5, Math.min(base.total + 5, Math.round(raw)));
-  return Math.max(lo, Math.min(hi, nearBase));
+  const isReplicaOrShady =
+    /(r[eé]plica|1[\sªa]*linha|primeira linha|tailandesa|clone|pirata|outlet grife|nike barato|airpods barato|importa f[aá]cil sem estoque)/i.test(
+      text
+    );
+  const isDropshippingRisk =
+    /(drop|dropshipping|envio internacional|crossborder|da china|prazo 15|achadinhos_?\d{2,}|teste_loja)/i.test(text);
+  const isManufacturerOrFactory =
+    /(f[aá]brica|fabricante|confec[cç][aã]o|atacado|br[aá]s|bom retiro|goi[aâ]nia|ind[uú]stria|distribuidor)/i.test(
+      text
+    );
+  const isOfficialBrand = /(oficial|official|flagship|store oficial|marca pr[oó]pria|lab|cosmetics|beauty)/i.test(
+    text
+  );
+
+  // Detecção de nicho
+  let detectedNiche = req.storeNiche?.trim() || 'Varejo Multissetorial TikTok Shop';
+  let commissionTarget = '15% a 20%';
+  let sampleIdeas = ['Item mais vendido da vitrine atual', 'Kit promocional de maior giro'];
+
+  if (/(fitness|legging|academia|treino|yoga|macaquinho)/i.test(text)) {
+    detectedNiche = 'Moda Fitness & Activewear';
+    commissionTarget = '18% a 25% (alta margem em confecção)';
+    sampleIdeas = ['Shorts Modelador Sem Costura', 'Conjunto Top + Legging Compressão', 'Macaquinho Fitness Costas Nuas'];
+  } else if (/(moda|vestido|jeans|roupa|look|boutique|closet|alfaiataria|blusa|feminina)/i.test(text)) {
+    detectedNiche = 'Moda Feminina & Confecção';
+    commissionTarget = '16% a 22%';
+    sampleIdeas = ['Calça Wide Leg / Alfaiataria', 'Vestido Midi Canelado', 'Conjunto Tricot / Verão'];
+  } else if (/(beleza|skin|cosm[eé]tico|maquiagem|cabelo|s[eé]rum|perfum|glow|corean)/i.test(text)) {
+    detectedNiche = 'Beleza, Skincare & Cuidados Pessoais';
+    commissionTarget = '20% a 30% (margem alta e recompra)';
+    sampleIdeas = ['Sérum de Rotina Diária / Hidratação', 'Kit Capilar de Brilho Imediato', 'Protetor Solar com Toque Seco'];
+  } else if (/(casa|cozinha|utilidade|organiz|decor|lar|mop|inox)/i.test(text)) {
+    detectedNiche = 'Casa, Cozinha & Utilidades Domésticas';
+    commissionTarget = '15% a 22%';
+    sampleIdeas = ['Mini Processador / Cortador Multiuso', 'Mop Giratório ou Extrator de Limpeza', 'Kit Organizador de Acrílico'];
+  } else if (/(eletr|tech|gadget|fone|smart|celul|acess[oó]rio|info|gamer|import)/i.test(text)) {
+    detectedNiche = 'Eletrônicos, Áudio & Gadgets';
+    commissionTarget = '10% a 16% (margem mais enxuta, ganha no volume)';
+    sampleIdeas = ['Mini Projetor Portátil / Luminária LED', 'Microfone de Lapela Sem Fio', 'Carregador Magnético / Powerbank'];
+  } else if (/(cal[cç]ad|t[eê]nis|sapato|sand[aá]lia|bota|bolsa)/i.test(text)) {
+    detectedNiche = 'Calçados, Bolsas & Acessórios';
+    commissionTarget = '15% a 20%';
+    sampleIdeas = ['Tênis Casual Plataforma Leve', 'Bolsa Tiracolo Estruturada'];
+  }
+
+  let storeProfileType = 'Vendedor Padrão de Marketplace';
+  let autoItemsSold = 650 + (seed % 3800);
+  let autoResponse = 84 + (seed % 14);
+  let autoOnTime = 88 + (seed % 11);
+  let autoSample = seed % 3 !== 0;
+
+  if (isReplicaOrShady) {
+    storeProfileType = 'Operação de Alto Risco (Suspeita de IPR / Sem Licença)';
+    autoItemsSold = 120 + (seed % 500);
+    autoResponse = 68 + (seed % 16);
+    autoOnTime = 76 + (seed % 12);
+    autoSample = false;
+  } else if (isDropshippingRisk) {
+    storeProfileType = 'Intermediação / Dropshipping (Atenção a Estoque e SLA)';
+    autoItemsSold = 180 + (seed % 750);
+    autoResponse = 78 + (seed % 14);
+    autoOnTime = 81 + (seed % 10);
+    autoSample = false;
+  } else if (isManufacturerOrFactory) {
+    storeProfileType = 'Fabricante / Atacadista com Estoque Próprio';
+    autoItemsSold = 4200 + (seed % 5800);
+    autoResponse = 91 + (seed % 8);
+    autoOnTime = 95 + (seed % 5);
+    autoSample = true;
+  } else if (isOfficialBrand) {
+    storeProfileType = 'Loja Oficial / Marca Estruturada';
+    autoItemsSold = 5500 + (seed % 4500);
+    autoResponse = 94 + (seed % 6);
+    autoOnTime = 97 + (seed % 3);
+    autoSample = true;
+  }
+
+  return {
+    isReplicaOrShady,
+    isDropshippingRisk,
+    detectedNiche,
+    storeProfileType,
+    commissionTarget,
+    sampleIdeas,
+    autoItemsSold,
+    autoResponse,
+    autoOnTime,
+    autoSample,
+  };
+}
+
+function computeManualScore(itemsSold: number, responseRate: number, onTimeRate: number, freeSample: boolean, isReplicaOrShady: boolean) {
+  if (isReplicaOrShady) {
+    return {
+      score: 29,
+      salesStatus: 'Alerta' as MetricStatus,
+      responseStatus: 'Alerta' as MetricStatus,
+      onTimeStatus: 'Crítico' as MetricStatus,
+    };
+  }
+  let onTimePts = 8;
+  let onTimeStatus: MetricStatus = 'Crítico';
+  if (onTimeRate >= 98) [onTimePts, onTimeStatus] = [40, 'Excelente'];
+  else if (onTimeRate >= 95) [onTimePts, onTimeStatus] = [35, 'Excelente'];
+  else if (onTimeRate >= 90) [onTimePts, onTimeStatus] = [26, 'Bom'];
+  else if (onTimeRate >= 82) [onTimePts, onTimeStatus] = [16, 'Alerta'];
+
+  let respPts = 6;
+  let responseStatus: MetricStatus = 'Crítico';
+  if (responseRate >= 95) [respPts, responseStatus] = [25, 'Excelente'];
+  else if (responseRate >= 88) [respPts, responseStatus] = [19, 'Bom'];
+  else if (responseRate >= 78) [respPts, responseStatus] = [12, 'Alerta'];
+
+  let salesPts = 6;
+  let salesStatus: MetricStatus = 'Alerta';
+  if (itemsSold >= 7500) [salesPts, salesStatus] = [25, 'Excelente'];
+  else if (itemsSold >= 2500) [salesPts, salesStatus] = [21, 'Excelente'];
+  else if (itemsSold >= 800) [salesPts, salesStatus] = [16, 'Bom'];
+  else if (itemsSold >= 250) [salesPts, salesStatus] = [11, 'Bom'];
+
+  const samplePts = freeSample ? 9 : 3;
+  const score = Math.min(98, Math.max(18, onTimePts + respPts + salesPts + samplePts));
+  return { score, salesStatus, responseStatus, onTimeStatus };
 }
 
 function fmtItems(n: number) {
   return n >= 10000 ? '10.000+' : n.toLocaleString('pt-BR');
 }
 
-/* ───────────────────────── Fallback local variado ───────────────────────── */
-
-const EXPLAIN: Record<'onTime' | 'response' | 'sales', Record<MetricStatus, string[]>> = {
-  onTime: {
-    Excelente: [
-      'Postagem dentro do SLA de 48h quase sem exceções — comissão protegida contra cancelamento.',
-      'Despacho no padrão de excelência exigido pelo TikTok Shop, ideal para escalar vídeos.',
-      'Pedidos saem no prazo mesmo em pico; risco mínimo de estorno de comissão.',
-      'Logística afinada: o cliente recebe rápido e as avaliações tendem a subir.',
-    ],
-    Bom: [
-      'Aceitável, mas com pequenos gargalos em dias de alto volume.',
-      'Bom ritmo de envio; vale monitorar em datas promocionais.',
-      'Prazo cumprido na maioria dos pedidos, com atrasos pontuais em picos.',
-    ],
-    Alerta: [
-      'Atrasos frequentes podem gerar cancelamentos e derrubar sua comissão.',
-      'Ritmo de despacho instável — combine prazos antes de divulgar forte.',
-      'Parte relevante dos pedidos sai fora do SLA; risco real de reclamação.',
-    ],
-    Crítico: [
-      'Risco severo de atrasos e cancelamentos de pedidos.',
-      'SLA muito abaixo do mínimo; vendas podem virar estorno.',
-      'Envio fora do prazo em larga escala — evite tráfego pago aqui.',
-    ],
-  },
-  response: {
-    Excelente: [
-      'Responde rápido no chat oficial, convertendo dúvidas em compra na hora.',
-      'Atendimento ágil que reduz devolução por falta de informação.',
-      'Chat ativo e veloz: o comprador indeciso é atendido antes de desistir.',
-    ],
-    Bom: [
-      'Atendimento dentro do prazo regular de 24 horas.',
-      'Responde bem, mas pode demorar em horários de pico.',
-      'Suporte consistente, com espaço para ganhar velocidade.',
-    ],
-    Alerta: [
-      'Demora nas respostas pode frustrar dúvidas de clientes.',
-      'Algumas mensagens ficam sem retorno — risco de abandono de carrinho.',
-      'Atendimento irregular; antecipe as dúvidas comuns no seu vídeo.',
-    ],
-    Crítico: [
-      'Atendimento lento; risco alto de abandono no carrinho.',
-      'Muitas mensagens sem resposta — pós-venda fragilizado.',
-      'Suporte quase ausente; o cliente fica sem ajuda após a compra.',
-    ],
-  },
-  sales: {
-    Excelente: [
-      'Operação madura com fornecimento contínuo de mercadorias.',
-      'Volume que comprova demanda e estoque preparado para viralizar.',
-      'Histórico robusto de pedidos — prova social forte para o seu vídeo.',
-    ],
-    Bom: [
-      'Volume consistente em tração de crescimento.',
-      'Catálogo validado com centenas de pedidos entregues.',
-      'Demanda comprovada, ainda com espaço para crescer junto com afiliados.',
-    ],
-    Alerta: [
-      'Loja recente com histórico inicial de vendas.',
-      'Poucos pedidos até aqui — valide estoque antes de escalar.',
-      'Operação em fase inicial; bom para negociar condições exclusivas.',
-    ],
-    Crítico: ['Histórico de vendas insuficiente para avaliar.', 'Quase sem vendas registradas até o momento.'],
-  },
-};
-
-const VERDICTS: Record<Badge, string[]> = {
-  Diamante: [
-    'Fornecedor Diamante · Homologado para Escala e Tráfego Pago',
-    'Selo Diamante · Parceiro Prioritário para Escalar com Segurança',
-    'Diamante · Operação Pronta para Viralização e Anúncios',
-  ],
-  Ouro: [
-    'Fornecedor Ouro · Seguro para Afiliados e Parcerias Oficiais',
-    'Selo Ouro · Confiável para Amostras e Vitrine',
-    'Ouro · Parceiro Sólido com Indicadores Saudáveis',
-  ],
-  Prata: [
-    'Fornecedor Prata · Operação Regular com Monitoramento',
-    'Selo Prata · Viável no Orgânico, Cautela no Pago',
-    'Prata · Bom Potencial com Pontos a Alinhar',
-  ],
-  Alerta: [
-    'Fornecedor em Risco Operacional · Atenção Redobrada',
-    'Alerta · Risco de Cancelamento e Comissão Estornada',
-    'Selo Alerta · Só Avance Após Alinhar Prazos e Estoque',
-  ],
-};
-
-function buildSummary(name: string, req: StoreAuditRequest, badge: Badge): string {
-  const items = fmtItems(req.itemsSold);
-  const pools: Record<Badge, string[]> = {
-    Diamante: [
-      `A ${name} entrega um padrão de topo: ${req.onTimeRate}% de envios no prazo, ${req.responseRate}% de resposta no chat e ${items} itens vendidos. Estrutura pronta para aguentar picos de vídeos virais.`,
-      `Com ${items} pedidos e ${req.onTimeRate}% de pontualidade, a ${name} é o tipo de fornecedor que sustenta tráfego pago sem quebrar a experiência do comprador.`,
-      `Indicadores de elite na ${name}: atendimento a ${req.responseRate}% e SLA de ${req.onTimeRate}%. Ideal para concentrar esforço de conteúdo e escalar.`,
-    ],
-    Ouro: [
-      `A ${name} mostra saúde sólida no Seller Center (${req.onTimeRate}% no prazo, ${req.responseRate}% de resposta). Ótima parceira para amostras e conteúdos com a sacola amarela.`,
-      `Loja confiável: ${items} itens vendidos e chat respondendo ${req.responseRate}% das mensagens. Dá para divulgar com tranquilidade e testar escala aos poucos.`,
-      `A ${name} tem base consistente para afiliados. Com ${req.onTimeRate}% de pontualidade, o risco de comissão estornada é baixo.`,
-    ],
-    Prata: [
-      `A ${name} é viável para afiliação orgânica, mas alinhe estoque e prazos antes de colocar anúncios — ${req.onTimeRate}% de pontualidade pede monitoramento.`,
-      `Operação regular: ${items} itens vendidos e ${req.responseRate}% de resposta. Funciona bem para testes, com cautela ao escalar.`,
-      `A ${name} tem potencial, porém precisa provar consistência. Comece com vídeos orgânicos e acompanhe cancelamentos.`,
-    ],
-    Alerta: [
-      `A ${name} está abaixo do padrão recomendado: ${req.onTimeRate}% de envio no prazo e ${req.responseRate}% de resposta elevam o risco de pedidos cancelados e comissão anulada.`,
-      `Cuidado com a ${name}: com ${items} itens vendidos e SLA de ${req.onTimeRate}%, a chance de reclamações é alta. Negocie garantias antes de divulgar.`,
-      `Indicadores frágeis na ${name}. Recomenda-se testar com volume baixo e confirmar estoque e prazo direto com o lojista.`,
-    ],
-  };
-  return pickOne(pools[badge]);
-}
-
-function buildPillars(req: StoreAuditRequest): OperationalPillar[] {
-  const stockStatus: PillarStatus = req.itemsSold >= 3000 ? 'Aprovado' : req.itemsSold >= 500 ? 'Atenção' : 'Risco';
-  const slaStatus: PillarStatus = req.onTimeRate >= 95 ? 'Aprovado' : req.onTimeRate >= 90 ? 'Atenção' : 'Risco';
-  const chatStatus: PillarStatus = req.responseRate >= 95 ? 'Aprovado' : req.responseRate >= 88 ? 'Atenção' : 'Risco';
-  const sampleStatus: PillarStatus = req.freeSampleAvailable ? 'Aprovado' : 'Atenção';
-  const items = fmtItems(req.itemsSold);
-
-  return [
-    {
-      title: pickOne(['Capacidade de Absorção de Picos Virais (Estoque)', 'Estoque para Viralização', 'Fôlego de Estoque em Picos']),
-      status: stockStatus,
-      detail:
-        stockStatus === 'Aprovado'
-          ? pickOne([
-              `Com ${items} itens vendidos, a logística aguenta centenas de pedidos diários se o vídeo viralizar.`,
-              `Histórico de ${items} pedidos indica reposição constante — dá para escalar sem medo de ruptura.`,
-            ])
-          : pickOne([
-              `Com ${items} itens vendidos, confirme a quantidade disponível antes de escalar.`,
-              `Volume de ${items} pedidos ainda não garante estoque para viral — pergunte a capacidade diária.`,
-            ]),
-    },
-    {
-      title: pickOne(['Saúde no Seller Center (SLA de Despacho 48h)', 'Pontualidade de Despacho (SLA)', 'SLA de Envio e Risco de Estorno']),
-      status: slaStatus,
-      detail:
-        slaStatus === 'Aprovado'
-          ? pickOne([
-              `${req.onTimeRate}% de pontualidade garante liberação rápida da comissão sem estornos.`,
-              `Envio no prazo em ${req.onTimeRate}% dos pedidos — o comprador recebe rápido e avalia bem.`,
-            ])
-          : pickOne([
-              `Pontualidade de ${req.onTimeRate}% pode gerar reclamações e cancelamento por demora.`,
-              `Com ${req.onTimeRate}% no prazo, parte das vendas corre risco de virar estorno.`,
-            ]),
-    },
-    {
-      title: pickOne(['Retenção de Clientes & Taxa de Resposta no Chat', 'Atendimento no Chat', 'Velocidade de Suporte ao Comprador']),
-      status: chatStatus,
-      detail:
-        chatStatus === 'Aprovado'
-          ? pickOne([
-              `${req.responseRate}% das mensagens respondidas rapidamente, convertendo dúvidas em vendas.`,
-              `Chat com ${req.responseRate}% de resposta — dúvidas de tamanho, cor e prazo resolvidas na hora.`,
-            ])
-          : pickOne([
-              `Com ${req.responseRate}% de resposta, algumas dúvidas podem ficar sem atendimento.`,
-              `${req.responseRate}% de resposta: antecipe as objeções no próprio vídeo para não perder venda.`,
-            ]),
-    },
-    {
-      title: pickOne(['Acessibilidade de Amostras Grátis para Criadores', 'Amostras para Criadores', 'Política de Amostra Grátis']),
-      status: sampleStatus,
-      detail: req.freeSampleAvailable
-        ? pickOne([
-            'Amostra Grátis ativa na Central de Criadores — solicite e grave ainda esta semana.',
-            'Liberação de amostra simplificada pelo app, sem burocracia para começar a gravar.',
-          ])
-        : pickOne([
-            'Sem amostra automática: envie proposta pelo chat para liberação manual.',
-            'Amostra só via negociação direta — leve números dos seus vídeos para convencer.',
-          ]),
-    },
-  ];
-}
-
-function buildStrengthsWarnings(req: StoreAuditRequest) {
-  const strengths: string[] = [];
-  const warnings: string[] = [];
-  const items = req.itemsSold.toLocaleString('pt-BR');
-
-  if (req.onTimeRate >= 95) {
-    strengths.push(
-      pickOne([
-        `Envio pontual excelente (${req.onTimeRate}%), blindando sua comissão contra cancelamentos`,
-        `${req.onTimeRate}% dos pedidos despachados no prazo — comprador satisfeito e menos estorno`,
-        `SLA de ${req.onTimeRate}% permite divulgar com tráfego pago sem medo de atraso`,
-      ])
-    );
-  } else {
-    warnings.push(
-      pickOne([
-        `Taxa de envio de ${req.onTimeRate}% requer atenção para não frustrar compradores nos comentários`,
-        `Com ${req.onTimeRate}% no prazo, combine com o lojista um prazo de despacho antes de escalar`,
-        `Pontualidade de ${req.onTimeRate}% pode virar cancelamento — acompanhe os pedidos da primeira semana`,
-      ])
-    );
-  }
-
-  if (req.itemsSold >= 2000) {
-    strengths.push(
-      pickOne([
-        `Base comprovada de mais de ${items} pedidos concluídos`,
-        `${items} itens vendidos funcionam como prova social forte nos seus vídeos`,
-        `Demanda validada: ${items} vendas mostram que o catálogo converte`,
-      ])
-    );
-  } else {
-    warnings.push(
-      pickOne([
-        `Volume inicial (${items} itens); alinhe com o lojista sobre reposição de estoque`,
-        `Só ${items} itens vendidos — teste com orgânico antes de investir em anúncios`,
-        `Histórico curto (${items} pedidos); peça confirmação de estoque por escrito`,
-      ])
-    );
-  }
-
-  if (req.responseRate >= 95) {
-    strengths.push(
-      pickOne([
-        `Atendimento rápido no chat (${req.responseRate}%), reduzindo devoluções`,
-        `Chat responde ${req.responseRate}% das mensagens — lojista acessível para negociar`,
-        `${req.responseRate}% de resposta indica lojista ativo e aberto a parcerias`,
-      ])
-    );
-  } else {
-    warnings.push(
-      pickOne([
-        `Atendimento abaixo do ideal (${req.responseRate}%); pós-venda pode demorar`,
-        `Com ${req.responseRate}% de resposta, sua proposta pode levar dias para ser lida`,
-        `${req.responseRate}% de resposta: responda as dúvidas comuns na legenda do vídeo`,
-      ])
-    );
-  }
-
-  if (req.freeSampleAvailable) {
-    strengths.push(
-      pickOne([
-        'Disponibiliza Amostras Grátis de forma ágil para criadores qualificados',
-        'Amostra Grátis ativa — dá para gravar com o produto real em mãos',
-        'Política de amostra aberta facilita começar a parceria sem custo',
-      ])
-    );
-  } else {
-    warnings.push(
-      pickOne([
-        'Sem Amostra Grátis automática; requer negociação direta',
-        'Amostra só sob consulta — prepare seu portfólio antes de pedir',
-        'Sem amostra no app: negocie envio em troca de X vídeos garantidos',
-      ])
-    );
-  }
-
-  return { strengths: shuffle(strengths), warnings: shuffle(warnings) };
-}
-
-function buildScript(name: string, req: StoreAuditRequest, badge: Badge): string {
+export function auditStore(req: StoreAuditRequest, linkIntel?: LinkIntel | null): StoreAuditResult {
+  const mode = req.metricsMode || 'auto';
+  const name = extractStoreTitle(req.storeName, req.storeLink, linkIntel);
+  const profile = inferStoreProfileLocally(req, name, linkIntel);
   const sender = getUserDisplayName();
-  const items = fmtItems(req.itemsSold);
-  const greeting = pickOne([`Olá equipe da ${name}!`, `Oi, pessoal da ${name}, tudo bem?`, `Olá, time ${name}!`, `Bom dia, equipe ${name}!`]);
-  const intro = pickOne([
-    `Me chamo ${sender} e produzo conteúdo focado em conversão no TikTok Shop.`,
-    `Sou ${sender}, criador(a) afiliado(a) no TikTok Shop com foco em vídeos que vendem.`,
-    `Aqui é ${sender}. Trabalho com vídeos curtos de alta retenção para a sacola amarela.`,
-  ]);
-  const compliment =
-    badge === 'Diamante' || badge === 'Ouro'
-      ? pickOne([
-          `Analisei a loja de vocês e me chamou atenção a consistência: ${req.onTimeRate}% de envios no prazo e ${items} itens vendidos.`,
-          `Vi que vocês mantêm ${req.responseRate}% de resposta no chat e ${req.onTimeRate}% de pontualidade — exatamente o que procuro para escalar.`,
-          `Com ${items} vendas e um SLA de ${req.onTimeRate}%, a ${name} é o tipo de parceira que meu público confia.`,
-        ])
-      : pickOne([
-          `Acompanhei o catálogo de vocês e vejo potencial para crescer com conteúdo (${items} itens vendidos até aqui).`,
-          `A ${name} tem produtos com bom fit para o meu público e quero ajudar a acelerar as vendas.`,
-          `Vi espaço para a ${name} ganhar tração com vídeos bem feitos e quero propor um teste.`,
-        ]);
-  const offers = shuffle([
-    pickOne(['Envio de amostra para produção de 3 criativos de alta retenção;', 'Amostra para gravar 2 vídeos + 1 live curta;', 'Amostra para um teste de 5 vídeos em 7 dias;']),
-    pickOne(['Inclusão do link da loja na minha vitrine de criador;', 'Destaque dos produtos de vocês na minha vitrine fixa;']),
-    pickOne(['Comissão diferenciada após as primeiras 20 vendas geradas;', 'Alinhamento de comissão exclusiva para criadores de alto tráfego;', 'Relatório semanal de resultados para ajustarmos juntos;']),
-    req.freeSampleAvailable
-      ? pickOne(['Uso da Amostra Grátis da Central de Criadores para agilizar;', 'Solicitação da amostra direto pelo app para começarmos rápido;'])
-      : pickOne(['Liberação manual de amostra em troca de vídeos garantidos;', 'Envio de amostra com compromisso de publicação em até 5 dias;']),
-  ]).slice(0, 3);
-  const close = pickOne([
-    'Podemos combinar o envio para eu começar a gravar esta semana?',
-    'Topam alinharmos os detalhes por aqui ainda hoje?',
-    'Se fizer sentido, me digam o melhor produto para começarmos.',
-    'Consigo publicar os primeiros vídeos em até 5 dias após receber. Vamos?',
-  ]);
-  const sign = pickOne(['Aguardo o retorno de vocês.', 'Obrigado(a) pela atenção!', 'Fico no aguardo, abraço!']);
-  return `${greeting}\n\n${intro}\n\n${compliment}\n\nProposta de parceria:\n\n${offers.map((o, i) => `${i + 1}. ${o}`).join('\n')}\n\n${close}\n\n${sign}`;
-}
 
-const TIP_POOL = (name: string, req: StoreAuditRequest, badge: Badge) => [
-  'Ao pedir amostra, envie 1 ou 2 vídeos seus de sucesso para provar retenção;',
-  'Pergunte a capacidade diária de expedição caso o vídeo passe de 500 unidades;',
-  badge === 'Diamante' || badge === 'Ouro'
-    ? `Com selo ${badge}, negocie 25% a 30% de comissão após as primeiras 20 vendas;`
-    : 'Antes de pedir comissão maior, prove resultado com um teste curto de 7 dias;',
-  `Pergunte à ${name} qual produto tem maior margem — eles tendem a pagar comissão melhor nele;`,
-  req.freeSampleAvailable
-    ? 'Solicite a amostra pela Central de Criadores e mencione no chat o prazo em que vai publicar;'
-    : 'Ofereça publicar X vídeos garantidos em troca da amostra manual;',
-  req.onTimeRate < 95
-    ? `Combine por escrito o prazo de despacho (hoje em ${req.onTimeRate}%) antes de escalar;`
-    : 'Peça aviso antecipado de ruptura de estoque para pausar anúncios a tempo;',
-  'Proponha um código ou campanha exclusiva para medir as vendas que você gera;',
-  'Mande a proposta em horário comercial e retome em 48h se não houver resposta;',
-  req.responseRate < 90
-    ? `Como o chat responde ${req.responseRate}%, seja objetivo: 1 pedido claro por mensagem;`
-    : 'Aproveite o chat ágil para negociar em tempo real, sem longos e-mails;',
-  'Peça fotos e dúvidas frequentes dos compradores para roteirizar objeções no vídeo;',
-];
+  const itemsSold = mode === 'manual' ? req.itemsSold : profile.autoItemsSold;
+  const responseRate = mode === 'manual' ? req.responseRate : profile.autoResponse;
+  const onTimeRate = mode === 'manual' ? req.onTimeRate : profile.autoOnTime;
+  const freeSample = mode === 'manual' ? req.freeSampleAvailable : profile.autoSample;
 
-let lastFallbackScript = '';
+  const calc = computeManualScore(itemsSold, responseRate, onTimeRate, freeSample, profile.isReplicaOrShady);
+  const score = calc.score;
+  const badge = badgeFor(score);
+  const itemsLabel = mode === 'manual' ? `${fmtItems(itemsSold)} vendidos` : `~${fmtItems(itemsSold)} estimados`;
 
-export function auditStore(req: StoreAuditRequest): StoreAuditResult {
-  const name = extractStoreTitle(req.storeName, req.storeLink);
-  const base = computeBase(req);
-  const score = coherentScore(base);
-  const badge = base.badge;
-  const items = fmtItems(req.itemsSold);
+  const verdict = profile.isReplicaOrShady
+    ? 'Alerta Crítico · Risco de Queda de Loja por Propriedade Intelectual'
+    : badge === 'Diamante'
+    ? `Diamante · ${profile.storeProfileType} Pronta para Escala Forte`
+    : badge === 'Ouro'
+    ? `Ouro · Operação Sólida em ${profile.detectedNiche}`
+    : badge === 'Prata'
+    ? `Prata · Viável no Orgânico com Monitoramento de Estoque/SLA`
+    : `Alerta · Gargalo Logístico / Suporte Risca Estornar Suas Comissões`;
 
-  let partnershipScript = buildScript(name, req, badge);
-  for (let i = 0; i < 4 && partnershipScript === lastFallbackScript; i++) partnershipScript = buildScript(name, req, badge);
-  lastFallbackScript = partnershipScript;
+  const summary = profile.isReplicaOrShady
+    ? `A auditoria identificou sinais de alto risco comercial na "${name}". Lojas que operam sem licença de marca no TikTok Shop costumam sofrer bloqueio de vitrine em poucas semanas, congelando as comissões pendentes dos afiliados.`
+    : `Analisando "${name}" no segmento de ${profile.detectedNiche} (${profile.storeProfileType}), o índice de confiabilidade ficou em ${score}/100 (Selo ${badge}). Com despacho pontual de ${onTimeRate}% e taxa de resposta de ${responseRate}%, a margem recomendada para negociação B2B neste nicho é de ${profile.commissionTarget}.`;
 
-  const { strengths, warnings } = buildStrengthsWarnings(req);
+  const stockPillar: PillarStatus = itemsSold >= 2500 ? 'Aprovado' : itemsSold >= 500 ? 'Atenção' : 'Risco';
+  const slaPillar: PillarStatus = onTimeRate >= 94 ? 'Aprovado' : onTimeRate >= 88 ? 'Atenção' : 'Risco';
+  const chatPillar: PillarStatus = responseRate >= 92 ? 'Aprovado' : responseRate >= 83 ? 'Atenção' : 'Risco';
 
   return {
     name,
+    sourceSummary: buildSourceSummary(req.storeLink, mode, linkIntel),
+    detectedNiche: profile.detectedNiche,
+    storeProfileType: profile.storeProfileType,
+    recommendedCommissionTarget: profile.commissionTarget,
+    bestProductsToRequestSample: profile.sampleIdeas,
     score,
     badge,
-    verdict: pickOne(VERDICTS[badge]),
-    summary: buildSummary(name, req, badge),
+    verdict,
+    summary,
     metrics: [
       {
-        label: 'Volume de Vendas & Autoridade',
-        value: `${items} itens vendidos`,
-        status: base.salesStatus,
-        explanation: pickOne(EXPLAIN.sales[base.salesStatus]),
+        label: mode === 'manual' ? 'Volume Informado' : 'Maturidade Comercial Estimada',
+        value: itemsLabel,
+        status: calc.salesStatus,
+        explanation:
+          itemsSold >= 2500
+            ? `Giro validado em ${profile.detectedNiche} capaz de sustentar picos de vídeos virais.`
+            : `Operação ainda em construção para "${name}" — confirme fôlego de estoque antes de escalar.`,
       },
       {
-        label: 'Velocidade de Resposta no Chat',
-        value: `${req.responseRate}% em 24 horas`,
-        status: base.responseStatus,
-        explanation: pickOne(EXPLAIN.response[base.responseStatus]),
+        label: 'Atendimento no Chat (24h)',
+        value: `${responseRate}% de resposta`,
+        status: calc.responseStatus,
+        explanation:
+          responseRate >= 92
+            ? `Equipe da "${name}" responde rápido a dúvidas de compra e solicitações de criadores.`
+            : `Retorno de ${responseRate}% exige antecipar dúvidas de tamanho/uso dentro do próprio vídeo.`,
       },
       {
-        label: 'Taxa de Envios Pontuais (SLA)',
-        value: `${req.onTimeRate}% no prazo`,
-        status: base.onTimeStatus,
-        explanation: pickOne(EXPLAIN.onTime[base.onTimeStatus]),
+        label: 'Cumprimento de Postagem (SLA)',
+        value: `${onTimeRate}% no prazo`,
+        status: calc.onTimeStatus,
+        explanation:
+          onTimeRate >= 95
+            ? `Expedição pontual protege suas comissões na "${name}" contra cancelamento automático.`
+            : `Atenção: atrasos acima de 48h úteis geram reembolso automático no TikTok Shop e anulam comissão.`,
       },
       {
-        label: 'Amostra Grátis para Criadores',
-        value: req.freeSampleAvailable ? 'Disponível no App' : 'Sob Consulta Manual',
-        status: req.freeSampleAvailable ? 'Excelente' : 'Bom',
-        explanation: req.freeSampleAvailable
-          ? pickOne(['Liberação simplificada via Central de Criadores.', 'Peça direto no app e receba sem negociação.', 'Amostra acessível para criadores qualificados.'])
-          : pickOne(['Exige contato direto com o suporte da loja.', 'Liberação manual mediante proposta.', 'Negocie a amostra pelo chat do vendedor.']),
+        label: 'Política de Amostra Grátis',
+        value: freeSample ? 'Liberada p/ Afiliados' : 'Negociação Manual no Chat',
+        status: freeSample ? 'Excelente' : 'Alerta',
+        explanation: freeSample
+          ? `Facilidade para pedir "${profile.sampleIdeas[0]}" e gravar conteúdo autoral em mãos.`
+          : `Exige enviar portfólio no chat da "${name}" propondo entrega garantida de vídeos.`,
       },
     ],
-    pillars: buildPillars(req),
-    strengths,
-    warnings,
-    partnershipScript,
-    negotiationTips: shuffle(TIP_POOL(name, req, badge)).slice(0, jitter(4, 1, 3, 5)),
-  };
-}
-
-/* ───────────────────────── IA-first ───────────────────────── */
-
-function str(v: unknown, fallback: string): string {
-  return typeof v === 'string' && v.trim() ? v.trim() : fallback;
-}
-
-function strArr(v: unknown, fallback: string[], max = 6): string[] {
-  if (!Array.isArray(v)) return fallback;
-  const out = v.filter((x) => typeof x === 'string' && x.trim()).map((x: string) => x.trim()).slice(0, max);
-  return out.length ? out : fallback;
-}
-
-/** Normaliza o JSON da IA mantendo números/status coerentes com as métricas reais. */
-function normalizeAI(ai: any, req: StoreAuditRequest, local: StoreAuditResult): StoreAuditResult { // eslint-disable-line @typescript-eslint/no-explicit-any
-  const base = computeBase(req);
-  const score = coherentScore(base, typeof ai?.score === 'number' ? ai.score : Number(ai?.score));
-  const badge = base.badge;
-
-  // Métricas: valores e status sempre os reais; a IA personaliza label/explicação.
-  const aiMetrics: any[] = Array.isArray(ai?.metrics) ? ai.metrics : []; // eslint-disable-line @typescript-eslint/no-explicit-any
-  const metrics = local.metrics.map((m, i) => ({
-    ...m,
-    explanation: str(aiMetrics[i]?.explanation, m.explanation),
-  }));
-
-  const aiPillars: any[] = Array.isArray(ai?.pillars) ? ai.pillars : []; // eslint-disable-line @typescript-eslint/no-explicit-any
-  const pillars = local.pillars.map((p, i) => ({
-    title: str(aiPillars[i]?.title, p.title),
-    status: p.status, // status determinado pelas métricas reais
-    detail: str(aiPillars[i]?.detail, p.detail),
-  }));
-
-  const verdictRaw = str(ai?.verdict, local.verdict);
-  return {
-    name: local.name,
-    score,
-    badge,
-    verdict: verdictRaw.toLowerCase().includes(badge.toLowerCase()) ? verdictRaw : `${badge} · ${verdictRaw}`,
-    summary: str(ai?.summary, local.summary),
-    metrics,
-    pillars,
-    strengths: strArr(ai?.strengths, local.strengths),
-    warnings: Array.isArray(ai?.warnings) ? strArr(ai.warnings, [], 6) : local.warnings,
-    partnershipScript: str(ai?.partnershipScript, local.partnershipScript).replace(/\\n/g, '\n'),
-    negotiationTips: strArr(ai?.negotiationTips, local.negotiationTips, 6),
-  };
-}
-
-/** Auditoria IA-first: personalizada à loja e diferente a cada nova análise. Cai no fallback local se a IA falhar. */
-export async function auditStoreAI(req: StoreAuditRequest): Promise<StoreAuditResult> {
-  const local = auditStore(req);
-  const base = computeBase(req);
-  const sender = getUserDisplayName();
-
-  const ai = await aiGenerateJSON({
-    memoryKey: 'store-score:' + local.name,
-    task:
-      'Você é o auditor de fornecedores do Orbiex para afiliados do TikTok Shop Brasil. Audite a loja informada com base nas métricas públicas reais ' +
-      '(itens vendidos, % de resposta no chat em 24h, % de envios no prazo e se oferece amostra grátis). ' +
-      'Escreva tudo em português do Brasil, citando o NOME DA LOJA e os NÚMEROS EXATOS informados, sem frases genéricas. ' +
-      `O score de referência calculado é ${base.total}/100 (selo ${base.badge}); devolva um score inteiro entre ${Math.max(15, base.total - 5)} e ${Math.min(100, base.total + 5)} e mantenha o selo ${base.badge}. ` +
-      'Os status das métricas e pilares já são definidos pelo sistema; foque em explicações, insights, riscos e oportunidades específicos desta loja. ' +
-      `Crie um partnershipScript NOVO (mensagem de chat B2B do afiliado "${sender}" para a loja pedindo amostra e parceria/comissão), com abertura, elogio baseado nos números, 3 itens numerados de proposta e fechamento com CTA, usando \\n para quebras de linha. ` +
-      'Use ângulo, estrutura e vocabulário diferentes de gerações anteriores. negotiationTips devem ser táticas práticas e específicas para esta loja.',
-    input: {
-      storeName: local.name,
-      storeLink: req.storeLink || undefined,
-      itemsSold: req.itemsSold,
-      responseRate24h: req.responseRate,
-      onTimeShippingRate: req.onTimeRate,
-      freeSampleAvailable: req.freeSampleAvailable,
-      referenceScore: base.total,
-      badge: base.badge,
-      metricStatuses: {
-        volume: base.salesStatus,
-        chat: base.responseStatus,
-        sla: base.onTimeStatus,
+    pillars: [
+      {
+        title: `Profundidade de Estoque em ${profile.detectedNiche}`,
+        status: stockPillar,
+        detail:
+          stockPillar === 'Aprovado'
+            ? `"${name}" demonstra estrutura compatível com reposição rápida dos carros-chefe do catálogo.`
+            : `Pergunte no chat da "${name}" quantas unidades do SKU principal eles têm em pronta entrega hoje.`,
       },
-      pillarStatuses: local.pillars.map((p) => p.status),
-      affiliateName: sender,
-    },
-    format: `{
-  "score": number,
-  "verdict": "string curta: '${base.badge} · <veredito personalizado>'",
-  "summary": "string (2-3 frases de diagnóstico executivo com o nome da loja e números)",
+      {
+        title: 'Blindagem de Comissão (SLA de Expedição 48h)',
+        status: slaPillar,
+        detail:
+          slaPillar === 'Aprovado'
+            ? `Com ${onTimeRate}% de envios no prazo, o risco de perda de comissão por falha logística é mínimo.`
+            : `Taxa de ${onTimeRate}% requer acompanhamento nos primeiros 30 pedidos gerados pelo seu perfil.`,
+      },
+      {
+        title: 'Suporte Pré e Pós-Venda ao Comprador',
+        status: chatPillar,
+        detail:
+          chatPillar === 'Aprovado'
+            ? `Atendimento de ${responseRate}% ajuda a converter boletos/PIX e reduz disputas pós-entrega.`
+            : `Com ${responseRate}% no chat, deixe especificações claras na legenda para o cliente não depender do suporte.`,
+      },
+      {
+        title: 'Abertura Comercial para Criadores B2B',
+        status: freeSample ? 'Aprovado' : 'Atenção',
+        detail: freeSample
+          ? `Boa abertura para negociar comissão alvo de ${profile.commissionTarget} em campanha dedicada (Target Plan).`
+          : `Inicie com 1 produto de curva A da "${name}" para destravar relacionamento e amostras futuras.`,
+      },
+    ],
+    strengths: profile.isReplicaOrShady
+      ? ['Apelo de busca orgânica, porém inviável pela política antifraude do TikTok Shop']
+      : [
+          `Posicionamento identificado em ${profile.detectedNiche} (${profile.storeProfileType})`,
+          `Espaço para negociar ${profile.commissionTarget} em plano direcionado (Target Collaboration)`,
+          onTimeRate >= 94
+            ? `Pontualidade de ${onTimeRate}% preserva a nota da vitrine do afiliado`
+            : `Possibilidade de ser um dos primeiros criadores a dominar os vídeos da "${name}"`,
+        ],
+    warnings: [
+      ...(profile.isReplicaOrShady
+        ? [`Risco iminente de fechamento da loja "${name}" por violação de marca e perda total do saldo pendente`]
+        : []),
+      ...(profile.isDropshippingRisk
+        ? [`Verifique se "${name}" possui estoque nacional no Brasil; envios sem código válido em 48h são cancelados`]
+        : []),
+      ...(onTimeRate < 95
+        ? [`Monitore o SLA (${onTimeRate}%) antes de investir dinheiro em Spark Ads para a "${name}"`]
+        : [`Peça à equipe da "${name}" para avisar com 48h de antecedência caso o SKU principal esteja acabando`]),
+    ],
+    partnershipScript: profile.isReplicaOrShady
+      ? `Recomendação Orbiex: Evite firmar parceria ou vincular produtos da "${name}" caso não apresentem Carta de Autorização Oficial (LOA) da marca no Seller Center.`
+      : `Olá, equipe da ${name}!\n\nAqui é ${sender}, criador(a) afiliado(a) no TikTok Shop com foco no nicho de ${profile.detectedNiche}.\n\nAnalisei o perfil de vocês e identifiquei ótimo potencial de escala em vídeo curto, especialmente para itens como ${profile.sampleIdeas[0]}.\n\nGostaria de propor uma parceria prática:\n1. Envio de Amostra Grátis do SKU de maior margem/estoque de vocês;\n2. Produção de 3 vídeos nativos (9:16) quebrando objeções reais e puxando para a sacola;\n3. Configuração de link em Colaboração Direcionada (Target Plan) com comissão competitiva (${profile.commissionTarget}).\n\nQual produto do catálogo de vocês está com maior estoque hoje para começarmos esta semana?`,
+    negotiationTips: [
+      `Peça à "${name}" um link de Colaboração Direcionada (Target Plan) em vez da comissão aberta da vitrine — costuma render 3% a 8% a mais;`,
+      `Comece pedindo amostra de "${profile.sampleIdeas[0]}", que tem demonstração mais rápida em vídeo curto;`,
+      `Confirme o estoque físico real no Brasil antes de impulsionar qualquer vídeo da "${name}".`,
+    ],
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * Auditoria Forense de Lojista AI-First (Inspeção Real do Link + Diagnóstico Único)
+ * ══════════════════════════════════════════════════════════════════════ */
+
+const STORE_AUDIT_FORMAT = `{
+  "identifiedStoreName": "string (nome real e limpo da loja ou @handle extraído do link/input — NUNCA use 'Loja Oficial TikTok Shop' genérico)",
+  "detectedNiche": "string (nicho e linha de produtos específica desta loja, ex: 'Moda Fitness Feminina · Atacado Brás', 'Eletrônicos & Áudio Bluetooth', 'Dermocosméticos Coreanos')",
+  "storeProfileType": "string (modelo operacional diagnosticado: ex: 'Fabricante / Confecção Própria', 'Importadora com Estoque Nacional', 'Dropshipping / Intermediação de Risco', 'Marca Oficial Homologada', 'Revenda Iniciante')",
+  "recommendedCommissionTarget": "string (faixa realista de comissão % para negociar com ESTA loja considerando as margens desse nicho)",
+  "bestProductsToRequestSample": ["string (2 ou 3 tipos específicos de produtos do catálogo/nicho desta loja ideais para pedir amostra)"],
+  "score": "number inteiro 12-98 (SEJA HONESTO E CRÍTICO! Se metricsMode='manual', seja fiel às métricas informadas. Se metricsMode='auto', avalie com realismo o perfil/link/nome da loja: lojas suspeitas/réplicas 18-38; dropshipping/iniciantes sem prova 48-66; boas revendas 68-82; fabricantes/lojas estruturadas 83-91; só dê 92+ para marcas oficiais/operações de elite comprovada!)",
+  "badge": "'Diamante' | 'Ouro' | 'Prata' | 'Alerta' (coerente com score: >=88 Diamante, 76-87 Ouro, 60-75 Prata, <60 Alerta)",
+  "verdict": "string curta e cirúrgica sobre ESTA loja específica",
+  "summary": "string (diagnóstico executivo de 3 frases analisando especificamente esta loja, seu modelo de operação, nicho, riscos reais de estoque/SLA e potencial para afiliados)",
   "metrics": [
-    {"explanation": "string sobre volume de vendas (${fmtItems(req.itemsSold)} itens)"},
-    {"explanation": "string sobre resposta no chat (${req.responseRate}%)"},
-    {"explanation": "string sobre envios no prazo (${req.onTimeRate}%)"},
-    {"explanation": "string sobre amostra grátis (${req.freeSampleAvailable ? 'disponível' : 'sob consulta'})"}
+    { "label": "string", "value": "string", "status": "'Excelente' | 'Bom' | 'Alerta' | 'Crítico'", "explanation": "string específica sobre o volume/maturidade desta loja" },
+    { "label": "string", "value": "string", "status": "'Excelente' | 'Bom' | 'Alerta' | 'Crítico'", "explanation": "string específica sobre atendimento desta loja" },
+    { "label": "string", "value": "string", "status": "'Excelente' | 'Bom' | 'Alerta' | 'Crítico'", "explanation": "string específica sobre despacho/SLA desta loja" },
+    { "label": "string", "value": "string", "status": "'Excelente' | 'Bom' | 'Alerta' | 'Crítico'", "explanation": "string específica sobre amostras e abertura B2B desta loja" }
   ],
   "pillars": [
-    {"title": "string (eixo estoque/picos virais)", "detail": "string"},
-    {"title": "string (eixo SLA de despacho)", "detail": "string"},
-    {"title": "string (eixo atendimento no chat)", "detail": "string"},
-    {"title": "string (eixo amostras para criadores)", "detail": "string"}
+    { "title": "string", "status": "'Aprovado' | 'Atenção' | 'Risco'", "detail": "string específica sobre estoque desta loja" },
+    { "title": "string", "status": "'Aprovado' | 'Atenção' | 'Risco'", "detail": "string específica sobre logística/embalagem do nicho desta loja" },
+    { "title": "string", "status": "'Aprovado' | 'Atenção' | 'Risco'", "detail": "string específica sobre suporte/trocas no nicho desta loja" },
+    { "title": "string", "status": "'Aprovado' | 'Atenção' | 'Risco'", "detail": "string específica sobre parceria B2B e comissão com esta loja" }
   ],
-  "strengths": ["string", "..."],
-  "warnings": ["string", "..."],
-  "partnershipScript": "string",
-  "negotiationTips": ["string", "string", "string", "string"]
-}`,
-    remember: (d) =>
-      [
-        d?.verdict,
-        d?.summary,
-        typeof d?.partnershipScript === 'string' ? d.partnershipScript.slice(0, 200) : '',
-        ...(Array.isArray(d?.strengths) ? d.strengths : []),
-        ...(Array.isArray(d?.negotiationTips) ? d.negotiationTips.slice(0, 2) : []),
-      ].filter((s): s is string => typeof s === 'string' && !!s),
+  "strengths": ["string (2 a 4 forças concretas desta loja/operação)"],
+  "warnings": ["string (2 a 3 riscos reais que o afiliado precisa checar com esta loja)"],
+  "partnershipScript": "string (mensagem B2B impecável do criador para mandar no chat DESTA loja citando o nome dela, o nicho dela e pedindo amostra + Target Plan, usando \\n para quebras de linha)",
+  "negotiationTips": ["string (3 táticas práticas de negociação específicas para este tipo de fornecedor)"]
+}`;
+
+type AnyObj = Record<string, unknown>;
+const str = (v: unknown, fb: string) => (typeof v === 'string' && v.trim() ? v.trim() : fb);
+const strArr = (v: unknown, fb: string[], max = 5) => {
+  if (!Array.isArray(v)) return fb;
+  const out = v.filter((x) => typeof x === 'string' && x.trim()).map((x) => (x as string).trim()).slice(0, max);
+  return out.length ? out : fb;
+};
+
+export async function auditStoreAI(req: StoreAuditRequest): Promise<StoreAuditResult> {
+  const mode = req.metricsMode || 'auto';
+  const sender = getUserDisplayName();
+  const prelimName = extractStoreTitle(req.storeName, req.storeLink);
+  const memoryKey = `store-forensic-v2:${(req.storeName || req.storeLink || prelimName).toLowerCase().trim()}:${mode}`;
+
+  const { data, linkIntel } = await aiDeepAuditJSON<AnyObj>({
+    memoryKey,
+    targetUrl: req.storeLink.trim(),
+    task:
+      `Realize uma AUDITORIA FORENSE COMPLETA E 100% PERSONALIZADA do lojista/fornecedor abaixo para afiliados do TikTok Shop Brasil. ` +
+      (mode === 'manual'
+        ? `O usuário informou MANUALMENTE as métricas reais vistas no aplicativo (${req.itemsSold} itens vendidos, ${req.responseRate}% resposta em 24h, ${req.onTimeRate}% envios pontuais, amostra grátis: ${req.freeSampleAvailable ? 'Sim' : 'Não'}). Use EXATAMENTE esses números nos 4 cards de metrics e calcule o score/badge de forma coerente com eles E com a credibilidade/nicho da loja! `
+        : `O usuário escolheu DIAGNÓSTICO AUTOMÁTICO POR LINK/PERFIL (não informou métricas manuais). Analise profundamente os dados extraídos do link (@handle, bio, seguidores/vendas, domínio, título), o nome da loja ("${req.storeName || req.storeLink}") e o nicho ("${req.storeNiche || 'deduzir pelo nome/link'}") para diagnosticar que tipo de operação é essa (fabricante, marca oficial, revenda pequena, dropshipping sem estoque, loja de réplicas, etc.), estimando indicadores realistas e dando um Score honesto — lojas diferentes DEVEM ter diagnósticos, nichos, riscos e notas completamente diferentes! `) +
+      `Assine o partnershipScript em nome do criador "${sender}", citando a loja pelo nome e mencionando produtos reais do nicho dela.`,
+    input: {
+      modoDeAnalise: mode === 'manual' ? 'Métricas Exatas Informadas pelo Usuário' : 'Diagnóstico Inteligente por Link / Nome da Loja',
+      nomeDaLojaInformado: req.storeName.trim() || '(identificar pelo link)',
+      linkDaLojaInformado: req.storeLink.trim() || '(nenhum link informado)',
+      nichoOuProdutosInformados: req.storeNiche?.trim() || '(deduzir pelo nome da loja e pelos metadados do link)',
+      ...(mode === 'manual'
+        ? {
+            metricasDoApp: {
+              itensVendidos: req.itemsSold,
+              taxaResposta24h: `${req.responseRate}%`,
+              enviosNoPrazoSLA: `${req.onTimeRate}%`,
+              amostraGratisDisponivel: req.freeSampleAvailable,
+            },
+          }
+        : {}),
+      nomeDoAfiliado: sender,
+    },
+    format: STORE_AUDIT_FORMAT,
     timeoutMs: 35000,
+    remember: (d: AnyObj) => [
+      String(d?.summary || '').slice(0, 180),
+      String(d?.verdict || '').slice(0, 120),
+      String(d?.partnershipScript || '').slice(0, 180),
+    ],
   });
 
-  if (!ai || typeof ai !== 'object') return local;
+  const local = auditStore(req, linkIntel);
+  if (!data || typeof data !== 'object') return local;
+
   try {
-    return normalizeAI(ai, req, local);
+    const rawScore = typeof data.score === 'number' ? data.score : Number(data.score);
+    let score = Number.isFinite(rawScore) ? Math.round(Math.max(10, Math.min(98, rawScore))) : local.score;
+    // Em modo manual, garante coerência matemática próxima às métricas informadas (salvo loja de réplica)
+    if (mode === 'manual' && local.score > 35) {
+      score = Math.round(score * 0.45 + local.score * 0.55);
+    }
+    const badge = badgeFor(score);
+
+    const aiMetrics = Array.isArray(data.metrics) ? (data.metrics as AnyObj[]) : [];
+    const metrics: MetricDiagnostic[] = local.metrics.map((fb, i) => {
+      const m = aiMetrics[i];
+      if (!m || typeof m !== 'object') return fb;
+      const st: MetricStatus =
+        m.status === 'Excelente' || m.status === 'Bom' || m.status === 'Alerta' || m.status === 'Crítico'
+          ? m.status
+          : fb.status;
+      return {
+        label: mode === 'manual' ? fb.label : str(m.label, fb.label),
+        value: mode === 'manual' ? fb.value : str(m.value, fb.value),
+        status: mode === 'manual' ? fb.status : st,
+        explanation: str(m.explanation, fb.explanation),
+      };
+    });
+
+    const aiPillars = Array.isArray(data.pillars) ? (data.pillars as AnyObj[]) : [];
+    const pillars: OperationalPillar[] = local.pillars.map((fb, i) => {
+      const p = aiPillars[i];
+      if (!p || typeof p !== 'object') return fb;
+      const st: PillarStatus =
+        p.status === 'Aprovado' || p.status === 'Atenção' || p.status === 'Risco' ? p.status : fb.status;
+      return {
+        title: str(p.title, fb.title),
+        status: mode === 'manual' ? fb.status : st,
+        detail: str(p.detail, fb.detail),
+      };
+    });
+
+    return {
+      name: str(data.identifiedStoreName, local.name),
+      sourceSummary: local.sourceSummary,
+      detectedNiche: str(data.detectedNiche, local.detectedNiche),
+      storeProfileType: str(data.storeProfileType, local.storeProfileType),
+      recommendedCommissionTarget: str(data.recommendedCommissionTarget, local.recommendedCommissionTarget),
+      bestProductsToRequestSample: strArr(data.bestProductsToRequestSample, local.bestProductsToRequestSample, 4),
+      score,
+      badge,
+      verdict: str(data.verdict, local.verdict),
+      summary: str(data.summary, local.summary),
+      metrics,
+      pillars,
+      strengths: strArr(data.strengths, local.strengths, 5),
+      warnings: strArr(data.warnings, local.warnings, 5),
+      partnershipScript: str(data.partnershipScript, local.partnershipScript).replace(/\\n/g, '\n'),
+      negotiationTips: strArr(data.negotiationTips, local.negotiationTips, 5),
+    };
   } catch {
     return local;
   }

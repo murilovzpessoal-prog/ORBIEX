@@ -69,6 +69,215 @@ function parseJSON(raw) {
   }
 }
 
+function decodeHtmlEntities(str = '') {
+  return String(str)
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isSafePublicUrl(u) {
+  try {
+    const parsed = new URL(u);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    const h = parsed.hostname.toLowerCase();
+    if (
+      h === 'localhost' ||
+      h.endsWith('.local') ||
+      h === '0.0.0.0' ||
+      h.startsWith('127.') ||
+      h.startsWith('10.') ||
+      h.startsWith('192.168.') ||
+      h.startsWith('169.254.') ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(h) ||
+      h.includes(':')
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function inspectTargetUrl(rawInput = '') {
+  const raw = String(rawInput || '').trim();
+  if (!raw) return null;
+
+  let candidate = raw;
+  if (raw.startsWith('@') && raw.length > 2 && !raw.includes(' ')) {
+    candidate = `https://www.tiktok.com/${raw}`;
+  } else if (!/^https?:\/\//i.test(raw) && /^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(raw)) {
+    candidate = `https://${raw}`;
+  }
+
+  if (!isSafePublicUrl(candidate)) return null;
+
+  const intel = {
+    inputUrl: raw,
+    finalUrl: candidate,
+    domain: '',
+    platform: '',
+    handle: '',
+    slugHint: '',
+    pageTitle: '',
+    pageDescription: '',
+    oembedTitle: '',
+    oembedAuthor: '',
+    detectedPrice: '',
+    detectedRating: '',
+    detectedSoldOrFollowers: '',
+  };
+
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3400);
+    const resp = await fetch(candidate, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: ctrl.signal,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    }).finally(() => clearTimeout(timer));
+
+    if (resp?.url && isSafePublicUrl(resp.url)) {
+      intel.finalUrl = resp.url;
+    }
+
+    const u = new URL(intel.finalUrl);
+    intel.domain = u.hostname.replace(/^www\./i, '');
+    if (intel.domain.includes('tiktok.com')) intel.platform = 'TikTok / TikTok Shop';
+    else if (intel.domain.includes('shopee')) intel.platform = 'Shopee';
+    else if (intel.domain.includes('mercadolivre') || intel.domain.includes('mercadolibre')) intel.platform = 'Mercado Livre';
+    else if (intel.domain.includes('amazon')) intel.platform = 'Amazon';
+    else if (intel.domain.includes('aliexpress')) intel.platform = 'AliExpress';
+    else if (intel.domain.includes('shein')) intel.platform = 'Shein';
+    else intel.platform = intel.domain;
+
+    const pathParts = u.pathname.split('/').filter(Boolean);
+    const handleSeg = pathParts.find((p) => p.startsWith('@'));
+    if (handleSeg) intel.handle = decodeURIComponent(handleSeg);
+
+    const slugCandidates = pathParts
+      .filter((p) => !p.startsWith('@') && !/^\d+$/.test(p) && !['video', 'product', 'view', 'shop', 'p', 'dp', 'item'].includes(p.toLowerCase()))
+      .map((p) =>
+        decodeURIComponent(p)
+          .replace(/-i\.\d+\.\d+$/i, '')
+          .replace(/^MLB-?\d+-?/i, '')
+          .replace(/_JM$/i, '')
+          .replace(/\.(html|htm|php)$/i, '')
+          .replace(/[-_]+/g, ' ')
+          .trim()
+      )
+      .filter((p) => p.length > 3);
+    if (slugCandidates.length) {
+      intel.slugHint = slugCandidates[slugCandidates.length - 1].slice(0, 140);
+    }
+
+    const html = (await resp.text()).slice(0, 140000);
+
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    if (titleMatch) intel.pageTitle = decodeHtmlEntities(titleMatch[1]).slice(0, 180);
+
+    const ogTitle =
+      html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i)?.[1];
+    if (ogTitle && (!intel.pageTitle || ogTitle.length > intel.pageTitle.length)) {
+      intel.pageTitle = decodeHtmlEntities(ogTitle).slice(0, 180);
+    }
+
+    const ogDesc =
+      html.match(/<meta[^>]+(?:property=["']og:description["']|name=["']description["'])[^>]+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property=["']og:description["']|name=["']description["'])/i)?.[1];
+    if (ogDesc) intel.pageDescription = decodeHtmlEntities(ogDesc).slice(0, 280);
+
+    const priceMeta =
+      html.match(/<meta[^>]+property=["'](?:product:price:amount|og:price:amount)["'][^>]+content=["']([^"']+)["']/i)?.[1] ||
+      html.match(/"price"\s*:\s*"?(R\$\s*[\d.,]+|\d+(?:\.\d{1,2})?)"?/i)?.[1] ||
+      html.match(/R\$\s?\d{1,4}(?:[.,]\d{2})/)?.[0];
+    if (priceMeta) intel.detectedPrice = String(priceMeta).slice(0, 40);
+
+    const ratingMatch = html.match(/"ratingValue"\s*:\s*"?(\d(?:\.\d)?)"?/i)?.[1];
+    if (ratingMatch) intel.detectedRating = `${ratingMatch}/5`;
+
+    const followersMatch = html.match(/"followerCount"\s*:\s*(\d+)/)?.[1];
+    const soldMatch = html.match(/"soldCount"\s*:\s*(\d+)/)?.[1];
+    if (soldMatch) intel.detectedSoldOrFollowers = `${Number(soldMatch).toLocaleString('pt-BR')} vendidos detectados`;
+    else if (followersMatch) intel.detectedSoldOrFollowers = `${Number(followersMatch).toLocaleString('pt-BR')} seguidores detectados`;
+  } catch {
+    // Mesmo que o site bloqueie scraping HTML, aproveitamos o parse da URL
+    try {
+      const u = new URL(intel.finalUrl);
+      intel.domain = u.hostname.replace(/^www\./i, '');
+      const pathParts = u.pathname.split('/').filter(Boolean);
+      const handleSeg = pathParts.find((p) => p.startsWith('@'));
+      if (handleSeg) intel.handle = decodeURIComponent(handleSeg);
+      const slug = pathParts
+        .filter((p) => !p.startsWith('@') && !/^\d+$/.test(p) && !['video', 'product', 'view', 'shop'].includes(p.toLowerCase()))
+        .pop();
+      if (slug) {
+        intel.slugHint = decodeURIComponent(slug)
+          .replace(/-i\.\d+\.\d+$/i, '')
+          .replace(/^MLB-?\d+-?/i, '')
+          .replace(/[-_]+/g, ' ')
+          .trim();
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Consulta oEmbed oficial do TikTok para vídeos e perfis (muito confiável para extrair legenda do produto e autor/loja!)
+  if (intel.finalUrl.includes('tiktok.com')) {
+    try {
+      const oCtrl = new AbortController();
+      const oTimer = setTimeout(() => oCtrl.abort(), 2000);
+      const oRes = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(intel.finalUrl)}`, {
+        signal: oCtrl.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+      }).finally(() => clearTimeout(oTimer));
+      if (oRes.ok) {
+        const oJson = await oRes.json();
+        if (oJson?.title) intel.oembedTitle = String(oJson.title).slice(0, 260);
+        if (oJson?.author_name) intel.oembedAuthor = String(oJson.author_name).slice(0, 90);
+        if (oJson?.author_unique_id && !intel.handle) intel.handle = `@${oJson.author_unique_id}`;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return intel;
+}
+
+const DEEP_AUDIT_SYSTEM = `Você é o Auditor Forense Sênior de Comércio Social da ORBIEX (especialista em TikTok Shop Brasil, moderação algorítmica, logística de marketplaces, margem de afiliados e engenharia de retenção em vídeos curtos).
+
+REGRA NÚMERO 1 — PROIBIDO SER GENÉRICO OU INFLAR NOTAS:
+- NUNCA dê a mesma faixa de score (ex: 88-92) para tudo! Use TODA a escala 0 a 98 com rigor técnico real:
+  * 08 a 25: Produtos proibidos (vape, armas, adulto, tabaco, drogas) ou lojas fraudulentas/golpe.
+  * 24 a 40: Réplicas, falsificações, marcas registradas sem licença LOA (camisa de time tailandesa, tênis Nike/Adidas réplica, AirPods réplica, copo Stanley réplica, perfume contratipo citando grife) ou lojas sem lastro.
+  * 35 a 52: Ingeríveis/cápsulas/emagrecedores/chás secativos/promessas médicas ou lojas com SLA crítico (<82% no prazo) onde a comissão será estornada.
+  * 48 a 65: Commodities sem diferencial visual ou ticket baixo demais que destrói a comissão (ex: meia branca simples, cabo USB comum, caneta comum, capinha transparente básica) ou lojas iniciantes sem histórico/sem amostra.
+  * 66 a 79: Produtos viáveis mas com atrito real (roupa/calçado com alto índice de troca por tamanho, vidro/espelho frágil no frete, skincare de melasma/acne que exige cuidado extremo com o filtro de antes-e-depois do TikTok, ou ticket > R$ 300 que reduz compra por impulso), ou lojas medianas (Prata).
+  * 80 a 88: Bons produtos validados com dor clara, boa margem e risco controlado, ou lojas Ouro consistentes.
+  * 89 a 97: APENAS produtos com "Efeito UAU" visual imediato nos primeiros 2 segundos, ticket de impulso ideal (R$ 39 a R$ 149), baixíssima devolução e altíssima recorrência, ou lojas Diamante de elite comprovada.
+
+REGRA NÚMERO 2 — HIPER-PERSONALIZAÇÃO CIRÚRGICA:
+- Cite SEMPRE as características físicas, mecânicas, sensoriais, de tecido, voltagem, embalagem, objeções reais dos comentários e uso prático EXATO do produto ou do nicho/catálogo da loja analisada!
+- Se houver dados extraídos do link (título da página, legenda do TikTok, @handle da loja, plataforma Shopee/Mercado Livre/TikTok Shop, preço detectado), incorpore esses dados reais na análise, no nome identificado e no script de abordagem!
+- Nenhuma frase pode parecer template pronto que serviria para outro produto ou outra loja.
+- Português do Brasil impecável, direto, analítico e sem emojis. Responda APENAS com JSON válido.`;
+
 const VISION_SYSTEM = `Você é o motor de Visão Computacional e Leitura Espacial (Set-of-Marks UI Grounding) do Orbiex Copilot v2.0.
 Sua única missão é localizar COM PRECISÃO CIRÚRGICA o elemento ou coordenada exata na tela onde o usuário pediu para clicar ou digitar.
 
@@ -105,6 +314,76 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = req.body || {};
+
+    // MODO ESPECIAL: Auditoria Forense Profunda de Produto ou Lojista (com inspeção real de URL + oEmbed)
+    if (body.mode === 'deep_audit') {
+      const {
+        targetUrl = '',
+        task = '',
+        input = {},
+        format = '',
+        avoid = [],
+      } = body;
+
+      const linkIntel = targetUrl ? await inspectTargetUrl(targetUrl) : null;
+      const avoidList = (Array.isArray(avoid) ? avoid : [])
+        .map((a) => String(a).replace(/\s+/g, ' ').trim().slice(0, 200))
+        .filter(Boolean)
+        .slice(-25);
+
+      const promptText = `${task}
+
+DADOS PREENCHIDOS PELO USUÁRIO:
+${JSON.stringify(input, null, 2)}
+
+${
+  linkIntel
+    ? `INSPEÇÃO EM TEMPO REAL DO LINK FORNECIDO (use estas informações reais para identificar o produto/loja, preço, nicho, @perfil e plataforma!):
+${JSON.stringify(linkIntel, null, 2)}`
+    : 'NENHUM LINK INFORMADO — baseie toda a análise forense exatamente no nome e parâmetros preenchidos pelo usuário.'
+}
+${avoidList.length ? `\nPROIBIDO REPETIR ESTES TRECHOS DE AUDITORIAS ANTERIORES:\n- ${avoidList.join('\n- ')}\n` : ''}
+FORMATO JSON OBRIGATÓRIO:
+${format}`;
+
+      const key = ACTIVE_GEMINI_KEY || process.env.GEMINI_API_KEY;
+      for (const model of MODELS) {
+        try {
+          const r = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: DEEP_AUDIT_SYSTEM }] },
+                generationConfig: {
+                  temperature: 0.65,
+                  topP: 0.92,
+                  responseMimeType: 'application/json',
+                  maxOutputTokens: 4096,
+                },
+              }),
+            }
+          );
+          if (!r.ok) continue;
+          const data = await r.json();
+          const parsed = parseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
+          if (parsed) {
+            return res.status(200).json({
+              success: true,
+              data: parsed,
+              linkIntel,
+              provider: `forensic-${model}`,
+            });
+          }
+        } catch (err) {
+          console.warn(`deep_audit ${model} error:`, err.message);
+        }
+      }
+
+      return res.status(200).json({ success: false, linkIntel, fallback: true });
+    }
 
     // MODO ESPECIAL: Visão Computacional + Grounding Espacial da Extensão Orbiex Copilot v2.0
     if (body.mode === 'vision_grounding') {

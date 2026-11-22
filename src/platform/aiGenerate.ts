@@ -75,6 +75,66 @@ export async function aiGenerateJSON<T = any>(opts: AIGenerateOptions): Promise<
   }
 }
 
+export interface LinkIntel {
+  inputUrl?: string;
+  finalUrl?: string;
+  domain?: string;
+  platform?: string;
+  handle?: string;
+  slugHint?: string;
+  pageTitle?: string;
+  pageDescription?: string;
+  oembedTitle?: string;
+  oembedAuthor?: string;
+  detectedPrice?: string;
+  detectedRating?: string;
+  detectedSoldOrFollowers?: string;
+}
+
+export async function aiDeepAuditJSON<T = any>(opts: { // eslint-disable-line @typescript-eslint/no-explicit-any
+  memoryKey: string;
+  targetUrl?: string;
+  task: string;
+  input: unknown;
+  format: string;
+  remember?: (data: any) => string[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  timeoutMs?: number;
+}): Promise<{ data: T | null; linkIntel: LinkIntel | null }> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), opts.timeoutMs ?? 35000);
+  try {
+    const res = await fetch('/api/ai-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'deep_audit',
+        targetUrl: opts.targetUrl || '',
+        task: opts.task,
+        input: opts.input,
+        format: opts.format,
+        avoid: getGenMemory(opts.memoryKey),
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) return { data: null, linkIntel: null };
+    const json = await res.json();
+    const linkIntel: LinkIntel | null = json?.linkIntel || null;
+    if (!json?.success || !json.data) return { data: null, linkIntel };
+    if (opts.remember) {
+      try {
+        addGenMemory(opts.memoryKey, opts.remember(json.data));
+      } catch {
+        /* ignore */
+      }
+    }
+    return { data: json.data as T, linkIntel };
+  } catch {
+    return { data: null, linkIntel: null };
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 /* ───── utilitários para fallbacks locais nunca ficarem iguais ───── */
 
 export function shuffle<T>(arr: T[]): T[] {

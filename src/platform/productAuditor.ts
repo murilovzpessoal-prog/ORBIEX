@@ -1,10 +1,12 @@
-import { aiGenerateJSON, shuffle, pickOne, jitter } from './aiGenerate';
+import { aiDeepAuditJSON, type LinkIntel } from './aiGenerate';
+import { getUserDisplayName } from './useUserProfile';
 
 export interface ProductAuditRequest {
   productName: string;
   productLink: string;
   category: string;
   commission: string;
+  estimatedPrice?: string;
 }
 
 export interface GuidelineItem {
@@ -21,16 +23,29 @@ export interface ContentAngle {
   description: string;
 }
 
+export interface BuyerObjection {
+  objection: string;
+  howToKillInVideo: string;
+}
+
 export interface ProductAuditResult {
   name: string;
+  sourceSummary?: string;
   categoryDetected: string;
   score: number;
   banRisk: 'Baixo' | 'Médio' | 'Alto';
+  banRiskDetail: string;
   status: string;
   demandIndex: number;
+  viralHookDetail: string;
   demonstrationEase: number;
+  estimatedTicket: string;
+  estimatedCommissionPerSale: string;
   estimatedMargin: string;
   returnRateRisk: string;
+  returnRateReason: string;
+  targetPersona: string;
+  buyerObjections: BuyerObjection[];
   verdictSummary: string;
   guidelines: GuidelineItem[];
   contentAngles: ContentAngle[];
@@ -40,1031 +55,656 @@ export interface ProductAuditResult {
   actionableAdvice: string;
 }
 
-// Clean and extract product title from user input or link
-export function extractProductTitle(rawName: string, rawLink: string, defaultCategory: string): string {
-  const trimmedName = rawName.trim();
-  if (trimmedName) return trimmedName;
-
-  const trimmedLink = rawLink.trim();
-  if (trimmedLink) {
-    try {
-      const url = new URL(trimmedLink.startsWith('http') ? trimmedLink : `https://${trimmedLink}`);
-      const pathSegments = url.pathname.split('/').filter(Boolean);
-      const lastSegment = pathSegments[pathSegments.length - 1] || '';
-      
-      // If segment is slug with dashes or underscores
-      if (lastSegment && !/^\d+$/.test(lastSegment)) {
-        const decoded = decodeURIComponent(lastSegment)
-          .replace(/[-_]+/g, ' ')
-          .replace(/\.(html|php|aspx|json)$/i, '')
-          .trim();
-        if (decoded.length > 3) {
-          return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-        }
-      }
-    } catch {
-      // ignore URL parsing error
-    }
-    return `Item TikTok Shop (${defaultCategory})`;
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
-
-  return 'Produto TikTok Shop';
+  return Math.abs(h >>> 0);
 }
 
-/** Triagem base por categoria (política/risco). A variação é aplicada em `auditProduct`. */
-function baseAuditProduct(req: ProductAuditRequest): ProductAuditResult {
-  const name = extractProductTitle(req.productName, req.productLink, req.category);
-  const normalized = `${name} ${req.productLink} ${req.category}`.toLowerCase();
+function parseLinkLocally(rawLink: string): {
+  domain: string;
+  handle: string;
+  slug: string;
+  platform: string;
+} {
+  const trimmed = rawLink.trim();
+  if (!trimmed) return { domain: '', handle: '', slug: '', platform: '' };
+  try {
+    const normalized = trimmed.startsWith('@')
+      ? `https://www.tiktok.com/${trimmed}`
+      : /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
+    const u = new URL(normalized);
+    const domain = u.hostname.replace(/^www\./i, '');
+    const platform = domain.includes('tiktok')
+      ? 'TikTok Shop'
+      : domain.includes('shopee')
+      ? 'Shopee'
+      : domain.includes('mercadolivre')
+      ? 'Mercado Livre'
+      : domain.includes('amazon')
+      ? 'Amazon'
+      : domain.includes('shein')
+      ? 'Shein'
+      : domain.includes('aliexpress')
+      ? 'AliExpress'
+      : domain;
+    const segs = u.pathname.split('/').filter(Boolean);
+    const handle = segs.find((s) => s.startsWith('@')) || '';
+    const rawSlug =
+      segs
+        .filter(
+          (s) =>
+            !s.startsWith('@') &&
+            !/^\d+$/.test(s) &&
+            !['video', 'product', 'view', 'shop', 'p', 'dp', 'item', 'pt', 'br'].includes(s.toLowerCase())
+        )
+        .pop() || '';
+    const slug = decodeURIComponent(rawSlug)
+      .replace(/-i\.\d+\.\d+$/i, '')
+      .replace(/^MLB-?\d+-?/i, '')
+      .replace(/_JM$/i, '')
+      .replace(/\.(html|php|htm)$/i, '')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+    return { domain, handle, slug, platform };
+  } catch {
+    return { domain: '', handle: '', slug: '', platform: '' };
+  }
+}
 
-  // Pattern tests
-  const isIngestibleOrMedical = /(emagreced|perda de peso|gordura|c[aá]psula|suplemento|whey|creatina|gotas|cura|melatonina|rem[eé]dio|ozempic|ch[aá] sec|diur[eé]tico|termog[eê]nico|col[aá]geno|lipo|detox|aumento peniano|secador de barriga)/i.test(
-    normalized
-  );
+export function extractProductTitle(
+  rawName: string,
+  rawLink: string,
+  defaultCategory: string,
+  linkIntel?: LinkIntel | null
+): string {
+  if (rawName.trim()) return rawName.trim();
 
-  const isReplicaOrCounterfeit = /(r[eé]plica|1 linha|primeira linha|fake|c[oó]pia id[eê]ntica|nike|adidas|gucci|louis vuitton|rolex|chanel|prada|balenciaga|stanley r[eé]plica|stanley fake|airpod r[eé]plica)/i.test(
-    normalized
-  );
+  // 1. Tenta dados reais extraídos do link (oEmbed / og:title / slug)
+  if (linkIntel) {
+    const candidates = [linkIntel.oembedTitle, linkIntel.pageTitle, linkIntel.slugHint]
+      .map((s) =>
+        String(s || '')
+          .replace(/#\S+/g, '')
+          .replace(/\|\s*(TikTok|Shopee|Mercado Livre|Amazon).*$/i, '')
+          .replace(/-\s*(TikTok|Shopee|Mercado Livre).*$/i, '')
+          .replace(/^TikTok\s*·\s*/i, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+      )
+      .filter((s) => s.length >= 4 && !/^(tiktok|make your day|entrar|login)$/i.test(s));
 
-  const isProhibitedOrSensitive = /(vape|pod|ess[eê]ncia|tabaco|faca t[aá]tica|canivete|taser|spray de pimenta|arma|muni[cç][aã]o|laser 1000mw|er[oó]tico|sex shop|estimulante sexual)/i.test(
-    normalized
-  );
-
-  const isSkincareOrTreatment = /(s[eé]rum|claread|clareamento|melasma|acne|espinha|estria|varizes|tatuagem|fungo|micose|anti[- ]?idade|rejuvenescedor|depilador a laser|botox)/i.test(
-    normalized
-  );
-
-  const isElectronics = /(projetor|mini c[aâ]mera|c[aâ]mera espi[aã]|drone|carregador|powerbank|fone bluetooth|fone sem fio|smartwatch|microfone|ring light|teclado|lumin[aá]ria|aspirador)/i.test(
-    normalized
-  );
-
-  const isHomeOrKitchen = /(processador|mop|seladora|dispenser|cortador|liquidificador|garrafa|copo t[eé]rmico|organizador|limpador|escova|cozinha|airfryer)/i.test(
-    normalized
-  );
-
-  const isFashionOrApparel = /(vestido|conjunto|cal[cç]a|camisa|cropped|t[eê]nis|mochila|bolsa|lingerie|cinta modeladora|legging|bermuda)/i.test(
-    normalized
-  );
-
-  // 1. REPROVADO CRÍTICO: Ingestíveis, Promessas Médicas, Réplicas e Proibidos
-  if (isProhibitedOrSensitive) {
-    return {
-      name,
-      categoryDetected: 'Itens Restritos / Proibidos',
-      score: 18,
-      banRisk: 'Alto',
-      status: 'Reprovado · Violação Crítica das Políticas Globais do TikTok Shop',
-      demandIndex: 45,
-      demonstrationEase: 20,
-      estimatedMargin: '0% (Bloqueio Imediato)',
-      returnRateRisk: '100% (Risco de Retenção de Fundos)',
-      verdictSummary:
-        'Produto listado como estritamente proibido pelas diretrizes do TikTok Shop. Qualquer menção ou veiculação de anúncios acarretará encerramento imediato de vitrine de afiliado e shadowban do perfil.',
-      guidelines: [
-        {
-          label: 'Conformidade com Diretrizes de Produtos Proibidos',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Produto detectado em categoria banida (artigos de tabacaria, armas ou conteúdo restrito).',
-          policyRef: 'TikTok Shop Merchant Policy - Seção 2.1 (Itens Banidos)',
-        },
-        {
-          label: 'Segurança da Comunidade & Moderação Algorítmica',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Gatilho de suspensão automática pelo sistema de visão computacional da plataforma.',
-          policyRef: 'Diretrizes da Comunidade TikTok Shop',
-        },
-        {
-          label: 'Proteção de Marca & Licenciamento',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Inviável para afiliação segura.',
-          policyRef: 'Normativa de Risco Operacional',
-        },
-        {
-          label: 'Viabilidade de Envio & Rastreamento Postal',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Sujeito a apreensão por transportadoras parceiras.',
-          policyRef: 'Termos de Logística e Frete Integrado',
-        },
-        {
-          label: 'Retenção de Repasses & Comissões',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Comissões geradas por produtos proibidos são bloqueadas sem direito a recurso.',
-          policyRef: 'Termos de Pagamento ao Criador',
-        },
-      ],
-      contentAngles: [],
-      strengths: [],
-      riskFactors: [
-        'Suspensão definitiva da conta de afiliado e perda da vitrine (Showcase)',
-        'Bloqueio do saldo acumulado na carteira do TikTok Shop',
-        'Impossibilidade de contestação perante o suporte oficial',
-      ],
-      freeSampleScript:
-        'Atenção: Não é recomendado solicitar amostras nem promover este produto. O algoritmo do TikTok Shop identifica e penaliza perfis que associam sua vitrine a itens desta categoria.',
-      actionableAdvice:
-        'Remova este produto imediatamente da sua esteira de testes e escolha produtos em Casa & Cozinha, Gadgets ou Moda.',
-    };
+    if (candidates[0]) {
+      return candidates[0].slice(0, 85);
+    }
   }
 
-  if (isReplicaOrCounterfeit) {
-    return {
-      name,
-      categoryDetected: 'Réplicas / Propriedade Intelectual Restrita',
-      score: 28,
-      banRisk: 'Alto',
-      status: 'Reprovado · Risco Grave de Propriedade Intelectual (IPR Strike)',
-      demandIndex: 85,
-      demonstrationEase: 80,
-      estimatedMargin: 'Inviável (Risco Jurídico)',
-      returnRateRisk: '35% a 60% (Reclamação de Fraude)',
-      verdictSummary:
-        'Produtos que copiam logotipos, designs industriais ou patentes de marcas consolidadas sofrem varredura de OCR e inteligência artificial do TikTok Shop, resultando em banimento permanente de conta de afiliado.',
-      guidelines: [
-        {
-          label: 'Proteção de Marca Registrada & Direitos Autorais',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Sem Carta de Autorização de Marca (LOA - Letter of Authorization) homologada.',
-          policyRef: 'TikTok Shop Intellectual Property Policy 2026',
-        },
-        {
-          label: 'Autenticidade do Produto & Garantia de Procedência',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Identificação de alta probabilidade de cópia ou réplica não autorizada.',
-          policyRef: 'Artigo 3.4 - Proibição de Contrafação',
-        },
-        {
-          label: 'Moderação Visual de Logotipos nos Criativos',
-          passed: false,
-          severity: 'alerta',
-          note: 'Detecção de emblemas proprietários gera suspensão do vídeo em menos de 4 horas.',
-          policyRef: 'Algoritmo OCR de Verificação de Marca',
-        },
-        {
-          label: 'Viabilidade Logística & Envio Legal',
-          passed: true,
-          severity: 'ok',
-          note: 'Fornecedor pode postar, porém sem amparo legal perante o consumidor final.',
-          policyRef: 'SLA de Transporte Nacional',
-        },
-        {
-          label: 'Segurança de Saldo de Afiliado',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Denúncias de clientes por falsificação congelam o pagamento de comissões.',
-          policyRef: 'Política de Chargebacks e Fraude Comercial',
-        },
-      ],
-      contentAngles: [],
-      strengths: ['Alta procura aparente pelo público'],
-      riskFactors: [
-        'Strike de Propriedade Intelectual (3 strikes levam à exclusão total da conta)',
-        'Perda imediata do direito de vincular links de afiliado',
-        'Responsabilidade solidária em casos de reclamações de consumidores',
-      ],
-      freeSampleScript:
-        'Atenção: Não associe sua imagem a réplicas. Fornecedores que vendem réplicas costumam ter suas lojas fechadas pelo TikTok em menos de 30 dias, deixando criadores sem receber comissões.',
-      actionableAdvice:
-        'Substitua por versões genéricas ("White Label") de boa qualidade que não utilizem marcas registradas de terceiros.',
-    };
+  // 2. Parse local da URL
+  const parsed = parseLinkLocally(rawLink);
+  if (parsed.slug && parsed.slug.length >= 4) {
+    return parsed.slug
+      .split(' ')
+      .map((w) => (w.length > 2 ? w[0].toUpperCase() + w.slice(1) : w))
+      .join(' ')
+      .slice(0, 85);
+  }
+  if (parsed.handle) {
+    return `Produto da Vitrine ${parsed.handle}`;
+  }
+  if (parsed.platform) {
+    const cat = defaultCategory && !defaultCategory.includes('Automaticamente') ? ` (${defaultCategory})` : '';
+    return `Anúncio ${parsed.platform}${cat}`;
+  }
+  return 'Produto em Análise';
+}
+
+function formatSourceSummary(rawLink: string, linkIntel?: LinkIntel | null): string | undefined {
+  if (!rawLink.trim()) return undefined;
+  if (linkIntel) {
+    const bits: string[] = [];
+    if (linkIntel.platform || linkIntel.domain) bits.push(`Fonte: ${linkIntel.platform || linkIntel.domain}`);
+    if (linkIntel.handle) bits.push(`Perfil: ${linkIntel.handle}`);
+    else if (linkIntel.oembedAuthor) bits.push(`Loja/Autor: ${linkIntel.oembedAuthor}`);
+    if (linkIntel.detectedPrice) bits.push(`Preço detectado: ${linkIntel.detectedPrice}`);
+    if (linkIntel.detectedRating) bits.push(`Nota: ${linkIntel.detectedRating}`);
+    if (linkIntel.detectedSoldOrFollowers) bits.push(linkIntel.detectedSoldOrFollowers);
+    if (bits.length) return bits.join(' • ');
+  }
+  const local = parseLinkLocally(rawLink);
+  if (local.platform || local.handle) {
+    return [local.platform && `Fonte: ${local.platform}`, local.handle && `Perfil: ${local.handle}`]
+      .filter(Boolean)
+      .join(' • ');
+  }
+  return undefined;
+}
+
+function parseCommissionNumber(comm: string): number {
+  const m = String(comm || '20').match(/(\d+(?:[.,]\d+)?)/);
+  if (!m) return 20;
+  return Math.max(1, Math.min(80, parseFloat(m[1].replace(',', '.'))));
+}
+
+function parsePriceNumber(priceStr?: string): number | null {
+  if (!priceStr) return null;
+  const cleaned = priceStr.replace(/[^\d.,]/g, '');
+  if (!cleaned) return null;
+  const normalized =
+    cleaned.includes(',') && cleaned.includes('.')
+      ? cleaned.replace(/\./g, '').replace(',', '.')
+      : cleaned.replace(',', '.');
+  const val = parseFloat(normalized);
+  return Number.isFinite(val) && val > 0 ? val : null;
+}
+
+function fmtBRL(v: number): string {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * Motor Forense Local (Fallback realista com 12 perfis distintos e hash determinístico por produto)
+ * ══════════════════════════════════════════════════════════════════════ */
+export function auditProduct(req: ProductAuditRequest, linkIntel?: LinkIntel | null): ProductAuditResult {
+  const name = extractProductTitle(req.productName, req.productLink, req.category, linkIntel);
+  const sourceSummary = formatSourceSummary(req.productLink, linkIntel);
+  const localLink = parseLinkLocally(req.productLink);
+  const storeRef = linkIntel?.handle || localLink.handle || linkIntel?.oembedAuthor || 'sua loja';
+  const sender = getUserDisplayName();
+  const commPct = parseCommissionNumber(req.commission);
+  const userPrice = parsePriceNumber(req.estimatedPrice) || parsePriceNumber(linkIntel?.detectedPrice);
+
+  const fullText = `${name} ${req.productLink} ${linkIntel?.oembedTitle || ''} ${linkIntel?.pageTitle || ''} ${
+    req.category && !req.category.includes('Automaticamente') ? req.category : ''
+  }`.toLowerCase();
+  const seed = hashStr(`${name.toLowerCase()}|${req.productLink.trim().toLowerCase()}|${commPct}|${userPrice || ''}`);
+  const offset = (seed % 7) - 3; // -3..+3 determinístico para cada produto diferente
+
+  // Classificadores granulares reais
+  const isProhibited =
+    /(vape|pod descart|cigarro eletr|ess[eê]ncia nargu|tabaco|faca t[aá]tica|canivete|taser|arma|muni[cç][aã]o|spray de pimenta|er[oó]tico|vibrador|sex shop|estimulante sexual)/i.test(
+      fullText
+    );
+  const isReplica =
+    /(r[eé]plica|1[\sªa]*linha|primeira linha|c[oó]pia|tailandesa|camisa de time|nike|adidas|apple|airpods|gucci|prada|louis vuitton|chanel|rolex|balenciaga|puma|new balance|copo stanley|contratipo)/i.test(
+      fullText
+    );
+  const isIngestible =
+    /(emagreced|perda de peso|secar barriga|queima gordura|c[aá]psula|gummy|suplemento|whey|creatina|melatonina|rem[eé]dio|ozempic|ch[aá] sec|diur[eé]tico|termog[eê]nico|col[aá]geno em p[oó]|detox|minoxidil)/i.test(
+      fullText
+    );
+  const isSensitiveSkin =
+    /(melasma|clareador|clareamento dental|acne|espinha|estria|varizes|fungo|micose|foliculite|cicatriz|queda de cabelo|anti[- ]?idade|rugas|peeling|[aá]cido)/i.test(
+      fullText
+    );
+  const isLowTicketCommodity =
+    /(meia branca|cabo usb|pel[ií]cula de vidro|capinha transparente|caneta|caderno simples|pano de prato|esponja comum|pilha|adaptador de tomada|chaveiro simples|el[aá]stico de cabelo)/i.test(
+      fullText
+    ) || (userPrice !== null && userPrice < 19);
+  const isFragileOrBulky =
+    /(espelho grande|corpo inteiro|vaso de vidro|cristal|porcelana|ta[cç]a|quadro com vidro|lustre|mesa|cadeira|estante|geladeira|micro-ondas|tv \d\d)/i.test(
+      fullText
+    );
+  const isSizingCritical =
+    /(sapato|t[eê]nis|bota|sand[aá]lia|salto|scarpin|cal[cç]a jeans|alfaiataria|suti[aã]|biqu[ií]ni|lingerie|terno|blazer)/i.test(
+      fullText
+    );
+  const isHighTicket = userPrice !== null && userPrice >= 320;
+  const isWowProblemSolver =
+    /(mini processador|mop|extrator|vaporizador|passadeira|escova alisadora|escova secadora|seladora|aspirador port[aá]til|removedor de pelos|tira bolinha|mini projetor|lumin[aá]ria|shorts modelador|macaquinho fitness|organizador girat)/i.test(
+      fullText
+    );
+
+  // Cálculo honesto e diferenciado
+  let score = 78 + offset;
+  let banRisk: ProductAuditResult['banRisk'] = 'Baixo';
+  let categoryDetected =
+    req.category && !req.category.includes('Automaticamente') ? req.category : 'Utilidades & Comércio Geral';
+  let ticketLo = userPrice ? Math.max(9, userPrice * 0.95) : 59.9;
+  let ticketHi = userPrice ? userPrice * 1.05 : 99.9;
+  let demandIndex = Math.min(98, Math.max(30, 80 + ((seed >> 3) % 13) - 5));
+  let demonstrationEase = Math.min(98, Math.max(25, 78 + ((seed >> 5) % 15) - 6));
+  let returnRateRisk = '3.4% (Baixo)';
+  let returnRateReason = `Baixa complexidade de uso no dia a dia para "${name}", desde que o anúncio mostre as dimensões reais.`;
+  let banRiskDetail = `Nenhum termo ou atributo visual de "${name}" aciona bloqueio automático no algoritmo comercial do TikTok Shop.`;
+  let viralHookDetail = `O funcionamento prático de "${name}" permite criar curiosidade visual logo nos primeiros 3 segundos.`;
+  let status = `Aprovado · Boa relação entre apelo visual e segurança operacional`;
+
+  if (isProhibited) {
+    score = Math.max(9, 16 + offset);
+    banRisk = 'Alto';
+    categoryDetected = 'Artigos Proibidos / Restrição Severa';
+    demandIndex = 42;
+    demonstrationEase = 15;
+    returnRateRisk = '100% (Retenção de Saldo)';
+    returnRateReason = 'Transações canceladas compulsoriamente pela conformidade da plataforma.';
+    banRiskDetail = `"${name}" enquadra-se na lista negra global do TikTok Shop. Exibir ou vincular este item gera perda imediata da vitrine e congelamento de comissões.`;
+    viralHookDetail = 'O sistema de visão computacional derruba o alcance do vídeo nos primeiros minutos de revisão.';
+    status = 'Bloqueado · Violação Crítica das Diretrizes de Produtos Proibidos';
+  } else if (isReplica) {
+    score = Math.max(20, 29 + offset);
+    banRisk = 'Alto';
+    categoryDetected = 'Propriedade Intelectual / Marca Registrada (IPR)';
+    demandIndex = 84;
+    demonstrationEase = 76;
+    returnRateRisk = '28% a 45% (Denúncia de Autenticidade)';
+    returnRateReason = `Compradores que suspeitam da originalidade de "${name}" abrem disputa com reembolso integral sem devolução.`;
+    banRiskDetail = `O scanner OCR e de áudio do TikTok detecta logotipos e nomes de marcas em "${name}". Sem Carta de Autorização (LOA) no Seller Center, aplica Strike de Propriedade Intelectual.`;
+    viralHookDetail = `Apesar da busca orgânica alta, vídeos exibindo logos protegidos em "${name}" sofrem corte de entrega e remoção.`;
+    status = 'Reprovado · Risco Grave de Strike por Marca Registrada (IPR)';
+  } else if (isIngestible) {
+    score = Math.max(34, 41 + offset);
+    banRisk = 'Alto';
+    categoryDetected = 'Saúde, Suplementação & Ingeríveis';
+    ticketLo = userPrice || 69.9;
+    ticketHi = userPrice || 129.9;
+    demandIndex = 88;
+    demonstrationEase = 44;
+    returnRateRisk = '16% a 24% (Expectativa de Resultado)';
+    returnRateReason = `Consumidores de "${name}" frequentemente solicitam estorno se não notarem efeito imediato na primeira semana.`;
+    banRiskDetail = `Produtos ingeríveis como "${name}" exigem habilitação sanitária restrita da loja e sofrem bloqueio instantâneo se o áudio prometer emagrecimento, cura ou prazo em dias.`;
+    viralHookDetail = 'Difícil provar transformação imediata em 3 segundos sem cair no filtro proibido de "antes e depois corporal".';
+    status = 'Alto Risco · Moderação Rígida sobre Ingeríveis e Promessas de Saúde';
+  } else if (isSensitiveSkin) {
+    score = Math.max(63, 69 + offset);
+    banRisk = 'Médio';
+    categoryDetected = 'Dermocosméticos & Tratamento Tópico';
+    ticketLo = userPrice || 49.9;
+    ticketHi = userPrice || 89.9;
+    demandIndex = 91;
+    demonstrationEase = 79;
+    returnRateRisk = '5.2% (Moderado — Sensibilidade / Expectativa)';
+    returnRateReason = `Devoluções em "${name}" ocorrem quando o criador promete resultado milagroso em poucos dias ou não explica o tipo de pele ideal.`;
+    banRiskDetail = `"${name}" é permitido na vitrine, mas o bot de moderação restringe vídeos com zoom macro em manchas/acne inflamada ou promessas de eliminação definitiva.`;
+    viralHookDetail = `Textura, gota e absorção na pele de "${name}" geram excelente retenção ASMR sem precisar violar regras.`;
+    status = 'Viável com Cautela · Exige Roteiro Sensorial sem Promessa Milagrosa';
+  } else if (isLowTicketCommodity) {
+    score = Math.max(48, 55 + offset);
+    banRisk = 'Baixo';
+    categoryDetected = 'Commodity Básica / Baixo Ticket';
+    ticketLo = userPrice || 12.9;
+    ticketHi = userPrice || 24.9;
+    demandIndex = 58;
+    demonstrationEase = 52;
+    returnRateRisk = '2.1% (Baixo)';
+    returnRateReason = `Baixo índice de troca, porém o frete muitas vezes custa quase o mesmo valor unitário de "${name}".`;
+    banRiskDetail = `"${name}" tem risco zero de punição na conta, porém o desafio real é econômico e de retenção criativa.`;
+    viralHookDetail = `Por ser um item comum, "${name}" sozinho tem baixo "efeito novidade" nos primeiros 2 segundos — exige vender em Kit/Combo ou teste extremo.`;
+    status = 'Atenção Comercial · Ticket Baixo Esmaga Comissão Unitária (Venda em Kit)';
+  } else if (isFragileOrBulky) {
+    score = Math.max(60, 66 + offset);
+    banRisk = 'Baixo';
+    categoryDetected = 'Decoração / Itens Frágeis ou Volumosos';
+    ticketLo = userPrice || 89.9;
+    ticketHi = userPrice || 219.9;
+    demandIndex = 79;
+    demonstrationEase = 83;
+    returnRateRisk = '11.8% (Alto Risco de Avaria no Transporte)';
+    returnRateReason = `Peças como "${name}" sofrem quebras e trincas em transportadoras caso o lojista não use isopor moldado e caixa dupla, estornando sua comissão.`;
+    banRiskDetail = `Totalmente seguro nas políticas do TikTok, mas sensível a avaliações negativas na loja por avaria logística.`;
+    viralHookDetail = `Forte apelo estético de transformação de ambiente com "${name}" em vídeos de decoração.`;
+    status = 'Viável com Ressalva Logística · Audite Embalagem Anti-Impacto da Loja';
+  } else if (isSizingCritical) {
+    score = Math.max(72, 77 + offset);
+    banRisk = 'Baixo';
+    categoryDetected = 'Moda & Calçados de Ajuste Preciso';
+    ticketLo = userPrice || 79.9;
+    ticketHi = userPrice || 149.9;
+    demandIndex = 89;
+    demonstrationEase = 86;
+    returnRateRisk = '9.4% (Atenção à Tabela de Numeração)';
+    returnRateReason = `Em "${name}", a maior causa de estorno de comissão é o cliente pedir numeração errada por falta de referência de medidas no vídeo.`;
+    banRiskDetail = `Livre de restrições se filmado como prova de caimento normal (evitando foco sensualizado em lingerie).`;
+    viralHookDetail = `Transição rápida mostrando o caimento real de "${name}" no espelho segura a audiência feminina/masculina.`;
+    status = 'Aprovado com Foco em Medidas · Alto Volume com Cuidado no Caimento';
+  } else if (isHighTicket) {
+    score = Math.max(66, 71 + offset);
+    banRisk = 'Baixo';
+    categoryDetected = req.category && !req.category.includes('Automaticamente') ? req.category : 'Ticket Elevado / Compra Racional';
+    demandIndex = 72;
+    demonstrationEase = 82;
+    returnRateRisk = '6.0% (Arrependimento Pós-Impulso)';
+    returnRateReason = `Acima de R$ 300, o comprador de "${name}" pesquisa mais antes de fechar e exige garantia clara na descrição.`;
+    banRiskDetail = `Seguro nas políticas, mas evite alegações técnicas exageradas que gerem devolução nos 7 dias.`;
+    viralHookDetail = `Comissão por venda altíssima em "${name}", exigindo vídeo de review profundo (35s–50s) em vez de vídeo raso.`;
+    status = 'Comissão Alta por Unidade · Exige Review Detalhado de Quebra de Objeção';
+  } else if (isWowProblemSolver) {
+    score = Math.min(96, 92 + offset);
+    banRisk = 'Baixo';
+    categoryDetected =
+      /shorts|macaquinho|legging/i.test(fullText)
+        ? 'Moda Fitness de Alta Conversão'
+        : /escova|vaporizador/i.test(fullText)
+        ? 'Beleza & Cuidados Práticos'
+        : /projetor|lumin[aá]ria/i.test(fullText)
+        ? 'Gadgets Virais de Ambiente'
+        : ' Solucionadores Visuais · Casa & Rotina';
+    ticketLo = userPrice || 54.9;
+    ticketHi = userPrice || 119.9;
+    demandIndex = Math.min(98, 94 + (seed % 4));
+    demonstrationEase = Math.min(99, 95 + (seed % 4));
+    returnRateRisk = '2.3% (Muito Baixo)';
+    returnRateReason = `"${name}" entrega exatamente o que o vídeo mostra em segundos, gerando satisfação imediata.`;
+    banRiskDetail = `Categoria 100% limpa no TikTok Shop, liberada tanto para alcance orgânico quanto para escala em Spark Ads.`;
+    viralHookDetail = `"${name}" resolve um incômodo visível na câmera em menos de 3 segundos — funciona até para quem assiste no mudo!`;
+    status = 'Campeão de Escala · Efeito UAU Visual + Ticket de Impulso Perfeito';
   }
 
-  if (isIngestibleOrMedical) {
-    return {
-      name,
-      categoryDetected: 'Suplementos & Promessas de Saúde',
-      score: 42,
-      banRisk: 'Alto',
-      status: 'Reprovado com Alto Risco · Violação de Alegações Médicas e Ingestíveis',
-      demandIndex: 90,
-      demonstrationEase: 45,
-      estimatedMargin: '45% a 65% (Porém com alto índice de bloqueio)',
-      returnRateRisk: '18% a 25% (Expectativa irreal)',
-      verdictSummary:
-        'O TikTok Shop proíbe expressamente alegações de cura, queima acelerada de gordura corporal, efeitos terapêuticos sem laudo e produtos ingeríveis que não possuam documentação sanitária estrita no Seller Center.',
-      guidelines: [
-        {
-          label: 'Alegações Médicas, Terapêuticas e de Emagrecimento',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Termos como "queima gordura", "secar barriga" ou "resultado em 7 dias" são bloqueados pelo bot de fala.',
-          policyRef: 'TikTok Shop Health & Wellness Policy - Seção 4.1',
-        },
-        {
-          label: 'Comparações Visuais "Antes e Depois"',
-          passed: false,
-          severity: 'bloqueio',
-          note: 'Cortes abruptos mostrando barriga ou perda de peso geram remoção imediata do anúncio.',
-          policyRef: 'Normativa de Moderação Visual de Imagem Corporal',
-        },
-        {
-          label: 'Registro Sanitário & Responsabilidade Técnica',
-          passed: false,
-          severity: 'alerta',
-          note: 'Lojas sem licença especial não podem manter produtos ingeríveis no catálogo.',
-          policyRef: 'Diretrizes Anvisa / Vigilância Sanitária Integradas',
-        },
-        {
-          label: 'Direitos Autorais & Imagens de Médicos/Especialistas',
-          passed: true,
-          severity: 'ok',
-          note: 'Geralmente não viola marca, desde que não utilize imagens falsas de médicos.',
-          policyRef: 'Política de Uso de Imagem e Autoridade',
-        },
-        {
-          label: 'SLA de Entrega e Estabilidade da Loja',
-          passed: true,
-          severity: 'ok',
-          note: 'Fornecedores costumam ter estoque, porém lojas têm vida útil média de apenas 2 semanas.',
-          policyRef: 'Estabilidade Operacional de Catálogo',
-        },
-      ],
-      contentAngles: [
-        {
-          type: 'Atenção Restrita',
-          title: 'Apenas Foco em Rotina de Bem-Estar',
-          description:
-            'Caso decida promover com autorização da loja, grave apenas a rotina matinal sem prometer perda de quilos ou benefícios curativos.',
-        },
-      ],
-      strengths: ['Alto apelo de compra por impulso'],
-      riskFactors: [
-        'Banimento de anúncios pela ferramenta de moderação de áudio e legendas',
-        'Desativação permanente da opção de afiliar novos produtos',
-        'Contestações e devoluções por clientes insatisfeitos com promessas irrealistas',
-      ],
-      freeSampleScript: `Olá! Sou criador no TikTok com foco em bem-estar e rotina saudável. Gostaria de verificar se a sua loja possui a autorização sanitária completa no TikTok Shop para a comercialização de "${name}", para que possamos produzir conteúdos dentro das diretrizes de moderação sem riscos para a sua loja e nosso perfil. Aguardo retorno.`,
-      actionableAdvice:
-        'Evite prometer resultados físicos específicos no vídeo. Foque em produtos de rotina, acessórios fitness (faixas, cordas, garrafas motivacionais) que possuem risco zero de ban.',
-    };
+  // Se comissão for muito baixa (<10%), ajusta score para refletir realidade financeira
+  if (commPct < 10 && banRisk !== 'Alto') {
+    score = Math.max(45, score - 9);
   }
 
-  // 2. APROVADO COM RESSALVAS: Skincare e Estética
-  if (isSkincareOrTreatment) {
-    return {
-      name,
-      categoryDetected: 'Beleza & Cuidados da Pele (Skincare)',
-      score: 79,
-      banRisk: 'Médio',
-      status: 'Aprovado com Ressalvas · Cuidados na Edição e Promessas Visuais',
-      demandIndex: 92,
-      demonstrationEase: 88,
-      estimatedMargin: '50% a 70% com ticket médio atrativo',
-      returnRateRisk: '4.5% (Moderado)',
-      verdictSummary:
-        'Categoria com excelente volume de vendas e ticket médio no TikTok Shop. Requer atenção rigorosa na moderação: não utilize close-up excessivo em acne, não prometa eliminação completa de manchas e evite cortes de "antes e depois" milagrosos.',
-      guidelines: [
-        {
-          label: 'Diretrizes de Moderação Visual de Pele',
-          passed: true,
-          severity: 'alerta',
-          note: 'Evite zoom macro em inflamações ou pele machucada para não acionar o filtro de conteúdo sensível.',
-          policyRef: 'TikTok Shop Visual Standards - Seção 3.2',
-        },
-        {
-          label: 'Alegações de Eficácia e Prazo de Resultado',
-          passed: true,
-          severity: 'alerta',
-          note: 'Enfatize sensorial, hidratação e textura; evite promessas de "clareamento em 3 dias".',
-          policyRef: 'Normativa de Publicidade Ética em Cosméticos',
-        },
-        {
-          label: 'Originalidade da Fórmula e Lacre de Segurança',
-          passed: true,
-          severity: 'ok',
-          note: 'Produto cosmético de uso tópico com embalagem homologada para transporte.',
-          policyRef: 'Conformidade de Rotulagem e Embalagem',
-        },
-        {
-          label: 'Viabilidade Logística & Risco de Vazamento',
-          passed: true,
-          severity: 'ok',
-          note: 'Requer embalagem com proteção contra impacto e tampa vedada.',
-          policyRef: 'Controle de Quebra Logística TikTok Express',
-        },
-        {
-          label: 'Margem Líquida & Comissão de Afiliado',
-          passed: true,
-          severity: 'ok',
-          note: `Comissão de ${req.commission || '20%'} viabiliza tanto tráfego orgânico quanto reinvestimento em Spark Ads.`,
-          policyRef: 'Rentabilidade de Afiliado Orbiex Benchmark',
-        },
-      ],
-      contentAngles: [
-        {
-          type: 'Sensorial & Textura (Hook de 2s)',
-          title: 'O Som e a Absorção Imediata',
-          description:
-            'Grave em luz natural aplicando uma pequena gota, focando no acabamento sedoso na pele e no sensorial tátil.',
-        },
-        {
-          type: 'Rotina Noturna (GRWM)',
-          title: 'Passo Essencial no "Get Ready With Me"',
-          description:
-            'Insira o produto organicamente em uma sequência de cuidados, mostrando que ele faz parte da rotina diária.',
-        },
-        {
-          type: 'Quebra de Objeção',
-          title: '"Não fica grudento nem pesado"',
-          description:
-            'Passe um lenço de papel após a aplicação para provar que a pele absorve rapidamente sem oleosidade.',
-        },
-      ],
-      strengths: [
-        'Altíssimo índice de recompra por clientes satisfeitas',
-        'Visual estético ideal para vídeos verticais de alta retenção',
-        'Margem de comissão atrativa para criadores',
-      ],
-      riskFactors: [
-        'Moderação automática pode limitar alcance se houver fotos exageradas de antes/depois',
-        'Exige demonstrar o produto real em uso para gerar credibilidade',
-      ],
-      freeSampleScript: `Olá equipe de parcerias! Sou criador no TikTok com audiência engajada em rotina de skincare e beleza limpa. Adorei a proposta do "${name}" e gostaria de solicitar uma Amostra Grátis para produzir 3 vídeos no formato Get Ready With Me focados em conversão direta na vitrine da loja de vocês. Qual o endereço de envio para alinharmos?`,
-      actionableAdvice:
-        'Grave com luz natural voltada para o rosto. Não use filtros pesados do TikTok, pois o público valoriza textura de pele real.',
-    };
-  }
+  const avgTicket = userPrice || (ticketLo + ticketHi) / 2;
+  const commLo = (ticketLo * commPct) / 100;
+  const commHi = (ticketHi * commPct) / 100;
+  const estimatedTicket = userPrice ? fmtBRL(userPrice) : `${fmtBRL(ticketLo)} a ${fmtBRL(ticketHi)}`;
+  const estimatedCommissionPerSale = userPrice
+    ? `${fmtBRL((userPrice * commPct) / 100)} por venda (${commPct}%)`
+    : `${fmtBRL(commLo)} a ${fmtBRL(commHi)} por venda (${commPct}%)`;
+  const salesFor1k = Math.max(1, Math.ceil(1000 / Math.max(1.5, (avgTicket * commPct) / 100)));
+  const estimatedMargin = `${estimatedCommissionPerSale} · ~${salesFor1k} vendas p/ R$ 1.000`;
 
-  // 3. APROVADO ALTA PERFORMANCE: Eletrônicos & Gadgets
-  if (isElectronics) {
-    return {
-      name,
-      categoryDetected: 'Eletrônicos & Gadgets Tecnológicos',
-      score: 91,
-      banRisk: 'Baixo',
-      status: 'Aprovado · Excelente Potencial de Viralização e Conversão',
-      demandIndex: 94,
-      demonstrationEase: 95,
-      estimatedMargin: '35% a 55% com volume massivo de vendas',
-      returnRateRisk: '3.2% (Baixo com fornecedor qualificado)',
-      verdictSummary:
-        'Produto com altíssima taxa de conversão no TikTok Shop. Gadgets resolvem dores claras e chamam atenção imediata no primeiro segundo do vídeo (efeito "eu preciso disso agora").',
-      guidelines: [
-        {
-          label: 'Diretrizes de Conteúdo & Moderação Visual',
-          passed: true,
-          severity: 'ok',
-          note: 'Produto sem restrições visuais. Excelente contraste para demonstração de uso em mesa.',
-          policyRef: 'TikTok Shop Product Showcase Guidelines',
-        },
-        {
-          label: 'Alegações Técnicas & Especificações Reais',
-          passed: true,
-          severity: 'ok',
-          note: 'Demonstre a compatibilidade real (Bluetooth, voltagem, bateria) sem prometer recursos inexistentes.',
-          policyRef: 'Normativa de Integridade de Especificação Técnica',
-        },
-        {
-          label: 'Segurança Elétrica & Homologação',
-          passed: true,
-          severity: 'ok',
-          note: 'Produto com certificações padrão para eletrônicos de consumo e bateria recarregável.',
-          policyRef: 'Diretrizes de Segurança para Dispositivos Portáteis',
-        },
-        {
-          label: 'Viabilidade Logística & Integridade no Transporte',
-          passed: true,
-          severity: 'ok',
-          note: 'Fornecedor com embalagem reforçada anti-impacto (caixa original e plástico bolha).',
-          policyRef: 'SLA de Devolução por Avaria Logística < 2%',
-        },
-        {
-          label: 'Atratividade de Comissão & Ticket Médio',
-          passed: true,
-          severity: 'ok',
-          note: `Comissão estimada em ${req.commission || '20%'} em ticket médio sólido, gerando retorno por venda elevado.`,
-          policyRef: 'Margem Operacional TikTok Shop 2026',
-        },
-      ],
-      contentAngles: [
-        {
-          type: 'Efeito "Transformação de Quarto / Setup"',
-          title: 'O Antes e Depois do Ambiente',
-          description:
-            'Mostre o ambiente escuro sendo iluminado ou a praticidade de uso em uma rotina real de trabalho/estudo.',
-        },
-        {
-          type: 'Unboxing Satisfatório (ASMR)',
-          title: 'Primeira Impressão & Som da Embalagem',
-          description:
-            'Grave retirando o plástico protetor, ligando o aparelho na primeira tentativa com som ambiente nítido.',
-        },
-        {
-          type: 'Comparativo de Custo-Benefício',
-          title: '"Por que pagar 4x mais no concorrente?"',
-          description:
-            'Destaque os principais recursos pelo preço de um almoço de fim de semana, com link direto na sacola amarela.',
-        },
-      ],
-      strengths: [
-        'Visual dinâmico que prende a atenção nos primeiros 2 segundos',
-        'Desejo instantâneo de compra sem necessidade de longas explicações',
-        'Facilidade para obter amostra grátis com lojistas de eletrônicos',
-      ],
-      riskFactors: [
-        'Conferir se o fornecedor envia o cabo/adaptador correto padrão nacional',
-        'Garantir que o estoque do fornecedor aguente picos de viralização acima de 500 pedidos',
-      ],
-      freeSampleScript: `Olá! Sou criador focado em gadgets e tecnologia no TikTok Shop. Notei a força do produto "${name}" no catálogo de vocês e gostaria de solicitar uma Amostra Grátis para gravar um comparativo técnico e unboxing dinâmico. Nossos vídeos têm gerado alta retenção e vendas diretas na sacola. Podemos combinar o envio?`,
-      actionableAdvice:
-        'Nos primeiros 2 segundos do vídeo, mostre o aparelho já ligado executando sua função principal antes de começar a falar.',
-    };
-  }
-
-  // 4. APROVADO MÁXIMA ESCALA: Casa & Cozinha / Utensílios
-  if (isHomeOrKitchen) {
-    return {
-      name,
-      categoryDetected: 'Casa & Cozinha / Utilidades Práticas',
-      score: 96,
-      banRisk: 'Baixo',
-      status: 'Aprovado · Categoria Líder em Escala e Menor Risco de Devolução',
-      demandIndex: 97,
-      demonstrationEase: 98,
-      estimatedMargin: '55% a 72% com giro rápido',
-      returnRateRisk: '1.2% (Excelente)',
-      verdictSummary:
-        'A categoria de maior volume e retenção no TikTok Shop brasileiro e global. Utensílios práticos demonstram o benefício de forma visual e autoexplicativa, eliminando barreiras de linguagem ou objeções de tamanho.',
-      guidelines: [
-        {
-          label: 'Diretrizes de Conteúdo & Moderação Visual',
-          passed: true,
-          severity: 'ok',
-          note: 'Produto 100% seguro para veiculação em qualquer horário e faixa etária.',
-          policyRef: 'TikTok Shop General Merchandise Guidelines',
-        },
-        {
-          label: 'Veracidade na Demonstração Prática',
-          passed: true,
-          severity: 'ok',
-          note: 'Demonstre a utilização em tempo real sem truques de corte acelerado que pareçam enganosos.',
-          policyRef: 'Código de Conduta para Demonstração de Produtos',
-        },
-        {
-          label: 'Livre de Violações de Propriedade Intelectual',
-          passed: true,
-          severity: 'ok',
-          note: 'Design de utilidade livre de restrições de patentes bloqueadas.',
-          policyRef: 'Verificação IPR de Utilidades Domésticas',
-        },
-        {
-          label: 'Viabilidade Logística & Resistência ao Transporte',
-          passed: true,
-          severity: 'ok',
-          note: 'Material durável com taxa de quebra durante transporte inferior a 0.8%.',
-          policyRef: 'Normativa Logística de Frágeis e Utensílios',
-        },
-        {
-          label: 'Giro de Estoque e Disponibilidade de Amostras',
-          passed: true,
-          severity: 'ok',
-          note: 'Lojas desse nicho possuem margem ampla para envio gratuito de amostras a criadores sérios.',
-          policyRef: 'Programa de Amostras TikTok Shop Creator Center',
-        },
-      ],
-      contentAngles: [
-        {
-          type: 'Demonstração de Dor Extrema vs Solução Rápida',
-          title: '"Odeio perder tempo fazendo isso da forma antiga"',
-          description:
-            'Inicie mostrando a dificuldade da tarefa comum e resolva em 3 segundos com o produto em ação.',
-        },
-        {
-          type: 'Limpeza e Teste de Resistência',
-          title: 'Facilidade de Higienização',
-          description:
-            'Mostre que além de funcionar bem, o produto se limpa facilmente embaixo da torneira sem complicação.',
-        },
-        {
-          type: 'Preço Acessível / Compra Impulsiva',
-          title: '"Custou menos de 50 reais e salvou minha semana"',
-          description:
-            'Aponte para a sacola amarela do TikTok Shop mostrando a disponibilidade imediata com frete grátis.',
-        },
-      ],
-      strengths: [
-        'Demonstração visual instantânea (funciona até no mudo com legendas)',
-        'Baixíssima taxa de devolução e quase nenhum suporte pós-venda necessário',
-        'Público comprador amplo (homens e mulheres de todas as idades)',
-      ],
-      riskFactors: [
-        'Concorrência por criativos semelhantes: exija do seu vídeo um gancho inicial diferenciado',
-      ],
-      freeSampleScript: `Olá! Sou criador no TikTok focado em dicas práticas de casa e utilidades do dia a dia. Encontrei o produto "${name}" na vitrine da loja e vejo potencial para gravar 3 criativos de demonstração prática direta. Gostaria de solicitar uma Amostra Grátis para começar as gravações esta semana. Vocês teriam disponibilidade de envio?`,
-      actionableAdvice:
-        'Não use introduções longas. O primeiro frame do vídeo deve mostrar a ação do produto (cortando, limpando ou organizando algo sujo/desorganizado).',
-    };
-  }
-
-  // 5. APROVADO PADRÃO: Moda Feminina / Masculina / Acessórios
-  if (isFashionOrApparel) {
-    return {
-      name,
-      categoryDetected: 'Moda, Roupas & Acessórios',
-      score: 88,
-      banRisk: 'Baixo',
-      status: 'Aprovado · Excelente Apelo Estético com Atenção à Tabela de Medidas',
-      demandIndex: 91,
-      demonstrationEase: 86,
-      estimatedMargin: '45% a 60%',
-      returnRateRisk: '6.8% (Atenção ao ajuste de tamanho)',
-      verdictSummary:
-        'Categoria campeã em volume bruto de vendas no TikTok Shop. O principal ponto de atenção não é moderação, mas sim clareza sobre tamanho e caimento no corpo para evitar devoluções de compradores.',
-      guidelines: [
-        {
-          label: 'Moderação de Imagem & Exposição Corporal',
-          passed: true,
-          severity: 'ok',
-          note: 'Enquadramento focado nas peças e costuras, dentro das normas da comunidade.',
-          policyRef: 'Diretrizes de Vestuário TikTok Shop',
-        },
-        {
-          label: 'Especificação Fiel do Tecido & Elasticidade',
-          passed: true,
-          severity: 'ok',
-          note: 'Informe claramente se estica, se é transparente ou se veste o tamanho exato da etiqueta.',
-          policyRef: 'Código de Descrição Precisa de Vestuário',
-        },
-        {
-          label: 'Originalidade & Ausência de Marcas Copiadas',
-          passed: true,
-          severity: 'ok',
-          note: 'Peça limpa, sem logotipos piratas ou estampas registradas de grifes internacionais.',
-          policyRef: 'Normativa Antipirataria Têxtil',
-        },
-        {
-          label: 'Agilidade de Troca e Devolução do Fornecedor',
-          passed: true,
-          severity: 'alerta',
-          note: 'Lojas parceiras com política de troca facilitada protegem a reputação do criador.',
-          policyRef: 'SLA de Atendimento ao Cliente de Moda',
-        },
-        {
-          label: 'Atratividade de Comissão & Venda Casada',
-          passed: true,
-          severity: 'ok',
-          note: `Comissão de ${req.commission || '20%'} com alta taxa de compras de mais de uma unidade/cor.`,
-          policyRef: 'Ticket Médio Composto Orbiex Data',
-        },
-      ],
-      contentAngles: [
-        {
-          type: 'Experimentando no Corpo (Try-On Haul)',
-          title: 'Caimento Real em Movimento',
-          description:
-            'Dê uma volta de 360 graus, mostre como fica sentado e em pé, destacando o conforto do tecido.',
-        },
-        {
-          type: '3 Maneiras de Usar a Mesma Peça',
-          title: 'Versatilidade do Look',
-          description:
-            'Mostre a peça combinada com tênis casual, salto e jaqueta para demonstrar múltiplos usos.',
-        },
-        {
-          type: 'Teste de Transparência / Agachamento (Squat Test)',
-          title: '"Não fica transparente no sol"',
-          description:
-            'Objeção número um em roupas femininas. Provar que o tecido é encorpado dobra a taxa de conversão.',
-        },
-      ],
-      strengths: [
-        'Forte identificação pessoal do público com o criador',
-        'Facilidade para montar combinações de peças e aumentar o carrinho',
-        'Estoque amplo na maioria dos distribuidores nacionais',
-      ],
-      riskFactors: [
-        'Dúvidas sobre tamanho: sempre mencione sua altura e peso de referência no vídeo para orientar quem assiste',
-      ],
-      freeSampleScript: `Olá! Sou criadora de conteúdo de moda no TikTok Shop. Adorei o corte e caimento do "${name}" na vitrine de vocês. Tenho um público fiel que compra looks recomendados. Gostaria de solicitar uma Amostra Grátis no meu tamanho para produzir 3 vídeos de prova de look com link direto para a loja. Como podemos proceder?`,
-      actionableAdvice:
-        'Sempre coloque na tela ou na legenda: "Tenho 1,65m e uso tamanho M", pois isso reduz pela metade o índice de devolução por tamanho errado.',
-    };
-  }
-
-  // 6. CASO GERAL BEM QUALIFICADO
   return {
     name,
-    categoryDetected: req.category || 'Geral TikTok Shop',
-    score: 87,
-    banRisk: 'Baixo',
-    status: 'Aprovado para Venda e Escala de Afiliado',
-    demandIndex: 88,
-    demonstrationEase: 84,
-    estimatedMargin: '40% a 60%',
-    returnRateRisk: '2.5% (Baixo)',
-    verdictSummary:
-      'Produto verificado e aprovado nos padrões de conformidade do TikTok Shop. Sem histórico de restrições de conta ou infração de direitos autorais identificados.',
-    guidelines: [
-      {
-        label: 'Diretrizes de Conteúdo & Moderação Visual',
-        passed: true,
-        severity: 'ok',
-        note: 'Sem conteúdo sensível ou promessas enganosas.',
-        policyRef: 'TikTok Shop Merchant Compliance 2026',
-      },
-      {
-        label: 'Promessas & Alegações de Resultados',
-        passed: true,
-        severity: 'ok',
-        note: 'Benefícios demonstráveis de forma natural e sem alegações médicas.',
-        policyRef: 'Normativa de Publicidade Transparente',
-      },
-      {
-        label: 'Proteção de Marca & Direitos Autorais',
-        passed: true,
-        severity: 'ok',
-        note: 'Sem infração de propriedade intelectual identificada.',
-        policyRef: 'Verificação IPR Base Global',
-      },
-      {
-        label: 'Viabilidade Logística & Prazo de Postagem',
-        passed: true,
-        severity: 'ok',
-        note: 'Fornecedor apto a postar pedidos em até 48 horas úteis.',
-        policyRef: 'SLA Padrão TikTok Fulfillment',
-      },
-      {
-        label: 'Atratividade de Comissão & Margem Líquida',
-        passed: true,
-        severity: 'ok',
-        note: `Comissão de ${req.commission || '20%'} compatível com os índices de mercado.`,
-        policyRef: 'Orbiex Creator Index',
-      },
-    ],
-    contentAngles: [
-      {
-        type: 'Gancho Direto de Problema / Solução',
-        title: 'Apresentação Imediata do Benefício',
-        description:
-          'Abra o vídeo mostrando o resultado que o produto proporciona antes de qualquer saudação.',
-      },
-      {
-        type: 'Demonstração Prática Sem Enrolação',
-        title: 'Uso Real no Cotidiano',
-        description:
-          'Grave com som nítido demonstrando as principais funções em menos de 30 segundos.',
-      },
-      {
-        type: 'Chamada para Ação Objetiva (CTA)',
-        title: 'Direcionamento para a Sacola Amarela',
-        description:
-          'Aponte claramente para o botão de compra no canto inferior esquerdo com indicação de frete grátis.',
-      },
-    ],
-    strengths: [
-      'Produto alinhado com as diretrizes de moderação',
-      'Boa margem de comissão para afiliação',
-      'Facilidade de integração com o catálogo da loja',
-    ],
-    riskFactors: ['Certificar que o vendedor possui estoque suficiente para suportar escala de pedidos'],
-    freeSampleScript: `Olá! Sou criador no TikTok Shop com foco no nicho de ${req.category}. Notamos o produto "${name}" e gostaríamos de solicitar uma Amostra Grátis para produzir conteúdos voltados para conversão direta na loja de vocês. Podemos alinhar os detalhes de envio?`,
-    actionableAdvice:
-      'Mantenha a comunicação do vídeo simples e direta. Mostre o produto nos primeiros 2 segundos para garantir alta retenção de visualização.',
-  };
-}
-
-
-/* ══════════════════════════════════════════════════════════════════════
- * Camada de variação local (fallback): nunca entrega o mesmo relatório
- * em cliques consecutivos — pools de textos com o nome do produto,
- * números com jitter coerente dentro da faixa de risco.
- * ══════════════════════════════════════════════════════════════════════ */
-
-let lastLocalSignature = '';
-
-function scoreBand(banRisk: ProductAuditResult['banRisk'], baseScore: number): [number, number] {
-  if (banRisk === 'Alto') return [Math.max(5, baseScore - 8), Math.min(49, baseScore + 8)];
-  if (banRisk === 'Médio') return [62, 84];
-  return [80, 99];
-}
-
-function jitterPercentRange(text: string): string {
-  // "55% a 72% ..." -> números variados mantendo ordem
-  const m = text.match(/^(\d+)% a (\d+)%(.*)$/);
-  if (!m) return text;
-  const lo = jitter(Number(m[1]), 4, 5, 90);
-  const hi = Math.max(lo + 8, jitter(Number(m[2]), 4, 10, 95));
-  return `${lo}% a ${hi}%${m[3]}`;
-}
-
-function jitterReturnRate(text: string): string {
-  const m = text.match(/^(\d+(?:\.\d+)?)%(.*)$/);
-  if (!m) return text;
-  const base = Number(m[1]);
-  const v = Math.max(0.4, base + (Math.random() * 2 - 1) * Math.max(0.4, base * 0.2));
-  return `${v.toFixed(1)}%${m[2]}`;
-}
-
-function strengthPool(name: string, req: ProductAuditRequest): string[] {
-  const c = req.commission || '20%';
-  return [
-    `"${name}" mostra o benefício em poucos segundos de vídeo, ideal para o feed vertical`,
-    `Comissão de ${c} deixa "${name}" rentável mesmo com volume moderado de vendas`,
-    `Produto fácil de explicar sem fala: legenda + demonstração já vendem "${name}"`,
-    `"${name}" funciona bem em vídeos curtos de 15–25s, o formato que mais converte na sacola`,
-    `Público de ${req.category || 'compras por impulso'} costuma salvar e compartilhar vídeos desse tipo de produto`,
-    `Ticket compatível com compra por impulso direto do vídeo`,
-    `Dá para gravar vários criativos diferentes de "${name}" com a mesma amostra`,
-    `"${name}" gera comentários de dúvida (“onde compra?”), o que alimenta o algoritmo`,
-    `Boa chance de recompra ou presente, ampliando o público de "${name}"`,
-    `Visual de "${name}" se destaca no primeiro frame sem precisar de edição pesada`,
-  ];
-}
-
-function riskPool(name: string): string[] {
-  return [
-    `Muitos criadores já postam "${name}": diferencie o gancho nos 2 primeiros segundos`,
-    `Confirme prazo de postagem do vendedor antes de escalar vídeos de "${name}"`,
-    `Não prometa resultado que o "${name}" não entrega na prática — gera devolução`,
-    `Verifique se as fotos da vitrine batem com o "${name}" que chega na amostra`,
-    `Evite cortes acelerados que pareçam truque ao demonstrar "${name}"`,
-    `Acompanhe avaliações da loja: nota abaixo de 4.5 derruba a conversão do link`,
-    `Picos de viralização podem esgotar o estoque de "${name}" — tenha um produto reserva`,
-    `Mostre tamanho/escala real do "${name}" na mão para evitar frustração do comprador`,
-  ];
-}
-
-function anglePool(name: string, req: ProductAuditRequest): ContentAngle[] {
-  return [
-    { type: 'Gancho de Curiosidade', title: `"Ninguém me contou que ${name} fazia isso"`, description: `Abra com o resultado inesperado do ${name} e só depois revele o produto, segurando a retenção até o 3º segundo.` },
-    { type: 'POV do Comprador', title: `POV: você finalmente comprou ${name}`, description: `Grave em primeira pessoa a rotina real usando o ${name}, com legenda curta e som em alta.` },
-    { type: 'Teste Real / Prova', title: `Testei ${name} por 7 dias`, description: `Mostre dia 1 e dia 7 com uso honesto do ${name}, sem promessas exageradas, terminando na sacola amarela.` },
-    { type: 'Comparativo', title: `${name} vs o jeito antigo`, description: `Tela dividida: à esquerda o problema sem o produto, à direita o ${name} resolvendo em segundos.` },
-    { type: 'Quebra de Objeção', title: `"Vale mesmo a pena?"`, description: `Responda a dúvida mais comum dos comentários sobre o ${name} mostrando o detalhe que convence.` },
-    { type: 'Unboxing ASMR', title: `Abrindo o ${name} sem falar nada`, description: `Som nítido da embalagem, primeiro uso do ${name} e texto na tela com o principal benefício.` },
-    { type: 'Lista Rápida', title: `3 motivos para ter ${name}`, description: `Três cortes de 3 segundos, cada um com um benefício visual do ${name}, CTA na última cena.` },
-    { type: 'Reação / Duet', title: `Reagindo a quem duvidou do ${name}`, description: `Use um comentário cético como gancho e prove na prática o funcionamento do ${name}.` },
-    { type: 'Nicho Específico', title: `${name} para quem curte ${req.category || 'praticidade'}`, description: `Fale direto com o público de ${req.category || 'compras inteligentes'}, mostrando um uso que só ele entende.` },
-  ];
-}
-
-function advicePool(name: string): string[] {
-  return [
-    `Mostre o ${name} em ação no primeiro frame; a fala vem só depois do 2º segundo.`,
-    `Grave 3 ganchos diferentes para o ${name} e mantenha o que tiver maior retenção em 24h.`,
-    `Use legenda grande com o benefício principal do ${name} — muita gente assiste no mudo.`,
-    `Termine todo vídeo do ${name} apontando para a sacola amarela e citando o frete.`,
-    `Responda comentários de dúvida sobre o ${name} com vídeo-resposta: converte mais que post novo.`,
-    `Poste vídeos do ${name} em horários diferentes (12h, 18h, 21h) e compare o alcance.`,
-  ];
-}
-
-function buildSampleScript(name: string, req: ProductAuditRequest): string {
-  const greet = pickOne(['Olá, equipe!', 'Oi, tudo bem?', 'Olá, time de parcerias!', 'Bom dia, pessoal da loja!', 'Olá! Espero que estejam bem.']);
-  const intro = pickOne([
-    `Sou criador(a) de conteúdo no TikTok Shop com foco em ${req.category || 'achadinhos'}.`,
-    `Produzo vídeos curtos de conversão para o público de ${req.category || 'compras online'} no TikTok.`,
-    `Trabalho com vídeos de demonstração real e link direto na sacola do TikTok Shop.`,
-    `Meu perfil é focado em reviews honestos de ${req.category || 'produtos do dia a dia'}.`,
-  ]);
-  const hook = pickOne([
-    `Vi o "${name}" na vitrine de vocês e enxerguei um ótimo potencial de venda.`,
-    `O "${name}" chamou minha atenção pelo apelo visual — é perfeito para vídeo vertical.`,
-    `Acredito que o "${name}" tem tudo para viralizar com a abordagem certa.`,
-    `Meu público vem pedindo algo como o "${name}" nos comentários.`,
-  ]);
-  const ask = pickOne([
-    `Gostaria de solicitar uma amostra grátis para gravar ${pickOne(['3', '3 a 5', '4'])} criativos de demonstração com link para a loja.`,
-    `Posso produzir ${pickOne(['um unboxing + 2 vídeos de uso real', 'um teste de 7 dias + vídeo de review', '3 vídeos com ganchos diferentes'])} se puderem enviar uma amostra.`,
-    `Com uma amostra, consigo publicar os primeiros vídeos em até ${pickOne(['5', '7', '3'])} dias após o recebimento.`,
-  ]);
-  const close = pickOne([
-    'Podemos alinhar o envio?',
-    'Qual o melhor caminho para combinarmos o envio?',
-    'Fico no aguardo para alinharmos os detalhes!',
-    'Se fizer sentido, me passem os próximos passos. Obrigado(a)!',
-  ]);
-  return `${greet} ${intro} ${hook} ${ask} ${close}`;
-}
-
-function verdictVariant(base: ProductAuditResult, req: ProductAuditRequest): string {
-  if (base.banRisk === 'Alto') {
-    const pre = pickOne([
-      `Análise de "${base.name}": `,
-      `Sobre "${base.name}": `,
-      `Parecer para "${base.name}": `,
-    ]);
-    return pre + base.verdictSummary;
-  }
-  const pre = pickOne([
-    `"${base.name}" tem score ${base.score}/100 nesta análise.`,
-    `Para "${base.name}", o cenário é ${base.score >= 88 ? 'muito favorável' : base.score >= 80 ? 'favorável' : 'positivo, com cuidados'}.`,
-    `Avaliando "${base.name}" em ${base.categoryDetected}:`,
-    `Leitura rápida de "${base.name}":`,
-  ]);
-  const post = pickOne([
-    ` Com comissão de ${req.commission || '20%'}, o foco deve ser volume de criativos curtos.`,
-    ` Demanda estimada em ${base.demandIndex}% — vale testar ganchos variados logo na primeira semana.`,
-    ` Facilidade de demonstração em ${base.demonstrationEase}% favorece vídeos sem fala.`,
-    '',
-  ]);
-  return `${pre} ${base.verdictSummary}${post}`;
-}
-
-function localSignature(r: ProductAuditResult) {
-  return [r.score, r.demandIndex, r.verdictSummary, r.freeSampleScript, r.actionableAdvice].join('|');
-}
-
-/** Auditoria local com variação (fallback quando a IA não responde). */
-export function auditProduct(req: ProductAuditRequest): ProductAuditResult {
-  let out: ProductAuditResult | null = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    out = varyAudit(baseAuditProduct(req), req);
-    if (localSignature(out) !== lastLocalSignature) break;
-  }
-  lastLocalSignature = localSignature(out!);
-  return out!;
-}
-
-function varyAudit(base: ProductAuditResult, req: ProductAuditRequest): ProductAuditResult {
-  const name = base.name;
-  const blocked = base.banRisk === 'Alto';
-  const [lo, hi] = scoreBand(base.banRisk, base.score);
-  const score = jitter(base.score, 4, lo, hi);
-  const demandIndex = jitter(base.demandIndex, 5, 20, 99);
-  const demonstrationEase = jitter(base.demonstrationEase, 5, 15, 99);
-  const r: ProductAuditResult = {
-    ...base,
-    score,
-    demandIndex,
-    demonstrationEase,
-    estimatedMargin: jitterPercentRange(base.estimatedMargin),
-    returnRateRisk: jitterReturnRate(base.returnRateRisk),
-  };
-  r.verdictSummary = verdictVariant(r, req);
-
-  if (blocked) {
-    r.riskFactors = shuffle(base.riskFactors);
-    r.guidelines = base.guidelines.map((g) => ({ ...g }));
-    return r;
-  }
-
-  r.strengths = shuffle([...base.strengths.slice(0, 2), ...shuffle(strengthPool(name, req)).slice(0, 3)]).slice(0, 3);
-  r.riskFactors = shuffle([...base.riskFactors.slice(0, 1), ...shuffle(riskPool(name)).slice(0, 2)]).slice(
-    0,
-    2 + Math.round(Math.random())
-  );
-  const angles = [...shuffle(base.contentAngles).slice(0, 1), ...shuffle(anglePool(name, req))];
-  r.contentAngles = angles.slice(0, 3);
-  r.freeSampleScript = buildSampleScript(name, req);
-  r.actionableAdvice = pickOne([base.actionableAdvice, ...advicePool(name)]);
-  return r;
-}
-
-/* ══════════════════════════════════════════════════════════════════════
- * Análise AI-first: personalizada para o produto, diferente a cada clique.
- * ══════════════════════════════════════════════════════════════════════ */
-
-const AI_FORMAT = `{
-  "categoryDetected": "string (categoria real do produto no TikTok Shop)",
-  "score": "number 0-100 (coerente com banRisk: Alto <= 49, Médio 55-84, Baixo >= 75)",
-  "banRisk": "'Baixo' | 'Médio' | 'Alto'",
-  "status": "string curta, ex: 'Aprovado · motivo específico'",
-  "demandIndex": "number 0-100",
-  "demonstrationEase": "number 0-100",
-  "estimatedMargin": "string, ex: '45% a 60% com giro rápido'",
-  "returnRateRisk": "string, ex: '2.8% (Baixo)'",
-  "verdictSummary": "string 2-3 frases citando o produto pelo nome",
-  "guidelines": [ { "label": "string", "passed": "boolean", "severity": "'ok' | 'alerta' | 'bloqueio'", "note": "string específica do produto", "policyRef": "string" } ] (exatamente 5),
-  "contentAngles": [ { "type": "string", "title": "string", "description": "string" } ] (exatamente 3; vazio [] se o produto for proibido),
-  "strengths": ["string"] (3 itens específicos do produto),
-  "riskFactors": ["string"] (2 a 3 itens específicos),
-  "freeSampleScript": "string: mensagem pronta para pedir amostra grátis ao vendedor, citando o produto",
-  "actionableAdvice": "string: 1 diretriz prática de gravação para este produto"
-}`;
-
-const AI_TASK = `Você é o auditor de produtos Orbiex para afiliados do TikTok Shop Brasil.
-Analise o produto informado (nome, link, categoria, comissão) e gere um relatório de viabilidade
-100% personalizado para ESTE produto: cite o nome, use características reais desse tipo de produto,
-público, objeções e formas de demonstrar. Avalie conformidade com as políticas do TikTok Shop
-(itens proibidos, réplicas/marcas, alegações médicas/emagrecimento, antes-e-depois, logística, comissão).
-Scores devem ser coerentes com os dados e com a triagemLocal (se a triagem indicar risco Alto, mantenha risco Alto).
-Gere textos, ângulos de conteúdo e script de amostra NOVOS, com ângulo criativo diferente das gerações anteriores.
-Tudo em português do Brasil.`;
-
-type AnyObj = Record<string, unknown>;
-
-const str = (v: unknown, fb: string) => (typeof v === 'string' && v.trim() ? v.trim() : fb);
-const num = (v: unknown, fb: number) => {
-  const n = typeof v === 'number' ? v : Number(v);
-  return Number.isFinite(n) ? Math.round(Math.max(0, Math.min(100, n))) : fb;
-};
-const strArr = (v: unknown): string[] =>
-  Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => (x as string).trim()) : [];
-
-function normalizeAI(raw: unknown, local: ProductAuditResult): ProductAuditResult {
-  const d = (raw && typeof raw === 'object' ? raw : {}) as AnyObj;
-  let banRisk: ProductAuditResult['banRisk'] =
-    d.banRisk === 'Baixo' || d.banRisk === 'Médio' || d.banRisk === 'Alto' ? d.banRisk : local.banRisk;
-  if (local.banRisk === 'Alto') banRisk = 'Alto';
-
-  let score = num(d.score, local.score);
-  if (banRisk === 'Alto') score = Math.min(score, 49);
-  else if (banRisk === 'Médio') score = Math.max(55, Math.min(84, score));
-  else score = Math.max(75, score);
-
-  const guidelinesRaw = Array.isArray(d.guidelines) ? (d.guidelines as AnyObj[]) : [];
-  const guidelines: GuidelineItem[] = [];
-  for (let i = 0; i < 5; i++) {
-    const g = guidelinesRaw[i];
-    const fb = local.guidelines[i] ?? local.guidelines[local.guidelines.length - 1];
-    if (g && typeof g === 'object' && typeof g.label === 'string' && g.label.trim()) {
-      const severity: GuidelineItem['severity'] =
-        g.severity === 'ok' || g.severity === 'alerta' || g.severity === 'bloqueio' ? g.severity : 'ok';
-      guidelines.push({
-        label: g.label.trim(),
-        severity,
-        passed: typeof g.passed === 'boolean' ? g.passed : severity !== 'bloqueio',
-        note: str(g.note, fb?.note ?? ''),
-        policyRef: str(g.policyRef, fb?.policyRef ?? 'Diretrizes TikTok Shop'),
-      });
-    } else if (fb) {
-      guidelines.push({ ...fb });
-    }
-  }
-
-  const prohibited = local.banRisk === 'Alto' && local.contentAngles.length === 0;
-  let contentAngles: ContentAngle[] = prohibited
-    ? []
-    : (Array.isArray(d.contentAngles) ? (d.contentAngles as AnyObj[]) : [])
-        .filter((a) => a && typeof a === 'object' && typeof a.title === 'string' && a.title.trim())
-        .map((a) => ({
-          type: str(a.type, 'Ângulo de Conteúdo'),
-          title: str(a.title, ''),
-          description: str(a.description, ''),
-        }))
-        .slice(0, 3);
-  if (!prohibited && contentAngles.length < (local.contentAngles.length ? 1 : 0)) contentAngles = local.contentAngles;
-
-  const strengths = strArr(d.strengths).slice(0, 4);
-  const riskFactors = strArr(d.riskFactors).slice(0, 4);
-
-  return {
-    name: local.name,
-    categoryDetected: str(d.categoryDetected, local.categoryDetected),
+    sourceSummary,
+    categoryDetected,
     score,
     banRisk,
-    status: str(d.status, local.status),
-    demandIndex: num(d.demandIndex, local.demandIndex),
-    demonstrationEase: num(d.demonstrationEase, local.demonstrationEase),
-    estimatedMargin: str(d.estimatedMargin, local.estimatedMargin),
-    returnRateRisk: str(d.returnRateRisk, local.returnRateRisk),
-    verdictSummary: str(d.verdictSummary, local.verdictSummary),
-    guidelines,
-    contentAngles,
-    strengths: prohibited ? strengths.slice(0, 1) : strengths.length ? strengths : local.strengths,
-    riskFactors: riskFactors.length ? riskFactors : local.riskFactors,
-    freeSampleScript: str(d.freeSampleScript, local.freeSampleScript),
-    actionableAdvice: str(d.actionableAdvice, local.actionableAdvice),
+    banRiskDetail,
+    status,
+    demandIndex,
+    viralHookDetail,
+    demonstrationEase,
+    estimatedTicket,
+    estimatedCommissionPerSale,
+    estimatedMargin,
+    returnRateRisk,
+    returnRateReason,
+    targetPersona: `Compradores ativos no TikTok interessados em ${categoryDetected.toLowerCase()} que decidem no impulso ao ver "${name}" sendo testado sem cortes falsos.`,
+    buyerObjections: [
+      {
+        objection: `"Será que ${name} funciona igual ao vídeo ou é propaganda enganosa?"`,
+        howToKillInVideo: `Grave um take contínuo de 6 segundos sem cortes mostrando "${name}" em uso real de perto, sob luz natural.`,
+      },
+      {
+        objection: isSizingCritical
+          ? `"Qual tamanho de ${name} devo pegar para não ficar apertado ou largo?"`
+          : `"Vale o preço de ${estimatedTicket} ou estraga rápido?"`,
+        howToKillInVideo: isSizingCritical
+          ? `Fale sua altura e peso logo no segundo 4 vestindo "${name}" e mostre a elasticidade/acabamento de perto.`
+          : `Mostre o material, acabamento ou potência real de "${name}" e destaque o custo por uso na legenda.`,
+      },
+    ],
+    verdictSummary:
+      banRisk === 'Alto'
+        ? `Auditoria reprovou "${name}" (${score}/100) para operação segura no TikTok Shop. ${banRiskDetail}`
+        : `Na análise de "${name}" (${categoryDetected}), o score ficou em ${score}/100. Com ticket estimado em ${estimatedTicket} e comissão de ${commPct}%, você precisa de cerca de ${salesFor1k} vendas para embolsar R$ 1.000 líquidos. ${viralHookDetail}`,
+    guidelines: [
+      {
+        label: 'Moderação Visual & Algoritmo de Vídeo',
+        passed: banRisk !== 'Alto',
+        severity: banRisk === 'Alto' ? 'bloqueio' : banRisk === 'Médio' ? 'alerta' : 'ok',
+        note: banRiskDetail,
+        policyRef: 'TikTok Shop Content Policy 2026',
+      },
+      {
+        label: 'Propriedade Intelectual & Marcas (IPR)',
+        passed: !isReplica,
+        severity: isReplica ? 'bloqueio' : 'ok',
+        note: isReplica
+          ? `"${name}" faz referência a marca protegida; exige autorização LOA oficial para não tomar strike.`
+          : `Nenhuma violação direta de marca registrada detectada para "${name}".`,
+        policyRef: 'IPR Protection Standards',
+      },
+      {
+        label: 'Alegações de Resultado & Promessas no Áudio',
+        passed: !isIngestible,
+        severity: isIngestible ? 'bloqueio' : isSensitiveSkin ? 'alerta' : 'ok',
+        note:
+          isIngestible || isSensitiveSkin
+            ? `Evite prometer prazos milagrosos ao narrar "${name}"; foque em rotina e experiência real de uso.`
+            : `Benefícios práticos de "${name}" podem ser demonstrados ao vivo na câmera sem risco regulatório.`,
+        policyRef: 'Commercial Claims Guidelines',
+      },
+      {
+        label: 'Risco Logístico, Avaria & Devolução',
+        passed: !isProhibited,
+        severity: isFragileOrBulky || isSizingCritical ? 'alerta' : 'ok',
+        note: returnRateReason,
+        policyRef: 'Fulfillment & Return SLA',
+      },
+      {
+        label: 'Viabilidade Econômica para o Afiliado',
+        passed: !isLowTicketCommodity && commPct >= 10,
+        severity: isLowTicketCommodity || commPct < 10 ? 'alerta' : 'ok',
+        note: isLowTicketCommodity
+          ? `Comissão unitária baixa em "${name}"; priorize anúncios de Kit com 3 ou 5 unidades para elevar o carrinho.`
+          : `Retorno estimado de ${estimatedCommissionPerSale}, saudável para escalar vídeos diários.`,
+        policyRef: 'Orbiex Unit Economics Benchmark',
+      },
+    ],
+    contentAngles:
+      banRisk === 'Alto' && (isProhibited || isReplica)
+        ? []
+        : [
+            {
+              type: 'Teste Sem Cortes (0–3s)',
+              title: `Colocando "${name}" à prova na prática`,
+              description: `Comece já no frame 1 usando "${name}" no problema real antes de dizer "oi", provando o efeito diante da câmera.`,
+            },
+            {
+              type: 'Quebra da Maior Dúvida',
+              title: `Respondendo se "${name}" realmente compensa`,
+              description: `Use uma caixinha de comentário na tela sobre a principal dúvida de "${name}" e mostre o detalhe de acabamento/uso de perto.`,
+            },
+            {
+              type: isLowTicketCommodity ? 'Estratégia de Kit Econômico' : 'Comparativo de Rotina',
+              title: isLowTicketCommodity
+                ? `Por que pegar o kit de "${name}" sai muito mais barato`
+                : `Antes vs. Depois na rotina com "${name}"`,
+              description: isLowTicketCommodity
+                ? `Mostre a economia no frete levando múltiplas unidades de "${name}" pela sacola amarela.`
+                : `Compare o tempo/esforço gasto sem o produto versus a praticidade com "${name}" em 20 segundos.`,
+            },
+          ],
+    strengths:
+      banRisk === 'Alto'
+        ? [`Demanda de busca existente por "${name}", porém bloqueada pelas regras da plataforma`]
+        : [
+            `Demonstração concreta de "${name}" funciona bem no formato vertical de 15 a 28 segundos`,
+            `Retorno estimado de ${estimatedCommissionPerSale} (${salesFor1k} vendas = R$ 1.000 de comissão)`,
+            `Fácil adaptação de "${name}" para múltiplos ganchos visuais com uma única amostra física`,
+          ],
+    riskFactors: [
+      returnRateReason,
+      isLowTicketCommodity
+        ? `Ticket unitário baixo exige alto volume de visualizações ou oferta de Kit para compensar o tempo de gravação`
+        : `Verifique avaliações recentes com foto de "${name}" em ${storeRef} para garantir que o item entregue é idêntico ao vídeo`,
+    ],
+    freeSampleScript:
+      banRisk === 'Alto' && (isProhibited || isReplica)
+        ? `Atenção: Recomendamos NÃO solicitar amostra nem vincular "${name}" à sua conta devido ao risco elevado de penalização da vitrine no TikTok Shop.`
+        : `Olá, equipe de ${storeRef}! Aqui é ${sender}, criador(a) focado(a) em vídeos de conversão direta no TikTok Shop. Analisei o anúncio de "${name}" e já estruturei 3 roteiros práticos quebrando as principais dúvidas de compra nos primeiros 3 segundos. Vocês conseguem liberar uma Amostra Grátis para gravarmos esta semana com link exclusivo na vitrine?`,
+    actionableAdvice:
+      isLowTicketCommodity
+        ? `Procure na vitrine do fornecedor um anúncio de Kit com 3+ unidades de "${name}" para triplicar sua comissão por clique.`
+        : `No primeiro segundo do vídeo, mostre "${name}" resolvendo a dor principal em close nítido — nunca comece se apresentando.`,
   };
 }
 
-/**
- * Auditoria AI-first. Sempre gera uma análise nova (memória anti-repetição por produto);
- * se a IA estiver indisponível, devolve o fallback local variado.
- */
-export async function auditProductAI(
-  req: ProductAuditRequest,
-  opts: { imageDataUrl?: string } = {}
-): Promise<ProductAuditResult> {
-  const local = auditProduct(req);
-  const memoryKey = `product-score:${local.name.toLowerCase().trim()}`;
-  const data = await aiGenerateJSON<AnyObj>({
+/* ══════════════════════════════════════════════════════════════════════
+ * Auditoria Forense AI-First (com inspeção real de link + zero inflação de score)
+ * ══════════════════════════════════════════════════════════════════════ */
+
+const PRODUCT_AUDIT_FORMAT = `{
+  "identifiedProductName": "string (nome limpo, real e específico do produto identificado pelo nome ou pelos dados extraídos do link — NUNCA use 'Item TikTok Shop' ou genéricos)",
+  "categoryDetected": "string (categoria + subnicho exato, ex: 'Casa & Cozinha · Limpeza Portátil', 'Moda Feminina · Jeans & Alfaiataria', 'Propriedade Intelectual · Calçado de Grife')",
+  "score": "number inteiro 8-97 (SEJA RIGOROSO E HONESTO! Proibido: 8-24; Réplica/Marca s/ licença: 20-38; Ingerível/Emagrecedor: 34-50; Commodity sem graça ou ticket <R$20: 48-63; Produto com atrito de tamanho/quebra/antes-e-depois: 64-78; Bom produto validado: 79-88; Só dê 89-96 se tiver Efeito UAU visual em 2s + ticket impulso R$40-150 + baixa devolução!)",
+  "banRisk": "'Baixo' | 'Médio' | 'Alto'",
+  "banRiskDetail": "string (1-2 frases explicando especificamente por que ESTE produto tem risco baixo, médio ou alto nas regras do TikTok Shop)",
+  "status": "string curta e cirúrgica resumindo o veredito específico deste produto",
+  "demandIndex": "number 15-99",
+  "viralHookDetail": "string (1-2 frases explicando exatamente o que acontece visualmente nos primeiros 3 segundos com ESTE produto — se for fraco visualmente, diga a verdade!)",
+  "demonstrationEase": "number 15-99",
+  "estimatedTicket": "string (faixa real de preço de mercado no Brasil em R$ para este exato item, ex: 'R$ 69,90 a R$ 89,90' ou preço detectado no link)",
+  "estimatedCommissionPerSale": "string (valor em R$ que o afiliado ganha por cada venda aplicando a % de comissão informada sobre o ticket deste produto)",
+  "estimatedMargin": "string (ex: 'R$ 15,80/venda (20%) · ~64 vendas p/ R$ 1.000')",
+  "returnRateRisk": "string (ex: '8.5% (Moderado — Ajuste de Numeração)' ou '1.9% (Muito Baixo)')",
+  "returnRateReason": "string (motivo real pelo qual compradores devolveriam ou não ESTE produto específico: tamanho, voltagem, quebra, cor, expectativa, etc.)",
+  "targetPersona": "string (quem exatamente compra este produto no TikTok Brasil e qual dor/desejo imediato motiva o clique)",
+  "buyerObjections": [
+    {
+      "objection": "string (pergunta cética real que os usuários comentam nos vídeos DESTE produto)",
+      "howToKillInVideo": "string (cena prática exata para gravar e matar essa objeção na hora)"
+    },
+    {
+      "objection": "string (segunda objeção específica deste produto)",
+      "howToKillInVideo": "string (como provar na câmera)"
+    }
+  ],
+  "verdictSummary": "string (parecer executivo realista de 3 frases dissecando este produto específico, ticket, comissão, pontos críticos e veredito real)",
+  "guidelines": [
+    { "label": "string", "passed": "boolean", "severity": "'ok' | 'alerta' | 'bloqueio'", "note": "string específica sobre ESTE produto", "policyRef": "string" }
+  ],
+  "contentAngles": [
+    { "type": "string", "title": "string", "description": "string descrevendo a cena física exata com este produto" }
+  ],
+  "strengths": ["string (3 pontos fortes concretos deste item — ou apenas 1 se for reprovado)"],
+  "riskFactors": ["string (2 a 3 pontos de atenção ou armadilhas reais ao gravar/vender este item)"],
+  "freeSampleScript": "string (mensagem pronta, humana e persuasiva pedindo amostra grátis deste produto específico ao vendedor/loja detectada no link)",
+  "actionableAdvice": "string (1 instrução prática de ouro de gravação ou oferta exclusiva para este produto)"
+}`;
+
+type AnyObj = Record<string, unknown>;
+const s = (v: unknown, fb: string) => (typeof v === 'string' && v.trim() ? v.trim() : fb);
+const n = (v: unknown, fb: number, lo = 0, hi = 100) => {
+  const val = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(val) ? Math.round(Math.max(lo, Math.min(hi, val))) : fb;
+};
+const arrStr = (v: unknown, fb: string[]) => {
+  if (!Array.isArray(v)) return fb;
+  const out = v.filter((x) => typeof x === 'string' && x.trim()).map((x) => (x as string).trim());
+  return out.length ? out : fb;
+};
+
+export async function auditProductAI(req: ProductAuditRequest): Promise<ProductAuditResult> {
+  const sender = getUserDisplayName();
+  const prelimTitle = extractProductTitle(req.productName, req.productLink, req.category);
+  const memoryKey = `product-forensic-v2:${(req.productName || req.productLink || prelimTitle).toLowerCase().trim()}`;
+
+  const { data, linkIntel } = await aiDeepAuditJSON<AnyObj>({
     memoryKey,
-    task: AI_TASK,
+    targetUrl: req.productLink.trim(),
+    task:
+      `Realize uma AUDITORIA FORENSE COMPLETA, CRÍTICA E 100% PERSONALIZADA do produto abaixo para venda como afiliado no TikTok Shop Brasil. ` +
+      `Se o usuário preencheu apenas o link, deduza o produto exato a partir dos metadados/slug/legenda extraídos na inspeção do link (ou do perfil da loja caso seja link de vitrine). ` +
+      `Avalie com honestidade brutal: se o produto for saturado, barato demais (ticket baixo), difícil de demonstrar, com risco de troca por tamanho, frágil no envio, réplica de marca ou promessa médica, REFLITA ISSO NO SCORE E NAS EXPLICAÇÕES! ` +
+      `Não dê nota 88+ automática! Cada produto deve ter diagnóstico único, cálculos reais em Reais (R$) usando a comissão informada (${req.commission || '20%'}), objeções reais dos comentários desse item e cenas concretas de gravação. ` +
+      `O nome do criador afiliado para assinar o freeSampleScript é "${sender}". Gere exatamente 5 guidelines e 3 contentAngles (ou 0 contentAngles se o produto for estritamente proibido/réplica ilegal).`,
     input: {
-      productName: local.name,
-      productLink: req.productLink || undefined,
-      categoriaInformada: req.category,
-      comissao: req.commission || '20%',
-      triagemLocal: {
-        categoria: local.categoryDetected,
-        riscoBan: local.banRisk,
-        scoreReferencia: local.score,
-      },
+      nomeInformadoPeloUsuario: req.productName.trim() || '(não informado — identificar pelo link)',
+      linkInformadoPeloUsuario: req.productLink.trim() || '(nenhum link informado)',
+      precoInformadoPeloUsuario: req.estimatedPrice?.trim() || '(estimar preço real praticado no TikTok Shop / Shopee Brasil)',
+      comissaoInformada: req.commission || '20%',
+      categoriaSelecionada: req.category || 'Detectar Automaticamente',
     },
-    format: AI_FORMAT,
-    imageDataUrl: opts.imageDataUrl,
+    format: PRODUCT_AUDIT_FORMAT,
     timeoutMs: 35000,
-    remember: (d: AnyObj) => {
-      const angles = Array.isArray(d?.contentAngles) ? (d.contentAngles as AnyObj[]).map((a) => String(a?.title ?? '')) : [];
-      return [
-        String(d?.verdictSummary ?? ''),
-        String(d?.freeSampleScript ?? '').slice(0, 160),
-        String(d?.actionableAdvice ?? ''),
-        ...angles,
-        ...strArr(d?.strengths),
-      ];
-    },
+    remember: (d: AnyObj) => [
+      String(d?.verdictSummary || '').slice(0, 180),
+      String(d?.actionableAdvice || '').slice(0, 160),
+      String(d?.freeSampleScript || '').slice(0, 160),
+    ],
   });
-  if (!data) return local;
+
+  const local = auditProduct(req, linkIntel);
+  if (!data || typeof data !== 'object') return local;
+
   try {
-    return normalizeAI(data, local);
+    const identifiedName = s(data.identifiedProductName, local.name);
+    let banRisk: ProductAuditResult['banRisk'] =
+      data.banRisk === 'Baixo' || data.banRisk === 'Médio' || data.banRisk === 'Alto' ? data.banRisk : local.banRisk;
+    // Se nossa trava local detectou item ilegal/réplica óbvia, impede falso-positivo
+    if (local.banRisk === 'Alto' && local.score <= 32) {
+      banRisk = 'Alto';
+    }
+
+    let score = n(data.score, local.score, 5, 98);
+    if (banRisk === 'Alto') score = Math.min(score, 49);
+
+    const guidelinesRaw = Array.isArray(data.guidelines) ? (data.guidelines as AnyObj[]) : [];
+    const guidelines: GuidelineItem[] = [];
+    for (let i = 0; i < 5; i++) {
+      const g = guidelinesRaw[i];
+      const fb = local.guidelines[i] || local.guidelines[0];
+      if (g && typeof g === 'object' && typeof g.label === 'string' && g.label.trim()) {
+        const sev: GuidelineItem['severity'] =
+          g.severity === 'ok' || g.severity === 'alerta' || g.severity === 'bloqueio' ? g.severity : 'ok';
+        guidelines.push({
+          label: g.label.trim(),
+          severity: sev,
+          passed: typeof g.passed === 'boolean' ? g.passed : sev !== 'bloqueio',
+          note: s(g.note, fb.note),
+          policyRef: s(g.policyRef, fb.policyRef),
+        });
+      } else {
+        guidelines.push(fb);
+      }
+    }
+
+    const anglesRaw = Array.isArray(data.contentAngles) ? (data.contentAngles as AnyObj[]) : [];
+    const contentAngles: ContentAngle[] =
+      banRisk === 'Alto' && score <= 35
+        ? []
+        : anglesRaw
+            .filter((a) => a && typeof a === 'object' && typeof a.title === 'string' && a.title.trim())
+            .map((a) => ({
+              type: s(a.type, 'Ângulo Estratégico'),
+              title: s(a.title, ''),
+              description: s(a.description, ''),
+            }))
+            .slice(0, 3);
+
+    const objRaw = Array.isArray(data.buyerObjections) ? (data.buyerObjections as AnyObj[]) : [];
+    const buyerObjections: BuyerObjection[] = objRaw
+      .filter((o) => o && typeof o === 'object' && typeof o.objection === 'string' && o.objection.trim())
+      .map((o) => ({
+        objection: s(o.objection, ''),
+        howToKillInVideo: s(o.howToKillInVideo, ''),
+      }))
+      .slice(0, 3);
+
+    return {
+      name: identifiedName,
+      sourceSummary: local.sourceSummary,
+      categoryDetected: s(data.categoryDetected, local.categoryDetected),
+      score,
+      banRisk,
+      banRiskDetail: s(data.banRiskDetail, local.banRiskDetail),
+      status: s(data.status, local.status),
+      demandIndex: n(data.demandIndex, local.demandIndex, 10, 99),
+      viralHookDetail: s(data.viralHookDetail, local.viralHookDetail),
+      demonstrationEase: n(data.demonstrationEase, local.demonstrationEase, 10, 99),
+      estimatedTicket: s(data.estimatedTicket, local.estimatedTicket),
+      estimatedCommissionPerSale: s(data.estimatedCommissionPerSale, local.estimatedCommissionPerSale),
+      estimatedMargin: s(data.estimatedMargin, local.estimatedMargin),
+      returnRateRisk: s(data.returnRateRisk, local.returnRateRisk),
+      returnRateReason: s(data.returnRateReason, local.returnRateReason),
+      targetPersona: s(data.targetPersona, local.targetPersona),
+      buyerObjections: buyerObjections.length ? buyerObjections : local.buyerObjections,
+      verdictSummary: s(data.verdictSummary, local.verdictSummary),
+      guidelines,
+      contentAngles: contentAngles.length ? contentAngles : local.contentAngles,
+      strengths: arrStr(data.strengths, local.strengths).slice(0, 4),
+      riskFactors: arrStr(data.riskFactors, local.riskFactors).slice(0, 4),
+      freeSampleScript: s(data.freeSampleScript, local.freeSampleScript).replace(/\\n/g, '\n'),
+      actionableAdvice: s(data.actionableAdvice, local.actionableAdvice),
+    };
   } catch {
     return local;
   }

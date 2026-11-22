@@ -17,10 +17,22 @@ import {
   Award,
   Layers,
   ArrowRight,
+  Globe,
+  Tag,
+  Percent,
+  Gift,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Ring, Pill } from '../ui';
 import { auditStore, auditStoreAI, type StoreAuditResult } from '../storeAuditor';
 import { copyText as copyToClipboard } from '../clipboard';
+
+const QUICK_STORE_TESTS = [
+  { name: 'Confecção Brás Fitness Atacado', link: '@brasfitness_fabrica', niche: 'Moda Fitness Feminina' },
+  { name: 'Drop Importados Express 24h', link: '@drop_importados_99', niche: 'Gadgets e Achadinhos Importados' },
+  { name: 'Glow Lab Dermocosméticos Oficial', link: '@glowlab_oficial', niche: 'Skincare & Beleza' },
+  { name: 'Outlet Sneakers 1ª Linha', link: '@sneakers_primeiralinha', niche: 'Tênis de Marca / Réplicas' },
+];
 
 export function StoreScoreView({
   onUseInAgent,
@@ -29,10 +41,13 @@ export function StoreScoreView({
 }) {
   const [storeLink, setStoreLink] = useState('');
   const [storeName, setStoreName] = useState('');
-  const [itemsSold, setItemsSold] = useState(3500);
-  const [responseRate, setResponseRate] = useState(98);
-  const [onTimeRate, setOnTimeRate] = useState(99);
+  const [storeNiche, setStoreNiche] = useState('');
+  const [metricsMode, setMetricsMode] = useState<'auto' | 'manual'>('auto');
+  const [itemsSold, setItemsSold] = useState(1800);
+  const [responseRate, setResponseRate] = useState(92);
+  const [onTimeRate, setOnTimeRate] = useState(95);
   const [freeSampleAvailable, setFreeSampleAvailable] = useState(true);
+  const [validationMsg, setValidationMsg] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -40,16 +55,20 @@ export function StoreScoreView({
 
   const [copiedScript, setCopiedScript] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const runIdRef = useRef(0);
 
   const handleClear = () => {
     runIdRef.current++;
     setStoreLink('');
     setStoreName('');
-    setItemsSold(3500);
-    setResponseRate(98);
-    setOnTimeRate(99);
+    setStoreNiche('');
+    setMetricsMode('auto');
+    setItemsSold(1800);
+    setResponseRate(92);
+    setOnTimeRate(95);
     setFreeSampleAvailable(true);
+    setValidationMsg('');
     setResult(null);
     setLoading(false);
     setStepIndex(0);
@@ -57,18 +76,35 @@ export function StoreScoreView({
 
   const handleAudit = async () => {
     if (loading) return;
+    if (!storeName.trim() && !storeLink.trim()) {
+      setValidationMsg('Informe o link/@perfil da loja ou digite o nome do fornecedor para auditar.');
+      nameInputRef.current?.focus();
+      return;
+    }
+
+    setValidationMsg('');
     const runId = ++runIdRef.current;
     setLoading(true);
     setResult(null);
     setStepIndex(0);
 
-    // Progressive multi-step pipeline while the AI generates a fresh, personalized audit
-    const timers = [600, 1200, 1800].map((ms, i) => window.setTimeout(() => {
-      if (runIdRef.current === runId) setStepIndex(i + 1);
-    }, ms));
+    const timers = [550, 1150, 1750, 2350].map((ms, i) =>
+      window.setTimeout(() => {
+        if (runIdRef.current === runId) setStepIndex(i + 1);
+      }, ms)
+    );
 
-    const req = { storeName, storeLink, itemsSold, responseRate, onTimeRate, freeSampleAvailable };
-    const minDelay = new Promise((r) => window.setTimeout(r, 2400));
+    const req = {
+      storeName,
+      storeLink,
+      storeNiche,
+      metricsMode,
+      itemsSold,
+      responseRate,
+      onTimeRate,
+      freeSampleAvailable,
+    };
+    const minDelay = new Promise((r) => window.setTimeout(r, 2600));
     let audit: StoreAuditResult;
     try {
       [audit] = await Promise.all([auditStoreAI(req), minDelay]);
@@ -76,7 +112,7 @@ export function StoreScoreView({
       audit = auditStore(req);
     }
     timers.forEach((t) => window.clearTimeout(t));
-    if (runIdRef.current !== runId) return; // cleared / superseded
+    if (runIdRef.current !== runId) return;
 
     setLoading(false);
     setResult(audit);
@@ -93,6 +129,19 @@ export function StoreScoreView({
     setTimeout(() => setCopiedScript(false), 2000);
   };
 
+  const scanTargetLabel = storeName.trim() || storeLink.trim().slice(0, 42) || 'lojista';
+  const scanSteps = [
+    storeLink.trim()
+      ? `Inspecionando perfil/link "${storeLink.trim().slice(0, 45)}" e extraindo sinais públicos...`
+      : `Mapeando estrutura comercial e modelo operacional de "${scanTargetLabel}"...`,
+    `Identificando nicho de catálogo, origem de estoque (fábrica, revenda ou dropshipping) e risco IPR...`,
+    metricsMode === 'manual'
+      ? `Auditando métricas informadas (${itemsSold.toLocaleString('pt-BR')} vendas · ${responseRate}% chat · ${onTimeRate}% SLA)...`
+      : `Estimando maturidade logística, risco de atraso no SLA de 48h e retenção de comissões...`,
+    `Calculando comissão-alvo ideal B2B e selecionando os melhores SKUs para pedir amostra...`,
+    `Consolidando Selo Orbiex e redigindo proposta personalizada de parceria para "${scanTargetLabel}"...`,
+  ];
+
   return (
     <div className="mvz-fade-up pb-16">
       {/* ── Top Bar Header ── */}
@@ -101,7 +150,7 @@ export function StoreScoreView({
           <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.3)] bg-[rgba(212,175,55,0.06)] px-3 py-1">
             <Store size={12} className="text-[var(--mvz-gold)]" />
             <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--mvz-gold-light)]">
-              Orbiex Supplier Auditor
+              Orbiex Forensic Supplier Auditor
             </span>
           </div>
 
@@ -110,11 +159,10 @@ export function StoreScoreView({
           </h1>
 
           <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-[var(--mvz-muted)]">
-            Audite qualquer loja do TikTok Shop preenchendo as métricas públicas exibidas no perfil do vendedor.
+            Descubra se o fornecedor tem estoque próprio, se é dropshipping disfarçado ou risco de queda, qual comissão negociar e quais produtos pedir de amostra grátis.
           </p>
         </div>
 
-        {/* Limpar Campos Button */}
         <button
           onClick={handleClear}
           className="flex h-9 items-center gap-2 rounded-xl border border-[var(--mvz-line)] bg-white/[0.03] px-3.5 text-[11.5px] font-semibold text-[var(--mvz-muted)] transition hover:border-[var(--mvz-line-strong)] hover:text-white"
@@ -128,45 +176,42 @@ export function StoreScoreView({
       <div className="mb-6 rounded-2xl border border-[var(--mvz-line)] bg-[#0c0a07] p-5">
         <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
           <CircleHelp size={14} />
-          Como auditar um lojista do TikTok Shop:
+          Como auditar qualquer fornecedor:
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {/* Step 1 */}
           <div className="flex gap-3 rounded-xl border border-[var(--mvz-line)] bg-white/[0.015] p-3.5">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(212,175,55,0.15)] text-[12px] font-black text-[var(--mvz-gold)]">
               1
             </div>
             <div>
-              <div className="text-[13px] font-bold text-white">Abra a Loja no TikTok</div>
+              <div className="text-[13px] font-bold text-white">Cole o Link/@Perfil ou Nome</div>
               <div className="mt-1 text-[11.5px] leading-relaxed text-[var(--mvz-dim)]">
-                Copie o link ou nome da loja e veja as 3 informações públicas que aparecem na tela.
+                Basta colar o `@perfil` ou link da loja no TikTok Shop / Shopee, ou digitar o nome e nicho da loja.
               </div>
             </div>
           </div>
 
-          {/* Step 2 */}
           <div className="flex gap-3 rounded-xl border border-[var(--mvz-line)] bg-white/[0.015] p-3.5">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(212,175,55,0.15)] text-[12px] font-black text-[var(--mvz-gold)]">
               2
             </div>
             <div>
-              <div className="text-[13px] font-bold text-white">Confirme as 3 Métricas</div>
+              <div className="text-[13px] font-bold text-white">Automático ou Métricas do App</div>
               <div className="mt-1 text-[11.5px] leading-relaxed text-[var(--mvz-dim)]">
-                Itens vendidos, % de resposta em 24h e % de envios pontuais do vendedor.
+                Deixe no modo Inteligente (por link/perfil) ou ative o modo Manual se estiver vendo os números exatos no celular.
               </div>
             </div>
           </div>
 
-          {/* Step 3 */}
           <div className="flex gap-3 rounded-xl border border-[var(--mvz-line)] bg-white/[0.015] p-3.5">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(212,175,55,0.15)] text-[12px] font-black text-[var(--mvz-gold)]">
               3
             </div>
             <div>
-              <div className="text-[13px] font-bold text-white">Receba o Diagnóstico ORBIEX</div>
+              <div className="text-[13px] font-bold text-white">Raio-X B2B Personalizado</div>
               <div className="mt-1 text-[11.5px] leading-relaxed text-[var(--mvz-dim)]">
-                Veja se a loja é segura para afiliar e copie scripts prontos para solicitar amostras.
+                Veja o modelo da loja, comissão ideal do nicho, SKUs recomendados para amostra e script B2B sob medida.
               </div>
             </div>
           </div>
@@ -179,28 +224,32 @@ export function StoreScoreView({
 
         <div className="text-center">
           <span className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[var(--mvz-gold)]">
-            Auditoria Oficial de Fornecedores
+            Auditoria Forense de Fornecedores
           </span>
           <h2 className="mt-1.5 text-xl font-black text-white sm:text-2xl">
-            Qual loja do TikTok Shop você deseja auditar?
+            Qual loja ou fornecedor você deseja investigar?
           </h2>
           <p className="mt-1 text-[12.5px] text-[var(--mvz-muted)]">
-            Insira o link ou o nome da loja e confira as 3 métricas visíveis no aplicativo.
+            Cada loja recebe diagnóstico exclusivo conforme seu link, estrutura comercial, nicho e reputação.
           </p>
         </div>
 
         {/* Input Fields */}
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
             <label className="flex items-center gap-1.5 text-[11.5px] font-bold text-white/90">
               <Link2 size={13} className="text-[var(--mvz-gold)]" />
-              Link da Loja / Perfil TikTok Shop:
+              Link ou @Perfil da Loja:
             </label>
             <input
               type="text"
               value={storeLink}
-              onChange={(e) => setStoreLink(e.target.value)}
-              placeholder="Ex: https://www.tiktok.com/@lojabrasil_shop ou @lojabrasil"
+              onChange={(e) => {
+                setStoreLink(e.target.value);
+                if (validationMsg) setValidationMsg('');
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleAudit()}
+              placeholder="Ex: @modafitness_sp ou https://tiktok.com/@..."
               className="mvz-input mt-1.5 h-12 w-full px-4 text-[13px]"
             />
           </div>
@@ -208,121 +257,198 @@ export function StoreScoreView({
           <div>
             <label className="flex items-center gap-1.5 text-[11.5px] font-bold text-white/90">
               <Store size={13} className="text-[var(--mvz-gold)]" />
-              Nome da Loja (Opcional se já colocou o link):
+              Nome da Loja:
+            </label>
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={storeName}
+              onChange={(e) => {
+                setStoreName(e.target.value);
+                if (validationMsg) setValidationMsg('');
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleAudit()}
+              placeholder="Ex: Confecção Brás Fitness, Tech Imports..."
+              className="mvz-input mt-1.5 h-12 w-full px-4 text-[13px]"
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 text-[11.5px] font-bold text-white/90">
+              <Tag size={13} className="text-[var(--mvz-gold)]" />
+              O que a Loja Vende? (Opcional):
             </label>
             <input
               type="text"
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-              placeholder="Ex: Top Brasil Oficial, Mega Imports..."
+              value={storeNiche}
+              onChange={(e) => setStoreNiche(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAudit()}
+              placeholder="Ex: Moda fitness, fones bluetooth, skincare..."
               className="mvz-input mt-1.5 h-12 w-full px-4 text-[13px]"
             />
           </div>
         </div>
 
-        {/* Sub-painel: Métricas Visíveis no Perfil */}
+        {/* Chips de Teste Rápido de Fornecedores */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-[var(--mvz-dim)]">Testar perfis diferentes:</span>
+          {QUICK_STORE_TESTS.map((st) => (
+            <button
+              key={st.link}
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setStoreName(st.name);
+                setStoreLink(st.link);
+                setStoreNiche(st.niche);
+                setMetricsMode('auto');
+                setValidationMsg('');
+              }}
+              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-white/75 transition hover:border-[var(--mvz-gold)]/45 hover:bg-[var(--mvz-gold)]/10 hover:text-[#f4d77a]"
+            >
+              {st.name}
+            </button>
+          ))}
+        </div>
+
+        {validationMsg && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2.5 text-[12px] font-semibold text-amber-200">
+            <AlertTriangle size={14} className="shrink-0 text-amber-300" />
+            <span>{validationMsg}</span>
+          </div>
+        )}
+
+        {/* Seletor de Modo de Métricas */}
         <div className="mt-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.015] p-5">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-[12px] font-extrabold text-white">
-              <Zap size={13} className="text-[var(--mvz-gold)]" />
-              Métricas Visíveis no Perfil da Loja no TikTok:
-            </div>
-            <Pill tone="cyan">Métricas Reais de Desempenho</Pill>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {/* Slider 1: Itens Vendidos */}
-            <div className="rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-4">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--mvz-dim)]">
-                <Package size={13} />
-                Itens Vendidos
-              </div>
-              <div className="mt-2 text-xl font-black text-[#7fcf9f]">
-                {itemsSold >= 10000 ? '10.000+ vendidos' : `${itemsSold.toLocaleString('pt-BR')} vendidos`}
-              </div>
-
-              <input
-                type="range"
-                min="50"
-                max="10000"
-                step="50"
-                value={itemsSold}
-                onChange={(e) => setItemsSold(Number(e.target.value))}
-                className="mt-3 w-full accent-[var(--mvz-gold)] cursor-pointer"
-              />
-              <div className="mt-1 flex justify-between text-[9px] font-bold text-[var(--mvz-dim)]">
-                <span>50</span>
-                <span>2.5k</span>
-                <span>10k+</span>
-              </div>
+              <SlidersHorizontal size={14} className="text-[var(--mvz-gold)]" />
+              Modo de Leitura das Métricas da Loja:
             </div>
 
-            {/* Slider 2: Responde em 24h */}
-            <div className="rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-4">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--mvz-dim)]">
-                <Clock size={13} />
-                Responde em 24h
-              </div>
-              <div className="mt-2 text-xl font-black text-[var(--mvz-gold-light)]">
-                {responseRate}% das mensagens
-              </div>
-
-              <input
-                type="range"
-                min="50"
-                max="100"
-                value={responseRate}
-                onChange={(e) => setResponseRate(Number(e.target.value))}
-                className="mt-3 w-full accent-[var(--mvz-gold)] cursor-pointer"
-              />
-              <div className="mt-1 flex justify-between text-[9px] font-bold text-[var(--mvz-dim)]">
-                <span>50%</span>
-                <span>90%</span>
-                <span>100%</span>
-              </div>
-            </div>
-
-            {/* Slider 3: Envios Pontuais */}
-            <div className="rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-4">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--mvz-dim)]">
-                <Truck size={13} />
-                Envios Pontuais (SLA)
-              </div>
-              <div className="mt-2 text-xl font-black text-[var(--mvz-gold)]">
-                {onTimeRate}% no prazo
-              </div>
-
-              <input
-                type="range"
-                min="70"
-                max="100"
-                value={onTimeRate}
-                onChange={(e) => setOnTimeRate(Number(e.target.value))}
-                className="mt-3 w-full accent-[var(--mvz-gold)] cursor-pointer"
-              />
-              <div className="mt-1 flex justify-between text-[9px] font-bold text-[var(--mvz-dim)]">
-                <span>70%</span>
-                <span>95%</span>
-                <span>100%</span>
-              </div>
+            <div className="inline-flex rounded-xl border border-white/10 bg-[#070605] p-1">
+              <button
+                type="button"
+                onClick={() => setMetricsMode('auto')}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
+                  metricsMode === 'auto'
+                    ? 'bg-[var(--mvz-gold)] text-black shadow'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Diagnóstico Inteligente (Link / Nome)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetricsMode('manual')}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
+                  metricsMode === 'manual'
+                    ? 'bg-[var(--mvz-gold)] text-black shadow'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Tenho as Métricas do App (Manual)
+              </button>
             </div>
           </div>
 
-          {/* Checkbox Amostra Grátis */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--mvz-line)] pt-3">
-            <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-medium text-white/90">
-              <input
-                type="checkbox"
-                checked={freeSampleAvailable}
-                onChange={(e) => setFreeSampleAvailable(e.target.checked)}
-                className="h-4 w-4 rounded border-[var(--mvz-line)] accent-[var(--mvz-gold)]"
-              />
-              Loja disponibiliza Amostra Grátis para Criadores de Conteúdo
-            </label>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
-              Critério de Parceria
-            </span>
-          </div>
+          {metricsMode === 'auto' ? (
+            <p className="mt-3 text-[12px] leading-relaxed text-[var(--mvz-muted)]">
+              <strong className="text-[#f4d77a]">Modo Automático Ativo:</strong> O motor inspeciona o link/@perfil, nome e nicho da loja para diagnosticar se é fabricante, marca oficial, revenda iniciante ou dropshipping de risco — sem usar números fixos genéricos. Se você estiver com a página da loja aberta no celular e quiser informar os números exatos, clique em <strong className="text-white">“Tenho as Métricas do App”</strong>.
+            </p>
+          ) : (
+            <div className="mvz-msg-in mt-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {/* Slider 1: Itens Vendidos */}
+                <div className="rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-4">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--mvz-dim)]">
+                    <Package size={13} />
+                    Itens Vendidos na Loja
+                  </div>
+                  <div className="mt-2 text-xl font-black text-[#7fcf9f]">
+                    {itemsSold >= 10000 ? '10.000+ vendidos' : `${itemsSold.toLocaleString('pt-BR')} vendidos`}
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="10000"
+                    step="50"
+                    value={itemsSold}
+                    onChange={(e) => setItemsSold(Number(e.target.value))}
+                    className="mt-3 w-full cursor-pointer accent-[var(--mvz-gold)]"
+                  />
+                  <div className="mt-1 flex justify-between text-[9px] font-bold text-[var(--mvz-dim)]">
+                    <span>50</span>
+                    <span>2.5k</span>
+                    <span>10k+</span>
+                  </div>
+                </div>
+
+                {/* Slider 2: Responde em 24h */}
+                <div className="rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-4">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--mvz-dim)]">
+                    <Clock size={13} />
+                    Responde em 24h
+                  </div>
+                  <div className="mt-2 text-xl font-black text-[var(--mvz-gold-light)]">
+                    {responseRate}% das mensagens
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="100"
+                    value={responseRate}
+                    onChange={(e) => setResponseRate(Number(e.target.value))}
+                    className="mt-3 w-full cursor-pointer accent-[var(--mvz-gold)]"
+                  />
+                  <div className="mt-1 flex justify-between text-[9px] font-bold text-[var(--mvz-dim)]">
+                    <span>50%</span>
+                    <span>85%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                {/* Slider 3: Envios Pontuais */}
+                <div className="rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-4">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--mvz-dim)]">
+                    <Truck size={13} />
+                    Envios Pontuais (SLA)
+                  </div>
+                  <div className="mt-2 text-xl font-black text-[var(--mvz-gold)]">
+                    {onTimeRate}% no prazo
+                  </div>
+                  <input
+                    type="range"
+                    min="65"
+                    max="100"
+                    value={onTimeRate}
+                    onChange={(e) => setOnTimeRate(Number(e.target.value))}
+                    className="mt-3 w-full cursor-pointer accent-[var(--mvz-gold)]"
+                  />
+                  <div className="mt-1 flex justify-between text-[9px] font-bold text-[var(--mvz-dim)]">
+                    <span>65%</span>
+                    <span>92%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--mvz-line)] pt-3">
+                <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-medium text-white/90">
+                  <input
+                    type="checkbox"
+                    checked={freeSampleAvailable}
+                    onChange={(e) => setFreeSampleAvailable(e.target.checked)}
+                    className="h-4 w-4 rounded border-[var(--mvz-line)] accent-[var(--mvz-gold)]"
+                  />
+                  Loja disponibiliza botão de Amostra Grátis ativa no aplicativo
+                </label>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
+                  Métricas Confirmadas Manualmente
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Button */}
@@ -331,28 +457,58 @@ export function StoreScoreView({
           disabled={loading}
           className="mvz-btn-grad mt-6 flex h-13 w-full items-center justify-center gap-2 text-[13px] font-extrabold uppercase tracking-wider shadow-lg"
         >
-          <Store size={16} />
-          {loading ? 'Auditando Lojista...' : 'Auditar Lojista Agora (Gerar Relatório Completo)'}
+          <Zap size={16} fill="currentColor" />
+          {loading ? 'Executando Auditoria Forense da Loja...' : 'AUDITAR LOJISTA AGORA (RELATÓRIO PERSONALIZADO)'}
         </button>
       </div>
 
-      {/* ── Loading Animation com Passos Reais ── */}
+      {/* ── Scanner Forense em Tempo Real ── */}
       {loading && (
-        <div className="mvz-msg-in mt-6 rounded-2xl border border-[var(--mvz-line-strong)] bg-[#0d0c0a] p-6 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[rgba(212,175,55,0.1)] text-[var(--mvz-gold)]">
-            <Sparkles size={24} className="animate-spin" />
+        <div className="mvz-msg-in mt-6 rounded-2xl border border-[var(--mvz-line-strong)] bg-[#0b0a08] p-6">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+            <div className="flex items-center gap-2.5">
+              <Sparkles size={18} className="animate-spin text-[var(--mvz-gold)]" />
+              <span className="text-[14px] font-extrabold text-white">
+                Investigando Fornecedor: <span className="text-[#f4d77a]">{scanTargetLabel}</span>
+              </span>
+            </div>
+            <span className="font-mono text-[11px] font-bold text-[var(--mvz-gold-light)]">
+              Etapa {stepIndex + 1}/5
+            </span>
           </div>
-          <h3 className="mt-3 text-[16px] font-bold">Processando auditoria de lojista TikTok Shop...</h3>
-          <p className="mt-1 font-mono text-[12px] text-[var(--mvz-gold-light)]">
-            {stepIndex === 0 && '1/4 Conectando aos índices de Seller Performance e histórico de vendas...'}
-            {stepIndex === 1 && '2/4 Calculando pontuação de Fulfillment SLA (48h) e velocidade de resposta...'}
-            {stepIndex === 2 && '3/4 Diagnosticando capacidade de absorção de picos de tráfego e ruptura de estoque...'}
-            {stepIndex === 3 && '4/4 Consolidando selo de homologação e estruturando proposta de parceria B2B...'}
-          </p>
-          <div className="mx-auto mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/10">
+
+          <div className="mt-4 space-y-2.5">
+            {scanSteps.map((st, idx) => {
+              const done = idx < stepIndex;
+              const current = idx === stepIndex;
+              return (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2 font-mono text-[11.5px] transition ${
+                    current
+                      ? 'border border-[var(--mvz-gold)]/35 bg-[var(--mvz-gold)]/10 text-white'
+                      : done
+                      ? 'text-emerald-300/90'
+                      : 'text-white/30'
+                  }`}
+                >
+                  {done ? (
+                    <Check size={13} className="shrink-0 text-emerald-400" strokeWidth={3} />
+                  ) : current ? (
+                    <span className="h-2 w-2 shrink-0 animate-ping rounded-full bg-[var(--mvz-gold)]" />
+                  ) : (
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/20" />
+                  )}
+                  <span className="truncate">{st}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
               className="h-full bg-[var(--mvz-gold)] transition-all duration-500"
-              style={{ width: `${((stepIndex + 1) / 4) * 100}%` }}
+              style={{ width: `${((stepIndex + 1) / 5) * 100}%` }}
             />
           </div>
         </div>
@@ -365,7 +521,7 @@ export function StoreScoreView({
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--mvz-line)] pb-5">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Pill
                     tone={
                       result.badge === 'Diamante'
@@ -379,11 +535,32 @@ export function StoreScoreView({
                   >
                     Selo {result.badge}
                   </Pill>
-                  <span className="text-[11px] text-[var(--mvz-dim)]">Auditoria Concluída</span>
+                  {result.sourceSummary && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10.5px] font-semibold text-[var(--mvz-gold-light)]">
+                      <Globe size={11} />
+                      {result.sourceSummary}
+                    </span>
+                  )}
                 </div>
-                <h2 className="mt-2 text-2xl font-black">{result.name}</h2>
+                <h2 className="mt-2.5 text-2xl font-black text-white">{result.name}</h2>
+
+                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-[var(--mvz-muted)]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Tag size={13} className="text-[var(--mvz-gold)]" />
+                    Nicho: <strong className="text-white">{result.detectedNiche}</strong>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Store size={13} className="text-[#f4d77a]" />
+                    Estrutura: <strong className="text-white">{result.storeProfileType}</strong>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Percent size={13} className="text-[#7fcf9f]" />
+                    Comissão-Alvo B2B: <strong className="text-[#7fcf9f]">{result.recommendedCommissionTarget}</strong>
+                  </span>
+                </div>
+
                 <div
-                  className="mt-0.5 text-[12.5px] font-semibold"
+                  className="mt-1.5 text-[12.5px] font-semibold"
                   style={{
                     color:
                       result.badge === 'Diamante'
@@ -402,7 +579,7 @@ export function StoreScoreView({
               <button
                 onClick={() =>
                   onUseInAgent(
-                    `A loja "${result.name}" foi auditada com score ${result.score}/100 (${result.badge}) no Auditor de Lojista. Métricas: ${itemsSold.toLocaleString('pt-BR')} itens vendidos, ${responseRate}% de resposta e ${onTimeRate}% de envio no prazo. Crie uma estratégia completa de abordagem B2B, seleção de produtos vencedores e roteiros de gravação.`
+                    `A loja "${result.name}" (${result.detectedNiche}, perfil: ${result.storeProfileType}) recebeu score ${result.score}/100 (Selo ${result.badge}) no Auditor Forense da Orbiex. Diagnóstico: ${result.summary} Crie um plano completo de negociação B2B, escolha dos produtos campeões dessa loja e estratégia de vídeos.`
                   )
                 }
                 className="mvz-btn-grad flex h-10 items-center gap-2 px-4 text-[12px]"
@@ -462,7 +639,7 @@ export function StoreScoreView({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {result.metrics.map((m, i) => (
                   <div key={i} className="rounded-xl border border-[var(--mvz-line)] bg-white/[0.015] p-3.5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] font-bold text-[var(--mvz-dim)]">{m.label}</span>
                       <Pill
                         tone={
@@ -479,7 +656,7 @@ export function StoreScoreView({
                       </Pill>
                     </div>
                     <div className="mt-1.5 text-[15px] font-extrabold text-white">{m.value}</div>
-                    <div className="mt-1 text-[11px] text-[var(--mvz-dim)]">{m.explanation}</div>
+                    <div className="mt-1 text-[11px] leading-relaxed text-[var(--mvz-dim)]">{m.explanation}</div>
                   </div>
                 ))}
               </div>
@@ -487,20 +664,43 @@ export function StoreScoreView({
 
             {/* Sumário do Parecer */}
             <div className="rounded-2xl border border-[var(--mvz-line)] bg-[#070605] p-4 text-[12.5px] leading-relaxed text-white/90">
-              <span className="font-bold text-[var(--mvz-gold)]">Diagnóstico Executivo: </span>
+              <span className="font-bold text-[var(--mvz-gold)]">Diagnóstico Forense da Loja: </span>
               {result.summary}
             </div>
+
+            {/* Melhores Produtos Desta Loja para Pedir Amostra Primeiro */}
+            {result.bestProductsToRequestSample.length > 0 && result.score >= 45 && (
+              <div className="mt-6 rounded-2xl border border-[var(--mvz-gold)]/25 bg-[var(--mvz-gold)]/[0.04] p-5">
+                <div className="flex items-center gap-2 text-[12.5px] font-bold text-[#f4d77a]">
+                  <Gift size={15} className="text-[var(--mvz-gold)]" />
+                  Quais Produtos Pedir de Amostra Primeiro em “{result.name}”:
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2.5">
+                  {result.bestProductsToRequestSample.map((prod, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-2 rounded-xl border border-[var(--mvz-gold)]/30 bg-[#070605] px-3.5 py-2 text-[12px] font-semibold text-white"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--mvz-gold)]/20 text-[10px] font-black text-[var(--mvz-gold)]">
+                        {idx + 1}
+                      </span>
+                      {prod}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 4 Pilares Operacionais */}
             <div className="mt-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
               <div className="mb-4 flex items-center gap-2 text-[13.5px] font-bold text-white">
                 <Layers size={16} className="text-[var(--mvz-gold)]" />
-                Diagnóstico dos 4 Eixos Operacionais TikTok Shop
+                Auditoria dos 4 Eixos Operacionais de “{result.name}”
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {result.pillars.map((pillar, idx) => (
                   <div key={idx} className="rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-3.5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-[12px] font-bold text-white">{pillar.title}</span>
                       <Pill
                         tone={
@@ -527,7 +727,7 @@ export function StoreScoreView({
               {result.strengths.length > 0 && (
                 <div className="rounded-2xl border border-[rgba(127,207,159,0.2)] bg-[rgba(127,207,159,0.02)] p-4">
                   <div className="flex items-center gap-2 text-[12px] font-bold text-[#7fcf9f]">
-                    <CheckCircle2 size={15} /> Pontos Fortes da Loja
+                    <CheckCircle2 size={15} /> Pontos Fortes de “{result.name}”
                   </div>
                   <ul className="mt-2 space-y-1.5 text-[11.5px] text-white/80">
                     {result.strengths.map((s, i) => (
@@ -542,7 +742,7 @@ export function StoreScoreView({
               {result.warnings.length > 0 && (
                 <div className="rounded-2xl border border-[rgba(242,201,76,0.2)] bg-[rgba(242,201,76,0.02)] p-4">
                   <div className="flex items-center gap-2 text-[12px] font-bold text-[var(--mvz-gold)]">
-                    <AlertTriangle size={15} /> Pontos de Atenção para o Afiliado
+                    <AlertTriangle size={15} /> Riscos Operacionais a Verificar
                   </div>
                   <ul className="mt-2 space-y-1.5 text-[11.5px] text-white/80">
                     {result.warnings.map((w, i) => (
@@ -560,7 +760,7 @@ export function StoreScoreView({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[13px] font-bold text-[var(--mvz-gold-light)]">
                   <Sparkles size={15} className="text-[var(--mvz-gold)]" />
-                  Script de Abordagem Direta para Parceria B2B & Amostra Grátis
+                  Script B2B Personalizado para Abordar “{result.name}”
                 </div>
                 <button
                   onClick={copyScript}
@@ -578,7 +778,7 @@ export function StoreScoreView({
             {/* Dicas de Negociação */}
             <div className="mt-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
               <div className="mb-2 flex items-center gap-2 text-[12px] font-bold text-[var(--mvz-gold)]">
-                <Award size={15} /> Diretrizes Orbiex para Negociação B2B com Fornecedores
+                <Award size={15} /> Estratégia de Negociação Recomendada para Este Perfil de Loja
               </div>
               <ul className="space-y-1.5 text-[11.5px] text-[var(--mvz-muted)]">
                 {result.negotiationTips.map((tip, idx) => (
@@ -591,7 +791,7 @@ export function StoreScoreView({
                 <button
                   onClick={() =>
                     onUseInAgent(
-                      `Como abordar a loja "${result.name}" no chat do TikTok Shop para conseguir 25% de comissão e 3 amostras grátis? Escreva um roteiro passo a passo com argumentos para negociação.`
+                      `Como abordar a loja "${result.name}" (${result.detectedNiche}) no chat do TikTok Shop para conseguir comissão Target Plan (${result.recommendedCommissionTarget}) e amostras grátis? Escreva mensagens de abordagem e resposta a objeções do lojista.`
                     )
                   }
                   className="flex items-center gap-1 text-[11.5px] font-bold text-[var(--mvz-gold)] transition hover:text-white"

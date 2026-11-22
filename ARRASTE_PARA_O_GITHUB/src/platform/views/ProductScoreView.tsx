@@ -19,10 +19,22 @@ import {
   Film,
   Tag,
   ArrowRight,
+  Users,
+  MessageSquareWarning,
+  Globe,
+  DollarSign,
 } from 'lucide-react';
 import { Ring, Pill } from '../ui';
 import { auditProduct, auditProductAI, type ProductAuditResult } from '../productAuditor';
 import { copyText as copyToClipboard } from '../clipboard';
+
+const QUICK_PRODUCT_TESTS = [
+  { label: 'Mini Processador Elétrico USB', price: 'R$ 54,90', comm: '20%' },
+  { label: 'Sérum Clareador de Melasma', price: 'R$ 69,90', comm: '22%' },
+  { label: 'Calça Jeans Wide Leg Cintura Alta', price: 'R$ 119,90', comm: '18%' },
+  { label: 'Cabo USB-C Simples 1 Metro', price: 'R$ 14,90', comm: '12%' },
+  { label: 'Tênis Nike Air Force 1 Linha', price: 'R$ 189,90', comm: '20%' },
+];
 
 export function ProductScoreView({
   onUseInAgent,
@@ -32,50 +44,86 @@ export function ProductScoreView({
   const [productLink, setProductLink] = useState('');
   const [productName, setProductName] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [estimatedPrice, setEstimatedPrice] = useState('');
   const [commission, setCommission] = useState('20%');
-  const [category, setCategory] = useState('Moda Feminina');
+  const [category, setCategory] = useState('Detectar Automaticamente');
+  const [validationMsg, setValidationMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [result, setResult] = useState<ProductAuditResult | null>(null);
 
   const [copiedScript, setCopiedScript] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef(0);
 
   const handleClear = () => {
     requestIdRef.current++;
     setProductLink('');
     setProductName('');
+    setEstimatedPrice('');
+    setCommission('20%');
+    setCategory('Detectar Automaticamente');
+    setValidationMsg('');
     setResult(null);
     setLoading(false);
     setStepIndex(0);
   };
 
-  const handleAnalyze = async () => {
+  const runAnalysisWith = async (override?: {
+    name?: string;
+    link?: string;
+    price?: string;
+    comm?: string;
+  }) => {
+    const pName = (override?.name ?? productName).trim();
+    const pLink = (override?.link ?? productLink).trim();
+    const pPrice = (override?.price ?? estimatedPrice).trim();
+    const pComm = (override?.comm ?? commission).trim() || '20%';
+
+    if (!pName && !pLink) {
+      setValidationMsg('Digite o nome do produto ou cole o link do anúncio para realizar a auditoria personalizada.');
+      nameInputRef.current?.focus();
+      return;
+    }
+
+    setValidationMsg('');
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setResult(null);
     setStepIndex(0);
 
-    // Pipeline progressivo enquanto a IA gera a análise
     const timers = [
-      window.setTimeout(() => setStepIndex(1), 600),
-      window.setTimeout(() => setStepIndex(2), 1300),
-      window.setTimeout(() => setStepIndex(3), 2000),
+      window.setTimeout(() => setStepIndex(1), 550),
+      window.setTimeout(() => setStepIndex(2), 1150),
+      window.setTimeout(() => setStepIndex(3), 1800),
+      window.setTimeout(() => setStepIndex(4), 2450),
     ];
-    const minDelay = new Promise((r) => window.setTimeout(r, 2500));
+    const minDelay = new Promise((r) => window.setTimeout(r, 2700));
 
     let audit: ProductAuditResult;
     try {
       const [ai] = await Promise.all([
-        auditProductAI({ productName, productLink, category, commission }),
+        auditProductAI({
+          productName: pName,
+          productLink: pLink,
+          category,
+          commission: pComm,
+          estimatedPrice: pPrice,
+        }),
         minDelay,
       ]);
       audit = ai;
     } catch {
-      audit = auditProduct({ productName, productLink, category, commission });
+      audit = auditProduct({
+        productName: pName,
+        productLink: pLink,
+        category,
+        commission: pComm,
+        estimatedPrice: pPrice,
+      });
     }
-    if (requestId !== requestIdRef.current) return; // limpado ou nova análise iniciada
+    if (requestId !== requestIdRef.current) return;
     timers.forEach((t) => window.clearTimeout(t));
 
     setLoading(false);
@@ -93,6 +141,30 @@ export function ProductScoreView({
     setTimeout(() => setCopiedScript(false), 2000);
   };
 
+  const scanTargetLabel =
+    productName.trim() ||
+    (() => {
+      try {
+        const raw = productLink.trim();
+        if (!raw) return 'produto';
+        if (raw.startsWith('@')) return raw;
+        const u = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+        return `${u.hostname.replace(/^www\./, '')}${u.pathname.slice(0, 32)}`;
+      } catch {
+        return productLink.trim().slice(0, 40);
+      }
+    })();
+
+  const scanSteps = [
+    productLink.trim()
+      ? `Inspecionando URL e extraindo metadados de "${scanTargetLabel}"...`
+      : `Mapeando taxonomia comercial, subnicho e curva de demanda de "${scanTargetLabel}"...`,
+    `Cruzando "${scanTargetLabel}" com filtros de IPR (marcas), Anvisa e moderação visual TikTok Shop...`,
+    `Calculando ticket médio real, comissão líquida (${commission || '20%'}) e quantas vendas batem R$ 1.000...`,
+    `Diagnosticando taxa real de devolução (tamanho/avaria/expectativa) e objeções dos comentários...`,
+    `Gerando parecer forense exclusivo, cenas de gravação 9:16 e script de amostra grátis...`,
+  ];
+
   return (
     <div className="mvz-fade-up pb-16">
       {/* ── Top Bar Header ── */}
@@ -101,7 +173,7 @@ export function ProductScoreView({
           <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.3)] bg-[rgba(212,175,55,0.06)] px-3 py-1">
             <Sparkles size={12} className="text-[var(--mvz-gold)]" />
             <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--mvz-gold-light)]">
-              Orbiex Product Intelligence
+              Orbiex Forensic Product Intelligence
             </span>
           </div>
 
@@ -110,11 +182,10 @@ export function ProductScoreView({
           </h1>
 
           <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-[var(--mvz-muted)]">
-            Descubra se o produto é seguro para vender, se corre risco de banimento e qual o potencial de escala antes de produzir qualquer vídeo.
+            Auditoria forense personalizada por link ou nome: avalia risco real de banimento, ticket, comissão por venda, devoluções, objeções dos comentários e roteiros práticos para aquele produto exato.
           </p>
         </div>
 
-        {/* Limpar Campos Button */}
         <button
           onClick={handleClear}
           className="flex h-9 items-center gap-2 rounded-xl border border-[var(--mvz-line)] bg-white/[0.03] px-3.5 text-[11.5px] font-semibold text-[var(--mvz-muted)] transition hover:border-[var(--mvz-line-strong)] hover:text-white"
@@ -128,45 +199,42 @@ export function ProductScoreView({
       <div className="mb-6 rounded-2xl border border-[var(--mvz-line)] bg-[#0c0a07] p-5">
         <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
           <CircleHelp size={14} />
-          Como fazer a análise do seu produto:
+          Como funciona a auditoria inteligente:
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {/* Step 1 */}
           <div className="flex gap-3 rounded-xl border border-[var(--mvz-line)] bg-white/[0.015] p-3.5">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(212,175,55,0.15)] text-[12px] font-black text-[var(--mvz-gold)]">
               1
             </div>
             <div>
-              <div className="text-[13px] font-bold text-white">Cole o Link ou Nome</div>
+              <div className="text-[13px] font-bold text-white">Cole o Link Real ou Nome</div>
               <div className="mt-1 text-[11.5px] leading-relaxed text-[var(--mvz-dim)]">
-                Copie o link do produto no TikTok Shop ou digite o nome do produto no campo abaixo.
+                Aceita links do TikTok Shop (`vt.tiktok.com`, `@loja/video/...`), Shopee, Mercado Livre ou o nome específico do item.
               </div>
             </div>
           </div>
 
-          {/* Step 2 */}
           <div className="flex gap-3 rounded-xl border border-[var(--mvz-line)] bg-white/[0.015] p-3.5">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(212,175,55,0.15)] text-[12px] font-black text-[var(--mvz-gold)]">
               2
             </div>
             <div>
-              <div className="text-[13px] font-bold text-white">Clique em Analisar Produto</div>
+              <div className="text-[13px] font-bold text-white">Inspeção Forense sem Filtro</div>
               <div className="mt-1 text-[11.5px] leading-relaxed text-[var(--mvz-dim)]">
-                O sistema cruza as informações com o banco de diretrizes de moderação do TikTok.
+                O motor extrai os dados do link, calcula margem em R$, detecta saturação, fragilidade, réplicas ou travas de moderação.
               </div>
             </div>
           </div>
 
-          {/* Step 3 */}
           <div className="flex gap-3 rounded-xl border border-[var(--mvz-line)] bg-white/[0.015] p-3.5">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(212,175,55,0.15)] text-[12px] font-black text-[var(--mvz-gold)]">
               3
             </div>
             <div>
-              <div className="text-[13px] font-bold text-white">Receba o Relatório Oficial</div>
+              <div className="text-[13px] font-bold text-white">Plano de Ação Sob Medida</div>
               <div className="mt-1 text-[11.5px] leading-relaxed text-[var(--mvz-dim)]">
-                Veja o Score (0-100), riscos de ban, políticas validadas e script de amostra grátis.
+                Receba o Score honesto (0–100), como matar as objeções daquele item na câmera e script personalizado de amostra.
               </div>
             </div>
           </div>
@@ -180,10 +248,10 @@ export function ProductScoreView({
         <div className="flex items-center justify-between border-b border-[var(--mvz-line)] pb-4">
           <div className="flex items-center gap-2 text-[14px] font-extrabold text-white">
             <Sparkles size={16} className="text-[var(--mvz-gold)]" />
-            Insira os Dados do Produto
+            Insira os Dados do Produto para Auditoria
           </div>
           <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-[var(--mvz-dim)]">
-            Varredura de Diretrizes Orbiex
+            Leitura Real de Link + IA Forense
           </span>
         </div>
 
@@ -192,13 +260,17 @@ export function ProductScoreView({
           <div>
             <label className="flex items-center gap-1.5 text-[11.5px] font-bold text-white/90">
               <Link2 size={13} className="text-[var(--mvz-gold)]" />
-              Link do Produto no TikTok Shop / Fornecedor:
+              Link do Produto (TikTok Shop, Shopee, Mercado Livre...):
             </label>
             <input
               type="text"
               value={productLink}
-              onChange={(e) => setProductLink(e.target.value)}
-              placeholder="Ex: https://www.tiktok.com/@loja/video/... ou link da loja"
+              onChange={(e) => {
+                setProductLink(e.target.value);
+                if (validationMsg) setValidationMsg('');
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && runAnalysisWith()}
+              placeholder="Ex: https://vt.tiktok.com/... ou https://shopee.com.br/..."
               className="mvz-input mt-2 h-12 w-full px-4 text-[13px]"
             />
           </div>
@@ -207,19 +279,52 @@ export function ProductScoreView({
           <div>
             <label className="flex items-center gap-1.5 text-[11.5px] font-bold text-white/90">
               <CheckCircle2 size={13} className="text-[var(--mvz-gold)]" />
-              Nome do Produto (Opcional se inseriu o link):
+              Nome / Modelo Específico do Produto:
             </label>
             <input
+              ref={nameInputRef}
               type="text"
               value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              placeholder="Ex: Mini Projetor Smart, Mop Giratório, Sérum Facial..."
+              onChange={(e) => {
+                setProductName(e.target.value);
+                if (validationMsg) setValidationMsg('');
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && runAnalysisWith()}
+              placeholder="Ex: Mini Projetor HY300 4K, Calça Flare Alfaiataria, Cabo USB..."
               className="mvz-input mt-2 h-12 w-full px-4 text-[13px]"
             />
           </div>
         </div>
 
-        {/* Accordion Ajustar Comissão e Categoria */}
+        {/* Chips de Teste Rápido Contrastantes */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-[var(--mvz-dim)]">Exemplos para comparar notas:</span>
+          {QUICK_PRODUCT_TESTS.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setProductName(item.label);
+                setEstimatedPrice(item.price);
+                setCommission(item.comm);
+                setValidationMsg('');
+              }}
+              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-white/75 transition hover:border-[var(--mvz-gold)]/45 hover:bg-[var(--mvz-gold)]/10 hover:text-[#f4d77a]"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {validationMsg && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2.5 text-[12px] font-semibold text-amber-200">
+            <AlertTriangle size={14} className="shrink-0 text-amber-300" />
+            <span>{validationMsg}</span>
+          </div>
+        )}
+
+        {/* Accordion Ajustar Preço, Comissão e Categoria */}
         <div className="mt-5 border-t border-[var(--mvz-line)] pt-4">
           <button
             type="button"
@@ -227,13 +332,23 @@ export function ProductScoreView({
             className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--mvz-muted)] transition hover:text-white"
           >
             {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            Ajustar Comissão e Categoria (Opcional)
+            Informar Preço de Venda, Comissão e Categoria (Opcional)
           </button>
 
           {showAdvanced && (
-            <div className="mvz-msg-in mt-4 grid grid-cols-1 gap-4 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-4 sm:grid-cols-2">
+            <div className="mvz-msg-in mt-4 grid grid-cols-1 gap-4 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-4 sm:grid-cols-3">
               <div>
-                <label className="text-[11px] font-bold text-[var(--mvz-dim)]">Comissão Estimada:</label>
+                <label className="text-[11px] font-bold text-[var(--mvz-dim)]">Preço de Venda (Opcional):</label>
+                <input
+                  type="text"
+                  value={estimatedPrice}
+                  onChange={(e) => setEstimatedPrice(e.target.value)}
+                  placeholder="Ex: R$ 79,90 (vazio = IA estima)"
+                  className="mvz-input mt-1.5 h-10 w-full px-3 text-[13px]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--mvz-dim)]">Comissão de Afiliado:</label>
                 <input
                   type="text"
                   value={commission}
@@ -249,11 +364,18 @@ export function ProductScoreView({
                   onChange={(e) => setCategory(e.target.value)}
                   className="mvz-input mt-1.5 h-10 w-full bg-[#0d0c0a] px-3 text-[13px]"
                 >
+                  <option>Detectar Automaticamente</option>
                   <option>Moda Feminina</option>
-                  <option>Fitness</option>
-                  <option>Beleza & Cuidados</option>
+                  <option>Moda Masculina</option>
+                  <option>Fitness & Esporte</option>
+                  <option>Beleza & Skincare</option>
+                  <option>Cabelo & Maquiagem</option>
                   <option>Casa & Cozinha</option>
                   <option>Eletrônicos & Gadgets</option>
+                  <option>Calçados & Bolsas</option>
+                  <option>Pet Shop</option>
+                  <option>Bebês & Maternidade</option>
+                  <option>Automotivo & Ferramentas</option>
                 </select>
               </div>
             </div>
@@ -261,42 +383,72 @@ export function ProductScoreView({
         </div>
 
         {/* Card Footer */}
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-[var(--mvz-line)] pt-5 sm:flex-row">
+        <div className="mt-7 flex flex-col items-center justify-between gap-4 border-t border-[var(--mvz-line)] pt-5 sm:flex-row">
           <div className="flex items-center gap-2 text-[12px] text-white/80">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(212,175,55,0.15)] text-[var(--mvz-gold)]">
               <Check size={12} strokeWidth={3} />
             </span>
-            <span>Auditoria cruzada com as diretrizes de conformidade TikTok Shop 2026</span>
+            <span>Avaliação crítica real (0–100) sem inflar notas de produtos fracos ou saturados</span>
           </div>
 
           <button
-            onClick={handleAnalyze}
+            onClick={() => runAnalysisWith()}
             disabled={loading}
             className="mvz-btn-grad flex h-12 w-full items-center justify-center gap-2.5 px-7 text-[12.5px] font-extrabold uppercase tracking-wider sm:w-auto"
           >
             <Zap size={15} fill="currentColor" />
-            {loading ? 'Auditando Diretrizes...' : 'ANALISAR PRODUTO AGORA →'}
+            {loading ? 'Executando Varredura Forense...' : 'ANALISAR PRODUTO AGORA →'}
           </button>
         </div>
       </div>
 
-      {/* ── Loading Animation com Passos Reais ── */}
+      {/* ── Scanner Forense em Tempo Real (Mostrando o Alvo Exato) ── */}
       {loading && (
-        <div className="mvz-msg-in mt-6 rounded-2xl border border-[var(--mvz-line-strong)] bg-[#0d0c0a] p-6 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[rgba(212,175,55,0.1)] text-[var(--mvz-gold)]">
-            <Sparkles size={24} className="animate-spin" />
+        <div className="mvz-msg-in mt-6 rounded-2xl border border-[var(--mvz-line-strong)] bg-[#0b0a08] p-6">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+            <div className="flex items-center gap-2.5">
+              <Sparkles size={18} className="animate-spin text-[var(--mvz-gold)]" />
+              <span className="text-[14px] font-extrabold text-white">
+                Auditando: <span className="text-[#f4d77a]">{scanTargetLabel}</span>
+              </span>
+            </div>
+            <span className="font-mono text-[11px] font-bold text-[var(--mvz-gold-light)]">
+              Etapa {stepIndex + 1}/5
+            </span>
           </div>
-          <h3 className="mt-3 text-[16px] font-bold">Auditando políticas e viabilidade TikTok Shop...</h3>
-          <p className="mt-1 font-mono text-[12px] text-[var(--mvz-gold-light)]">
-            {stepIndex === 0 && '1/4 Extraindo parâmetros de produto e categoria...'}
-            {stepIndex === 1 && '2/4 Verificando diretrizes de moderação, direitos autorais e alegações sensíveis...'}
-            {stepIndex === 2 && '3/4 Calculando score de demanda viral, margem líquida e taxa de devolução...'}
-            {stepIndex === 3 && '4/4 Consolidando parecer executivo e gerando roteiros de amostra...'}
-          </p>
-          <div className="mx-auto mt-4 h-1.5 w-64 overflow-hidden rounded-full bg-white/10">
+
+          <div className="mt-4 space-y-2.5">
+            {scanSteps.map((stepText, i) => {
+              const done = i < stepIndex;
+              const current = i === stepIndex;
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2 font-mono text-[11.5px] transition ${
+                    current
+                      ? 'border border-[var(--mvz-gold)]/35 bg-[var(--mvz-gold)]/10 text-white'
+                      : done
+                      ? 'text-emerald-300/90'
+                      : 'text-white/30'
+                  }`}
+                >
+                  {done ? (
+                    <Check size={13} className="shrink-0 text-emerald-400" strokeWidth={3} />
+                  ) : current ? (
+                    <span className="h-2 w-2 shrink-0 animate-ping rounded-full bg-[var(--mvz-gold)]" />
+                  ) : (
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/20" />
+                  )}
+                  <span className="truncate">{stepText}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
               className="h-full bg-[var(--mvz-gold)] transition-all duration-500"
-              style={{ width: `${((stepIndex + 1) / 4) * 100}%` }}
+              style={{ width: `${((stepIndex + 1) / 5) * 100}%` }}
             />
           </div>
         </div>
@@ -309,24 +461,42 @@ export function ProductScoreView({
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--mvz-line)] pb-5">
               <div>
-                <div className="flex items-center gap-2">
-                  <Pill tone={result.score >= 80 ? 'green' : result.score >= 60 ? 'amber' : 'pink'}>
-                    {result.score >= 80 ? 'Produto Aprovado' : result.score >= 60 ? 'Atenção Operacional' : 'Alto Risco de Ban'}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Pill tone={result.score >= 80 ? 'green' : result.score >= 58 ? 'amber' : 'pink'}>
+                    {result.score >= 85
+                      ? 'Campeão de Escala'
+                      : result.score >= 78
+                      ? 'Produto Aprovado'
+                      : result.score >= 58
+                      ? 'Viável com Ressalvas'
+                      : 'Alto Risco / Baixa Viabilidade'}
                   </Pill>
-                  <span className="text-[11px] text-[var(--mvz-dim)]">Auditoria Concluída</span>
+                  {result.sourceSummary && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10.5px] font-semibold text-[var(--mvz-gold-light)]">
+                      <Globe size={11} />
+                      {result.sourceSummary}
+                    </span>
+                  )}
                 </div>
-                <h2 className="mt-2 text-2xl font-black">{result.name}</h2>
-                <div className="mt-1 flex items-center gap-2 text-[12px] text-[var(--mvz-muted)]">
-                  <Tag size={13} className="text-[var(--mvz-gold)]" />
-                  <span>Categoria: <strong className="text-white">{result.categoryDetected}</strong></span>
+                <h2 className="mt-2.5 text-2xl font-black text-white">{result.name}</h2>
+                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-[var(--mvz-muted)]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Tag size={13} className="text-[var(--mvz-gold)]" />
+                    Categoria: <strong className="text-white">{result.categoryDetected}</strong>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <DollarSign size={13} className="text-[#7fcf9f]" />
+                    Ticket Estimado: <strong className="text-white">{result.estimatedTicket}</strong>
+                  </span>
                 </div>
+                <div className="mt-1 text-[12px] font-semibold text-[var(--mvz-gold-light)]">{result.status}</div>
               </div>
 
               <div className="flex items-center gap-3">
                 <button
                   onClick={() =>
                     onUseInAgent(
-                      `O produto "${result.name}" (${result.categoryDetected}) foi auditado com score ${result.score}/100 no Analisador de Produto. Veredito: ${result.status}. Crie uma estratégia completa de criativos, ganchos de alta retenção e roteiros de conversão direta para TikTok Shop.`
+                      `O produto "${result.name}" (${result.categoryDetected}, ticket ${result.estimatedTicket}) recebeu score ${result.score}/100 no Analisador Forense da Orbiex. Diagnóstico: ${result.verdictSummary} Crie uma estratégia sob medida com 5 ganchos de 3s, estrutura de vídeo quebrando as objeções desse produto e plano de postagem para o TikTok Shop.`
                     )
                   }
                   className="mvz-btn-grad flex h-10 items-center gap-2 px-4 text-[12px]"
@@ -337,19 +507,19 @@ export function ProductScoreView({
               </div>
             </div>
 
-            {/* Score & Risk Summary Cards */}
+            {/* Score & Risk Summary Cards — 100% Dinâmicos por Produto! */}
             <div className="my-6 grid grid-cols-1 gap-5 md:grid-cols-4">
               {/* Ring Score */}
               <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5 text-center">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">
-                  Score de Validação
+                  Score Forense Orbiex
                 </div>
                 <div className="my-2">
                   <Ring
                     value={result.score}
                     size={110}
                     stroke={7}
-                    color={result.score >= 80 ? '#7fcf9f' : result.score >= 60 ? '#f2c94c' : '#ef4444'}
+                    color={result.score >= 78 ? '#7fcf9f' : result.score >= 58 ? '#f2c94c' : '#ef4444'}
                     label={
                       <div className="text-center">
                         <div className="text-3xl font-black">{result.score}</div>
@@ -361,14 +531,20 @@ export function ProductScoreView({
                 <div
                   className="text-[11.5px] font-bold"
                   style={{
-                    color: result.score >= 80 ? '#7fcf9f' : result.score >= 60 ? '#f2c94c' : '#ef4444',
+                    color: result.score >= 78 ? '#7fcf9f' : result.score >= 58 ? '#f2c94c' : '#ef4444',
                   }}
                 >
-                  {result.score >= 80 ? 'Excelente Potencial' : result.score >= 60 ? 'Ressalvas Identificadas' : 'Reprovado / Crítico'}
+                  {result.score >= 86
+                    ? 'Potencial de Escala Forte'
+                    : result.score >= 78
+                    ? 'Aprovado p/ Conversão'
+                    : result.score >= 58
+                    ? 'Exige Ajuste de Oferta/Vídeo'
+                    : 'Reprovado / Alto Atrito'}
                 </div>
               </div>
 
-              {/* Ban Risk */}
+              {/* Ban Risk (Texto específico do produto!) */}
               <div className="flex flex-col justify-center rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
                 <div className="flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
                   <ShieldCheck size={16} /> Risco de Banimento
@@ -382,50 +558,85 @@ export function ProductScoreView({
                   {result.banRisk} Risco
                 </div>
                 <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--mvz-muted)]">
-                  {result.banRisk === 'Baixo'
-                    ? 'Nenhuma violação às diretrizes de comércio identificada. Produto liberado para vitrine e anúncios.'
-                    : result.banRisk === 'Médio'
-                    ? 'Atenção aos primeiros frames do vídeo e alegações no áudio para evitar advertências.'
-                    : 'Gatilho de suspensão de vitrine e saldo. Não recomendado para afiliação direta.'}
+                  {result.banRiskDetail}
                 </p>
               </div>
 
-              {/* Demanda Viral */}
+              {/* Demanda Viral & Retenção Visual (Específico do produto!) */}
               <div className="flex flex-col justify-center rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
                 <div className="flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
-                  <Flame size={16} /> Demanda Viral
+                  <Flame size={16} /> Apelo Viral & Demonstração
                 </div>
-                <div className="mt-2 text-2xl font-black text-[var(--mvz-gold-light)]">
-                  {result.demandIndex}%
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-[var(--mvz-gold-light)]">{result.demandIndex}%</span>
+                  <span className="text-[11px] font-semibold text-white/60">
+                    (Demo: {result.demonstrationEase}%)
+                  </span>
                 </div>
                 <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--mvz-muted)]">
-                  Facilidade de demonstração avaliada em {result.demonstrationEase}%. Forte apelo de retenção nos primeiros 3 segundos.
+                  {result.viralHookDetail}
                 </p>
               </div>
 
-              {/* Margens e Devolução */}
+              {/* Comissão em R$ & Risco Real de Devolução */}
               <div className="flex flex-col justify-center rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
                 <div className="flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
-                  <TrendingUp size={16} /> Margem & Devolução
+                  <TrendingUp size={16} /> Ganho Líquido & Devolução
                 </div>
-                <div className="mt-2 text-lg font-black text-white">{result.estimatedMargin}</div>
+                <div className="mt-2 text-[15px] font-black leading-snug text-white">
+                  {result.estimatedMargin}
+                </div>
                 <p className="mt-1.5 text-[11.5px] leading-relaxed text-[var(--mvz-muted)]">
-                  Risco de devolução estimado em <strong className="text-white">{result.returnRateRisk}</strong> com entrega pontual.
+                  Devolução: <strong className="text-white">{result.returnRateRisk}</strong> — {result.returnRateReason}
                 </p>
               </div>
             </div>
 
             {/* Veredito Geral */}
             <div className="rounded-2xl border border-[var(--mvz-line)] bg-[#070605] p-4 text-[12.5px] leading-relaxed text-white/90">
-              <span className="font-bold text-[var(--mvz-gold)]">Parecer Executivo Orbiex: </span>
+              <span className="font-bold text-[var(--mvz-gold)]">Parecer Forense Orbiex: </span>
               {result.verdictSummary}
+            </div>
+
+            {/* Público Comprador + Objeções Reais dos Comentários */}
+            <div className="mt-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
+              <div className="flex items-start gap-3 border-b border-white/10 pb-4">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)]">
+                  <Users size={16} />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
+                    Perfil Exato de Quem Compra Este Produto no TikTok
+                  </div>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-white/85">{result.targetPersona}</p>
+                </div>
+              </div>
+
+              {result.buyerObjections.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-3 flex items-center gap-2 text-[12px] font-bold text-white">
+                    <MessageSquareWarning size={15} className="text-amber-400" />
+                    Maiores Objeções nos Comentários & Como Matar na Gravação:
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {result.buyerObjections.map((obj, i) => (
+                      <div key={i} className="rounded-xl border border-white/10 bg-[#070605] p-3.5">
+                        <div className="text-[11.5px] font-bold text-amber-200">{obj.objection}</div>
+                        <p className="mt-1.5 text-[11.5px] leading-relaxed text-white/75">
+                          <strong className="text-emerald-300">Prova na câmera:</strong> {obj.howToKillInVideo}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Guidelines Checklist */}
             <div className="mt-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-[13.5px] font-bold">Varredura das Diretrizes Oficiais TikTok Shop 2026</h3>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">5 Políticas Auditadas</span>
+                <h3 className="text-[13.5px] font-bold">Auditoria das 5 Diretrizes Aplicadas a “{result.name}”</h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">TikTok Shop 2026</span>
               </div>
               <div className="space-y-3">
                 {result.guidelines.map((g, idx) => (
@@ -474,7 +685,7 @@ export function ProductScoreView({
               <div className="mt-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-5">
                 <div className="mb-4 flex items-center gap-2 text-[13.5px] font-bold text-white">
                   <Film size={16} className="text-[var(--mvz-gold)]" />
-                  Ângulos de Conteúdo Recomendados para Alta Retenção (Vídeo Vertical 9:16)
+                  Cenas e Ângulos de Vídeo Específicos para “{result.name}” (9:16)
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {result.contentAngles.map((angle, idx) => (
@@ -497,7 +708,7 @@ export function ProductScoreView({
               {result.strengths.length > 0 && (
                 <div className="rounded-2xl border border-[rgba(127,207,159,0.2)] bg-[rgba(127,207,159,0.02)] p-4">
                   <div className="flex items-center gap-2 text-[12px] font-bold text-[#7fcf9f]">
-                    <CheckCircle2 size={15} /> Pontos Fortes do Produto
+                    <CheckCircle2 size={15} /> Pontos Fortes Específicos
                   </div>
                   <ul className="mt-2 space-y-1.5 text-[11.5px] text-white/80">
                     {result.strengths.map((s, i) => (
@@ -512,7 +723,7 @@ export function ProductScoreView({
               {result.riskFactors.length > 0 && (
                 <div className="rounded-2xl border border-[rgba(242,201,76,0.2)] bg-[rgba(242,201,76,0.02)] p-4">
                   <div className="flex items-center gap-2 text-[12px] font-bold text-[var(--mvz-gold)]">
-                    <AlertTriangle size={15} /> Pontos de Atenção na Gravação
+                    <AlertTriangle size={15} /> Riscos Reais & Cuidados na Gravação
                   </div>
                   <ul className="mt-2 space-y-1.5 text-[11.5px] text-white/80">
                     {result.riskFactors.map((r, i) => (
@@ -530,7 +741,7 @@ export function ProductScoreView({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[13px] font-bold text-[var(--mvz-gold-light)]">
                   <Sparkles size={15} className="text-[var(--mvz-gold)]" />
-                  Script Oficial para Solicitar Amostra Grátis ao Fornecedor
+                  Script Personalizado para Solicitar Amostra de “{result.name}”
                 </div>
                 <button
                   onClick={copySampleScript}
@@ -540,7 +751,7 @@ export function ProductScoreView({
                   {copiedScript ? 'Copiado!' : 'Copiar Script'}
                 </button>
               </div>
-              <p className="mt-3 rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-3.5 font-mono text-[12px] leading-relaxed text-white/90">
+              <p className="mt-3 whitespace-pre-line rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-3.5 font-mono text-[12px] leading-relaxed text-white/90">
                 {result.freeSampleScript}
               </p>
             </div>
@@ -554,7 +765,7 @@ export function ProductScoreView({
               <button
                 onClick={() =>
                   onUseInAgent(
-                    `Quero gravar 3 vídeos do produto "${result.name}". Crie 3 roteiros completos com Hook de 3 segundos, Demonstração prática e CTA para a sacola do TikTok Shop.`
+                    `Quero gravar 3 vídeos do produto "${result.name}" (${result.categoryDetected}). Crie 3 roteiros completos com Hook visual de 3 segundos, quebra de objeções reais desse produto e CTA para a sacola do TikTok Shop.`
                   )
                 }
                 className="flex items-center gap-1 text-[11.5px] font-bold text-[var(--mvz-gold)] transition hover:text-white"

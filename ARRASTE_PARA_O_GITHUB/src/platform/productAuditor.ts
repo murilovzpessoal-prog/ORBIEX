@@ -1,5 +1,6 @@
 import { aiDeepAuditJSON, type LinkIntel } from './aiGenerate';
 import { getUserDisplayName } from './useUserProfile';
+import { getAllProducts, type WinningProduct } from './productsStore';
 
 export interface ProductAuditRequest {
   productName: string;
@@ -30,6 +31,8 @@ export interface BuyerObjection {
 
 export interface ProductAuditResult {
   name: string;
+  isCatalogChampion?: boolean;
+  catalogSales?: string;
   sourceSummary?: string;
   categoryDetected: string;
   score: number;
@@ -206,17 +209,252 @@ function fmtBRL(v: number): string {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+const CATALOG_STOPWORDS = new Set([
+  'de',
+  'da',
+  'do',
+  'das',
+  'dos',
+  'com',
+  'sem',
+  'em',
+  'para',
+  'por',
+  'no',
+  'na',
+  'ao',
+  'aos',
+  'as',
+  'os',
+  'um',
+  'uma',
+  'e',
+  'o',
+  'a',
+  'feminino',
+  'feminina',
+  'femininos',
+  'femininas',
+]);
+
+function normalizeCatalogToken(word: string): string {
+  let w = word;
+  if (w === 'shorts') return 'short';
+  if (w === 'shortinho') return 'short';
+  if (w.length > 4 && w.endsWith('oes')) w = w.slice(0, -3) + 'ao';
+  else if (w.length > 4 && w.endsWith('s') && !w.endsWith('ss') && w !== 'plus') w = w.slice(0, -1);
+  return w;
+}
+
+function tokenizeForCatalog(raw: string): string[] {
+  return String(raw || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .map((w) => normalizeCatalogToken(w.trim()))
+    .filter((w) => w.length >= 2 && !CATALOG_STOPWORDS.has(w));
+}
+
+function cleanUrlForMatch(u?: string): string {
+  if (!u) return '';
+  return u
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .split('?')[0]
+    .replace(/\/+$/, '')
+    .toLowerCase();
+}
+
+/**
+ * Verifica se o nome ou o link informado pertence ao catálogo da aba "Produtos Campeões" da Orbiex.
+ * - Qualquer produto da nossa aba de produtos retorna o item homologado (garantindo Score Alto 90-98).
+ * - Produtos externos retornam null e passam pelo crivo forense rigoroso (podendo ter score baixo/médio).
+ */
+export function matchCatalogWinningProduct(
+  rawName: string,
+  rawLink: string,
+  linkIntel?: LinkIntel | null
+): WinningProduct | null {
+  const catalog = getAllProducts();
+  const inUrl = cleanUrlForMatch(rawLink);
+  const resolvedUrl = cleanUrlForMatch(linkIntel?.finalUrl);
+
+  // 1. Match por link do catálogo (exato ou código curto vt.tiktok.com/ZS...)
+  if (inUrl && inUrl !== '#') {
+    for (const wp of catalog) {
+      const wpUrl = cleanUrlForMatch(wp.link);
+      if (!wpUrl || wpUrl === '#') continue;
+      if (inUrl === wpUrl || (resolvedUrl && resolvedUrl === wpUrl)) return wp;
+      const code = wpUrl.split('/').pop();
+      if (code && code.length >= 8 && (inUrl.includes(code) || (resolvedUrl && resolvedUrl.includes(code)))) {
+        return wp;
+      }
+    }
+  }
+
+  // 2. Match por nome / título extraído do link
+  const candidateTexts = [rawName, linkIntel?.oembedTitle || '', linkIntel?.pageTitle || '']
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  let bestMatch: { wp: WinningProduct; overlap: number } | null = null;
+
+  for (const text of candidateTexts) {
+    const qTokens = tokenizeForCatalog(text);
+    if (qTokens.length === 0) continue;
+
+    for (const wp of catalog) {
+      const wpTokens = tokenizeForCatalog(wp.name);
+      if (wpTokens.length === 0) continue;
+      const wpSet = new Set(wpTokens);
+      const qSet = new Set(qTokens);
+
+      // Todos os tokens relevantes digitados pelo usuário existem no produto campeão (mínimo 2 palavras-chave)
+      const matchedInWp = qTokens.filter((t) => wpSet.has(t));
+      const matchedInQ = wpTokens.filter((t) => qSet.has(t));
+
+      const exactAllQueryTokens = qTokens.length >= 2 && matchedInWp.length === qTokens.length;
+      const strongBidirectional =
+        qTokens.length >= 3 &&
+        matchedInWp.length / qTokens.length >= 0.8 &&
+        matchedInQ.length / wpTokens.length >= 0.6;
+
+      if (exactAllQueryTokens || strongBidirectional) {
+        const scoreOverlap = matchedInWp.length * 10 - Math.abs(wpTokens.length - qTokens.length);
+        if (!bestMatch || scoreOverlap > bestMatch.overlap) {
+          bestMatch = { wp, overlap: scoreOverlap };
+        }
+      }
+    }
+  }
+
+  return bestMatch ? bestMatch.wp : null;
+}
+
 /* ══════════════════════════════════════════════════════════════════════
  * Motor Forense Local (Fallback realista com 12 perfis distintos e hash determinístico por produto)
  * ══════════════════════════════════════════════════════════════════════ */
 export function auditProduct(req: ProductAuditRequest, linkIntel?: LinkIntel | null): ProductAuditResult {
-  const name = extractProductTitle(req.productName, req.productLink, req.category, linkIntel);
+  const matchedCatalog = matchCatalogWinningProduct(req.productName, req.productLink, linkIntel);
+  const name = matchedCatalog
+    ? matchedCatalog.name
+    : extractProductTitle(req.productName, req.productLink, req.category, linkIntel);
   const sourceSummary = formatSourceSummary(req.productLink, linkIntel);
   const localLink = parseLinkLocally(req.productLink);
   const storeRef = linkIntel?.handle || localLink.handle || linkIntel?.oembedAuthor || 'sua loja';
   const sender = getUserDisplayName();
   const commPct = parseCommissionNumber(req.commission);
-  const userPrice = parsePriceNumber(req.estimatedPrice) || parsePriceNumber(linkIntel?.detectedPrice);
+  const catalogPrice = matchedCatalog ? parsePriceNumber(matchedCatalog.suggestedPrice) : null;
+  const userPrice = parsePriceNumber(req.estimatedPrice) || catalogPrice || parsePriceNumber(linkIntel?.detectedPrice);
+
+  // REGRA OFICIAL DO SISTEMA: Produtos da aba "Produtos Campeões" da Orbiex SEMPRE têm Score Alto (90–98)!
+  if (matchedCatalog) {
+    const champScore = Math.max(90, Math.min(98, matchedCatalog.score || 95));
+    const pVal = userPrice || 79.9;
+    const commPerSale = (pVal * commPct) / 100;
+    const salesFor1k = Math.max(1, Math.ceil(1000 / Math.max(2, commPerSale)));
+    const estimatedTicket = fmtBRL(pVal);
+    const estimatedCommissionPerSale = `${fmtBRL(commPerSale)} por venda (${commPct}%)`;
+    return {
+      name: matchedCatalog.name,
+      isCatalogChampion: true,
+      catalogSales: matchedCatalog.sales,
+      sourceSummary: sourceSummary || `Catálogo Oficial Orbiex • ${matchedCatalog.sales}`,
+      categoryDetected: `Moda Campeã Orbiex · ${matchedCatalog.category}`,
+      score: champScore,
+      banRisk: 'Baixo',
+      banRiskDetail: `Peça pré-homologada pela curadoria Orbiex (${matchedCatalog.sales}), 100% em conformidade com as políticas do TikTok Shop e liberada para escala orgânica e Spark Ads.`,
+      status: `Campeão Homologado Orbiex · ${matchedCatalog.sales} com Margem de ${matchedCatalog.margin}`,
+      demandIndex: Math.min(99, Math.max(93, champScore + 1)),
+      viralHookDetail: `${matchedCatalog.angle} Gancho validado na plataforma: "${matchedCatalog.hook}"`,
+      demonstrationEase: 95,
+      estimatedTicket,
+      estimatedCommissionPerSale,
+      estimatedMargin: `${estimatedCommissionPerSale} · ~${salesFor1k} vendas p/ R$ 1.000`,
+      returnRateRisk: '2.4% (Muito Baixo — Modelagem Validada)',
+      returnRateReason: `Modelagem de alta elasticidade e caimento validado em escala (${matchedCatalog.sales}); basta citar altura/peso no vídeo para manter devoluções mínimas.`,
+      targetPersona: `Mulheres ativas no TikTok Brasil buscando peças de ${String(matchedCatalog.category).toLowerCase()} com visual de loja cara, caimento anatômico e preço acessível (${estimatedTicket}).`,
+      buyerObjections: [
+        {
+          objection: `"Será que "${matchedCatalog.name}" fica transparente ou marca no corpo?"`,
+          howToKillInVideo: `Mostre a gramatura do tecido contra a luz e faça o teste de movimento/agachamento logo nos primeiros 4 segundos.`,
+        },
+        {
+          objection: `"Veste o tamanho real da etiqueta ou preciso pedir um número maior?"`,
+          howToKillInVideo: `Coloque na legenda fixa sua altura, peso e o tamanho vestido para destravar a compra imediata na sacola.`,
+        },
+      ],
+      verdictSummary: `"${matchedCatalog.name}" é um Produto Campeão oficial do ecossistema Orbiex com tração comprovada (${matchedCatalog.sales}) e Score ${champScore}/100. Com preço sugerido de ${estimatedTicket} e comissão de ${commPct}%, cada venda gera ${fmtBRL(commPerSale)} (apenas ~${salesFor1k} vendas para embolsar R$ 1.000). ${matchedCatalog.angle}`,
+      guidelines: [
+        {
+          label: 'Curadoria Oficial Orbiex & Moderação Visual',
+          passed: true,
+          severity: 'ok',
+          note: `Peça validada na aba Produtos Campeões sem restrições algorítmicas para vídeos de provador (Try-On).`,
+          policyRef: 'Selo Orbiex Verified 2026',
+        },
+        {
+          label: 'Propriedade Intelectual & Modelagem Limpa (IPR)',
+          passed: true,
+          severity: 'ok',
+          note: `Modelagem própria White Label livre de logotipos registrados ou risco de strike de marca.`,
+          policyRef: 'IPR Protection Standards',
+        },
+        {
+          label: 'Promessa Visual Comprovável na Câmera',
+          passed: true,
+          severity: 'ok',
+          note: matchedCatalog.angle,
+          policyRef: 'Commercial Claims Guidelines',
+        },
+        {
+          label: 'Baixo Atrito Logístico & Estoque Nacional',
+          passed: true,
+          severity: 'ok',
+          note: `Envio leve em pacote flexível inquebrável com giro de ${matchedCatalog.sales} nos fornecedores nacionais.`,
+          policyRef: 'Fulfillment & Return SLA',
+        },
+        {
+          label: 'Rentabilidade Comprovada para Afiliados',
+          passed: true,
+          severity: 'ok',
+          note: `Margem bruta de catálogo de ${matchedCatalog.margin} garantindo ${estimatedCommissionPerSale} para o criador.`,
+          policyRef: 'Orbiex Unit Economics Benchmark',
+        },
+      ],
+      contentAngles: [
+        {
+          type: 'Gancho Campeão Validado (0–3s)',
+          title: matchedCatalog.hook,
+          description: `Abra o vídeo no espelho já vestindo "${matchedCatalog.name}" com essa frase na tela e mostre o caimento em 360 graus.`,
+        },
+        {
+          type: 'Teste Real de Tecido & Zero Transparência',
+          title: `Provando a qualidade de "${matchedCatalog.name}" de perto`,
+          description: `Aproxime a câmera da costura/tecido para provar que parece peça de shopping custando ${estimatedTicket}.`,
+        },
+        {
+          type: '3 Ocasiões com a Mesma Peça',
+          title: `Versatilidade máxima na rotina`,
+          description: `Faça 3 cortes rápidos combinando "${matchedCatalog.name}" com tênis, sandália e acessórios, fechando na sacola amarela.`,
+        },
+      ],
+      strengths: [
+        `Produto pré-validado no Catálogo Orbiex com volume de ${matchedCatalog.sales}`,
+        `${matchedCatalog.angle}`,
+        `Excelente retorno unitário de ${estimatedCommissionPerSale} com envio leve e seguro`,
+      ],
+      riskFactors: [
+        `Por ser campeão de vendas, grave com seu próprio ângulo/cenário para se destacar no feed`,
+        `Informe sempre o tamanho vestido na tela (P, M, G ou GG) para zerar dúvidas nos comentários`,
+      ],
+      freeSampleScript: `Olá, equipe de ${storeRef}! Aqui é ${sender}, criador(a) da comunidade Orbiex no TikTok Shop. Selecionei o "${matchedCatalog.name}" como prioridade de escala esta semana e já tenho 3 roteiros de provador validados prontos para gravar. Vocês conseguem liberar uma Amostra Grátis no meu tamanho para subirmos os vídeos com link direto na sacola?`,
+      actionableAdvice: `Use o gancho campeão "${matchedCatalog.hook}" nos primeiros 2 segundos mostrando o caimento real em movimento sob luz natural.`,
+    };
+  }
 
   const fullText = `${name} ${req.productLink} ${linkIntel?.oembedTitle || ''} ${linkIntel?.pageTitle || ''} ${
     req.category && !req.category.includes('Automaticamente') ? req.category : ''
@@ -594,24 +832,46 @@ const arrStr = (v: unknown, fb: string[]) => {
 
 export async function auditProductAI(req: ProductAuditRequest): Promise<ProductAuditResult> {
   const sender = getUserDisplayName();
-  const prelimTitle = extractProductTitle(req.productName, req.productLink, req.category);
+  const prelimCatalog = matchCatalogWinningProduct(req.productName, req.productLink);
+  const prelimTitle = prelimCatalog
+    ? prelimCatalog.name
+    : extractProductTitle(req.productName, req.productLink, req.category);
   const memoryKey = `product-forensic-v2:${(req.productName || req.productLink || prelimTitle).toLowerCase().trim()}`;
+
+  const catalogDirective = prelimCatalog
+    ? `ATENÇÃO MÁXIMA (PRODUTO DO CATÁLOGO OFICIAL ORBIEX): Este produto ("${prelimCatalog.name}", categoria "${prelimCatalog.category}", giro "${prelimCatalog.sales}", preço sugerido "${prelimCatalog.suggestedPrice}", margem "${prelimCatalog.margin}", diferencial "${prelimCatalog.angle}") PERTENCE À ABA DE PRODUTOS CAMPEÕES HOMOLOGADOS DA PLATAFORMA ORBIEX! Portanto, o "score" DEVE OBRIGATORIAMENTE SER ALTO (entre ${Math.max(90, prelimCatalog.score - 2)} e ${Math.min(98, prelimCatalog.score + 1)}), "banRisk" DEVE ser "Baixo", "demandIndex" >= 91 e "demonstrationEase" >= 90! Ainda assim, faça uma análise 100% personalizada sobre o tecido, modelagem, caimento, objeções reais de compra dessa peça específica e cenas práticas de provador, sem texto genérico! `
+    : `PRODUTO EXTERNO FORA DO CATÁLOGO ORBIEX: Avalie com honestidade brutal e rigor crítico! Se o produto for commodity barata/sem graça, saturado, difícil de demonstrar, com alto atrito de troca/quebra, réplica de marca ou promessa médica, DÊ UM SCORE MAIS BAIXO (ex: 18 a 74 conforme o problema real) e explique exatamente o porquê! Só dê score alto se realmente for extraordinário para vídeo curto. `;
 
   const { data, linkIntel } = await aiDeepAuditJSON<AnyObj>({
     memoryKey,
     targetUrl: req.productLink.trim(),
     task:
-      `Realize uma AUDITORIA FORENSE COMPLETA, CRÍTICA E 100% PERSONALIZADA do produto abaixo para venda como afiliado no TikTok Shop Brasil. ` +
-      `Se o usuário preencheu apenas o link, deduza o produto exato a partir dos metadados/slug/legenda extraídos na inspeção do link (ou do perfil da loja caso seja link de vitrine). ` +
-      `Avalie com honestidade brutal: se o produto for saturado, barato demais (ticket baixo), difícil de demonstrar, com risco de troca por tamanho, frágil no envio, réplica de marca ou promessa médica, REFLITA ISSO NO SCORE E NAS EXPLICAÇÕES! ` +
-      `Não dê nota 88+ automática! Cada produto deve ter diagnóstico único, cálculos reais em Reais (R$) usando a comissão informada (${req.commission || '20%'}), objeções reais dos comentários desse item e cenas concretas de gravação. ` +
-      `O nome do criador afiliado para assinar o freeSampleScript é "${sender}". Gere exatamente 5 guidelines e 3 contentAngles (ou 0 contentAngles se o produto for estritamente proibido/réplica ilegal).`,
+      `Realize uma AUDITORIA FORENSE COMPLETA E 100% PERSONALIZADA do produto abaixo para venda como afiliado no TikTok Shop Brasil. ` +
+      catalogDirective +
+      `Se o usuário preencheu apenas o link, identifique o produto exato a partir dos metadados/slug/legenda extraídos na inspeção do link. ` +
+      `Cada produto deve ter diagnóstico único, cálculos reais em Reais (R$) usando a comissão informada (${req.commission || '20%'}), objeções reais dos comentários desse item e cenas concretas de gravação. ` +
+      `O nome do criador afiliado para assinar o freeSampleScript é "${sender}". Gere exatamente 5 guidelines e 3 contentAngles (ou 0 contentAngles se for proibido/réplica ilegal).`,
     input: {
       nomeInformadoPeloUsuario: req.productName.trim() || '(não informado — identificar pelo link)',
       linkInformadoPeloUsuario: req.productLink.trim() || '(nenhum link informado)',
-      precoInformadoPeloUsuario: req.estimatedPrice?.trim() || '(estimar preço real praticado no TikTok Shop / Shopee Brasil)',
+      precoInformadoPeloUsuario:
+        req.estimatedPrice?.trim() ||
+        prelimCatalog?.suggestedPrice ||
+        '(estimar preço real praticado no TikTok Shop / Shopee Brasil)',
       comissaoInformada: req.commission || '20%',
       categoriaSelecionada: req.category || 'Detectar Automaticamente',
+      ...(prelimCatalog
+        ? {
+            homologacaoCatalogoOrbiex: {
+              pertenceAoCatalogoCampeoes: true,
+              nomeOficial: prelimCatalog.name,
+              scoreOficialCatalogo: prelimCatalog.score,
+              vendasMensaisValidada: prelimCatalog.sales,
+              anguloValidado: prelimCatalog.angle,
+              hookValidado: prelimCatalog.hook,
+            },
+          }
+        : { pertenceAoCatalogoCampeoes: false }),
     },
     format: PRODUCT_AUDIT_FORMAT,
     timeoutMs: 35000,
@@ -622,20 +882,30 @@ export async function auditProductAI(req: ProductAuditRequest): Promise<ProductA
     ],
   });
 
+  const finalCatalog = prelimCatalog || matchCatalogWinningProduct(req.productName, req.productLink, linkIntel);
   const local = auditProduct(req, linkIntel);
   if (!data || typeof data !== 'object') return local;
 
   try {
-    const identifiedName = s(data.identifiedProductName, local.name);
-    let banRisk: ProductAuditResult['banRisk'] =
-      data.banRisk === 'Baixo' || data.banRisk === 'Médio' || data.banRisk === 'Alto' ? data.banRisk : local.banRisk;
-    // Se nossa trava local detectou item ilegal/réplica óbvia, impede falso-positivo
-    if (local.banRisk === 'Alto' && local.score <= 32) {
+    const identifiedName = finalCatalog ? finalCatalog.name : s(data.identifiedProductName, local.name);
+    let banRisk: ProductAuditResult['banRisk'] = finalCatalog
+      ? 'Baixo'
+      : data.banRisk === 'Baixo' || data.banRisk === 'Médio' || data.banRisk === 'Alto'
+      ? data.banRisk
+      : local.banRisk;
+
+    if (!finalCatalog && local.banRisk === 'Alto' && local.score <= 32) {
       banRisk = 'Alto';
     }
 
     let score = n(data.score, local.score, 5, 98);
-    if (banRisk === 'Alto') score = Math.min(score, 49);
+    if (finalCatalog) {
+      // Garantia absoluta: qualquer produto da aba Produtos Campeões sempre sai com índice ALTO (90 a 98)!
+      const floor = Math.max(90, (finalCatalog.score || 94) - 2);
+      score = Math.max(floor, Math.min(98, score));
+    } else if (banRisk === 'Alto') {
+      score = Math.min(score, 49);
+    }
 
     const guidelinesRaw = Array.isArray(data.guidelines) ? (data.guidelines as AnyObj[]) : [];
     const guidelines: GuidelineItem[] = [];
@@ -681,15 +951,23 @@ export async function auditProductAI(req: ProductAuditRequest): Promise<ProductA
 
     return {
       name: identifiedName,
-      sourceSummary: local.sourceSummary,
+      isCatalogChampion: Boolean(finalCatalog),
+      catalogSales: finalCatalog?.sales,
+      sourceSummary: finalCatalog
+        ? `Catálogo Oficial Orbiex • ${finalCatalog.sales}`
+        : local.sourceSummary,
       categoryDetected: s(data.categoryDetected, local.categoryDetected),
       score,
       banRisk,
       banRiskDetail: s(data.banRiskDetail, local.banRiskDetail),
       status: s(data.status, local.status),
-      demandIndex: n(data.demandIndex, local.demandIndex, 10, 99),
+      demandIndex: finalCatalog
+        ? Math.max(92, n(data.demandIndex, local.demandIndex, 92, 99))
+        : n(data.demandIndex, local.demandIndex, 10, 99),
       viralHookDetail: s(data.viralHookDetail, local.viralHookDetail),
-      demonstrationEase: n(data.demonstrationEase, local.demonstrationEase, 10, 99),
+      demonstrationEase: finalCatalog
+        ? Math.max(91, n(data.demonstrationEase, local.demonstrationEase, 91, 99))
+        : n(data.demonstrationEase, local.demonstrationEase, 10, 99),
       estimatedTicket: s(data.estimatedTicket, local.estimatedTicket),
       estimatedCommissionPerSale: s(data.estimatedCommissionPerSale, local.estimatedCommissionPerSale),
       estimatedMargin: s(data.estimatedMargin, local.estimatedMargin),

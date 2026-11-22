@@ -29,9 +29,9 @@ import { auditProduct, auditProductAI, type ProductAuditResult } from '../produc
 import { copyText as copyToClipboard } from '../clipboard';
 
 const QUICK_PRODUCT_TESTS = [
-  { label: 'Mini Processador Elétrico USB', price: 'R$ 54,90', comm: '20%' },
+  { label: 'Shorts Modelador Yoga Empina Bumbum', price: 'R$ 69,90', comm: '20%' },
+  { label: 'Calça Flare Alfaiataria Social Cintura Alta', price: 'R$ 109,90', comm: '20%' },
   { label: 'Sérum Clareador de Melasma', price: 'R$ 69,90', comm: '22%' },
-  { label: 'Calça Jeans Wide Leg Cintura Alta', price: 'R$ 119,90', comm: '18%' },
   { label: 'Cabo USB-C Simples 1 Metro', price: 'R$ 14,90', comm: '12%' },
   { label: 'Tênis Nike Air Force 1 Linha', price: 'R$ 189,90', comm: '20%' },
 ];
@@ -471,6 +471,12 @@ export function ProductScoreView({
                       ? 'Viável com Ressalvas'
                       : 'Alto Risco / Baixa Viabilidade'}
                   </Pill>
+                  {result.isCatalogChampion && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--mvz-gold)]/50 bg-[var(--mvz-gold)]/15 px-3 py-0.5 text-[10.5px] font-extrabold uppercase tracking-wider text-[#f4d77a]">
+                      <Sparkles size={11} />
+                      Homologado no Catálogo Orbiex
+                    </span>
+                  )}
                   {result.sourceSummary && (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10.5px] font-semibold text-[var(--mvz-gold-light)]">
                       <Globe size={11} />

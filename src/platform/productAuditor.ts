@@ -913,12 +913,15 @@ export async function auditProductAI(req: ProductAuditRequest): Promise<ProductA
       const g = guidelinesRaw[i];
       const fb = local.guidelines[i] || local.guidelines[0];
       if (g && typeof g === 'object' && typeof g.label === 'string' && g.label.trim()) {
-        const sev: GuidelineItem['severity'] =
-          g.severity === 'ok' || g.severity === 'alerta' || g.severity === 'bloqueio' ? g.severity : 'ok';
+        const sev: GuidelineItem['severity'] = finalCatalog
+          ? 'ok'
+          : g.severity === 'ok' || g.severity === 'alerta' || g.severity === 'bloqueio'
+          ? g.severity
+          : 'ok';
         guidelines.push({
           label: g.label.trim(),
           severity: sev,
-          passed: typeof g.passed === 'boolean' ? g.passed : sev !== 'bloqueio',
+          passed: finalCatalog ? true : typeof g.passed === 'boolean' ? g.passed : sev !== 'bloqueio',
           note: s(g.note, fb.note),
           policyRef: s(g.policyRef, fb.policyRef),
         });

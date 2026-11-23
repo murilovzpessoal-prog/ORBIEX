@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { setAgentClipboard } from './clipboard';
 
-export const LATEST_COPILOT_VERSION = '2.3.0';
+export const LATEST_COPILOT_VERSION = '2.4.0';
 
 function isVersionAtLeast(current: string, minVer: string): boolean {
   if (!current) return false;
@@ -38,12 +38,22 @@ export interface CopilotScreenElement {
   h: number;
 }
 
+export interface CopilotTabSummary {
+  id: number;
+  title: string;
+  url: string;
+  serviceKey?: string;
+  lastAccessed?: number;
+}
+
 export interface CopilotResult {
   ok: boolean;
   version?: string;
   reused?: boolean;
   notFound?: boolean;
   openTabs?: string[];
+  tabs?: CopilotTabSummary[];
+  tabId?: number;
   clickedLabel?: string;
   copiedText?: string;
   message?: string;
@@ -72,7 +82,13 @@ const pendingMap = new Map<string, (res: CopilotResult) => void>();
 let detectedInstalled = false;
 let detectedVersion = '';
 let detectedV23Bridge = false;
+let detectedV24Bridge = false;
 const listeners = new Set<(info: { installed: boolean; version: string }) => void>();
+
+function hasV24DomAttr(): boolean {
+  if (typeof document === 'undefined') return false;
+  return Boolean(document.documentElement?.getAttribute('data-orbiex-copilot-v24'));
+}
 
 function hasV23DomAttr(): boolean {
   if (typeof document === 'undefined') return false;
@@ -82,6 +98,7 @@ function hasV23DomAttr(): boolean {
 function getBestDomVersion(): string {
   if (typeof document === 'undefined') return '';
   return (
+    document.documentElement?.getAttribute('data-orbiex-copilot-v24') ||
     document.documentElement?.getAttribute('data-orbiex-copilot-v23') ||
     document.documentElement?.getAttribute('data-orbiex-copilot') ||
     ''
@@ -99,13 +116,18 @@ function markInstalled(ver?: string) {
     detectedInstalled = true;
     changed = true;
   }
+  const dom24 =
+    typeof document !== 'undefined' ? document.documentElement?.getAttribute('data-orbiex-copilot-v24') || '' : '';
   const dom23 =
     typeof document !== 'undefined' ? document.documentElement?.getAttribute('data-orbiex-copilot-v23') || '' : '';
-  if (dom23 || (ver && isVersionAtLeast(ver, '2.3.0'))) {
+  if (dom24 || (ver && isVersionAtLeast(ver, '2.4.0'))) {
+    detectedV24Bridge = true;
+    detectedV23Bridge = true;
+  } else if (dom23 || (ver && isVersionAtLeast(ver, '2.3.0'))) {
     detectedV23Bridge = true;
   }
-  const candidate = dom23 || ver || '';
-  // Nunca faz downgrade de versão se uma extensão antiga (ex.: v2.0) responder junto com a v2.3 no Chrome
+  const candidate = dom24 || dom23 || ver || '';
+  // Nunca faz downgrade de versão se uma extensão antiga (ex.: v2.0/v2.2/v2.3) responder junto com a v2.4 no Chrome
   if (candidate && candidate !== detectedVersion && (!detectedVersion || isVersionAtLeast(candidate, detectedVersion))) {
     detectedVersion = candidate;
     changed = true;
@@ -114,9 +136,11 @@ function markInstalled(ver?: string) {
 }
 
 if (typeof window !== 'undefined') {
+  const attr24 = document.documentElement?.getAttribute('data-orbiex-copilot-v24');
   const attr23 = document.documentElement?.getAttribute('data-orbiex-copilot-v23');
-  const attr = attr23 || document.documentElement?.getAttribute('data-orbiex-copilot');
-  if (attr23) detectedV23Bridge = true;
+  const attr = attr24 || attr23 || document.documentElement?.getAttribute('data-orbiex-copilot');
+  if (attr24) detectedV24Bridge = true;
+  if (attr23 || attr24) detectedV23Bridge = true;
   if (attr) {
     detectedInstalled = true;
     detectedVersion = attr;
@@ -138,9 +162,17 @@ if (typeof window !== 'undefined') {
       return;
     }
 
-    if ((data.source === 'orbiex-ext-res-v23' || data.source === 'orbiex-ext-res') && data.reqId) {
+    if (
+      (data.source === 'orbiex-ext-res-v24' ||
+        data.source === 'orbiex-ext-res-v23' ||
+        data.source === 'orbiex-ext-res') &&
+      data.reqId
+    ) {
       const res: CopilotResult = data.result || { ok: false };
-      if (data.source === 'orbiex-ext-res-v23') {
+      if (data.source === 'orbiex-ext-res-v24') {
+        detectedV24Bridge = true;
+        detectedV23Bridge = true;
+      } else if (data.source === 'orbiex-ext-res-v23') {
         detectedV23Bridge = true;
       }
       markInstalled(res.version || getBestDomVersion() || detectedVersion || '1.0.0');
@@ -164,9 +196,11 @@ export function isCopilotInstalled(): boolean {
 }
 
 export function getCopilotVersion(): string {
+  const attr24 =
+    typeof document !== 'undefined' ? document.documentElement?.getAttribute('data-orbiex-copilot-v24') || '' : '';
   const attr23 =
     typeof document !== 'undefined' ? document.documentElement?.getAttribute('data-orbiex-copilot-v23') || '' : '';
-  if (attr23) markInstalled(attr23);
+  if (attr24 || attr23) markInstalled(attr24 || attr23);
   if (detectedVersion) return detectedVersion;
   const attr = getBestDomVersion();
   if (attr) {
@@ -196,14 +230,19 @@ export function sendCopilotCommand(type: string, payload?: unknown, timeoutMs = 
       resolve(res);
     });
 
+    const useV24 =
+      detectedV24Bridge ||
+      hasV24DomAttr() ||
+      (detectedVersion ? isVersionAtLeast(detectedVersion, '2.4.0') : false);
     const useV23 =
-      detectedV23Bridge ||
-      hasV23DomAttr() ||
-      (detectedVersion ? isVersionAtLeast(detectedVersion, '2.3.0') : false);
+      !useV24 &&
+      (detectedV23Bridge ||
+        hasV23DomAttr() ||
+        (detectedVersion ? isVersionAtLeast(detectedVersion, '2.3.0') : false));
 
     window.postMessage(
       {
-        source: useV23 ? 'orbiex-web-cmd-v23' : 'orbiex-web-cmd',
+        source: useV24 ? 'orbiex-web-cmd-v24' : useV23 ? 'orbiex-web-cmd-v23' : 'orbiex-web-cmd',
         reqId,
         type,
         payload,
@@ -214,8 +253,11 @@ export function sendCopilotCommand(type: string, payload?: unknown, timeoutMs = 
 }
 
 export async function pingCopilot(): Promise<boolean> {
-  if (typeof window !== 'undefined' && !detectedV23Bridge && !hasV23DomAttr()) {
-    window.postMessage({ source: 'orbiex-web-cmd-v23', reqId: `probe_${Date.now()}`, type: 'PING', payload: {} }, '*');
+  if (typeof window !== 'undefined' && !detectedV24Bridge && !hasV24DomAttr()) {
+    window.postMessage({ source: 'orbiex-web-cmd-v24', reqId: `probe24_${Date.now()}`, type: 'PING', payload: {} }, '*');
+    if (!detectedV23Bridge && !hasV23DomAttr()) {
+      window.postMessage({ source: 'orbiex-web-cmd-v23', reqId: `probe23_${Date.now()}`, type: 'PING', payload: {} }, '*');
+    }
   }
   const res = await sendCopilotCommand('PING', {}, 750);
   if (res.ok) {
@@ -225,28 +267,36 @@ export async function pingCopilot(): Promise<boolean> {
   return isCopilotInstalled();
 }
 
-function getServiceKey(url: string): string {
+function getServiceKey(url: string, title = ''): string {
   if (!url) return '';
   try {
     const u = new URL(url);
     const ha = u.hostname.replace(/^www\./i, '').toLowerCase();
     const path = (u.pathname || '').toLowerCase();
+    const ttl = String(title || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
 
     if (
+      ha === 'flow.google' ||
+      ha.endsWith('.flow.google') ||
+      ha === 'flow.google.com' ||
+      ha.endsWith('.flow.google.com') ||
       ha === 'labs.google' ||
       ha.endsWith('.labs.google') ||
       ha === 'labs.google.com' ||
       ha.endsWith('.labs.google.com') ||
-      ha === 'flow.google' ||
-      ha.endsWith('.flow.google') ||
       ha.includes('aitestkitchen') ||
       ha.includes('videofx') ||
-      (ha.includes('google') && (path.includes('/flow') || path.includes('videofx')))
+      (ha.includes('google') && (path.includes('/flow') || path.includes('/fx') || path.includes('videofx'))) ||
+      /\bgoogle\s*flow\b/i.test(ttl) ||
+      (/\bflow\b/i.test(ttl) && (ha.includes('google') || ttl.includes('veo') || ttl.includes('labs')))
     ) {
-      if (path.includes('/flow') || path.includes('/fx') || ha.includes('flow') || path.includes('videofx')) {
-        return 'google_flow';
-      }
-      return 'labs_google';
+      if (path.includes('/whisk')) return 'google_whisk';
+      if (path.includes('/musicfx')) return 'google_musicfx';
+      if (path.includes('/imagefx')) return 'google_imagefx';
+      return 'google_flow';
     }
     if (ha === 'tiktok.com' || ha.endsWith('.tiktok.com')) {
       if (ha.includes('seller')) return 'tiktok_seller';
@@ -333,16 +383,108 @@ export async function copilotFocusPreviousTab(): Promise<CopilotResult & { needs
       ok: false,
       needsUpdateToReturn: true,
       error: outdated
-        ? `Sua extensão no Chrome (${installedVer || 'antiga'}) precisa ser atualizada para v2.3 (e remova versões antigas duplicadas em chrome://extensions).`
+        ? `Sua extensão no Chrome (${installedVer || 'antiga'}) precisa ser atualizada para v2.4 (e remova versões antigas em chrome://extensions).`
         : 'A extensão Copilot foi atualizada ou desconectada. Recarregue esta aba da Orbiex (Cmd+R / F5) para reconectar.',
     };
   }
   return existing.notFound ? existing : res;
 }
 
+function isOrbiexTabUrl(url: string): boolean {
+  return /https?:\/\/([a-z0-9-]+\.)?orbiex\.io/i.test(url) || /http:\/\/localhost:/i.test(url);
+}
+
+function findMatchingTabInList(tabs: CopilotTabSummary[], url: string, hint = ''): CopilotTabSummary | null {
+  const cleanHint = String(hint || '')
+    .replace(/\([^)]*\)/g, ' ')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s._-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const targetSvc = url ? getServiceKey(url, hint) : '';
+  const wantFlow = targetSvc === 'google_flow' || /\bflow\b|\bveo\b|\blabs\b/i.test(cleanHint);
+  const stopWords = new Set(['para', 'com', 'aba', 'aberta', 'google', 'veo', 'site', 'pagina']);
+  const tokens = cleanHint.split(' ').filter((w) => w.length >= 3 && !stopWords.has(w));
+
+  const candidates = tabs.filter((t) => {
+    const u = String(t.url || '').trim();
+    if (!u || !/^https?:\/\//i.test(u) || isOrbiexTabUrl(u)) return false;
+    const ttl = String(t.title || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const uLow = u.toLowerCase();
+    const tabSvc = getServiceKey(u, t.title);
+
+    if (targetSvc && tabSvc === targetSvc) return true;
+    if (wantFlow) {
+      if (
+        uLow.includes('flow.google') ||
+        uLow.includes('labs.google') ||
+        uLow.includes('/tools/flow') ||
+        uLow.includes('aitestkitchen') ||
+        uLow.includes('videofx') ||
+        /\bgoogle\s*flow\b/i.test(ttl) ||
+        /\bflow\b/i.test(ttl)
+      ) {
+        return true;
+      }
+    }
+    if (cleanHint.length >= 3 && `${uLow} ${ttl}`.includes(cleanHint)) return true;
+    if (tokens.length > 0 && tokens.some((tk) => tk.length >= 4 && `${uLow} ${ttl}`.includes(tk))) return true;
+    return false;
+  });
+
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => {
+    const sa = (a.url.includes('/project/') || a.url.includes('/editor') ? 2000 : 0) + (a.lastAccessed || 0) / 1000000;
+    const sb = (b.url.includes('/project/') || b.url.includes('/editor') ? 2000 : 0) + (b.lastAccessed || 0) / 1000000;
+    return sb - sa;
+  });
+  return candidates[0];
+}
+
+async function tryFocusListedTab(
+  match: CopilotTabSummary,
+  allTabs: CopilotTabSummary[]
+): Promise<CopilotResult | null> {
+  // v2.4+ suporta foco exato por ID!
+  const byId = await sendCopilotCommand('FOCUS_TAB_BY_ID', { tabId: match.id }, 6000);
+  if (byId.ok) {
+    markExternalServiceOpened(byId.url || match.url);
+    return byId;
+  }
+
+  // Se usuário ainda está na v2.3.0 (que não tem FOCUS_TAB_BY_ID nem reconhecia flow.google.com):
+  // tenta focar na própria v2.3 pelo URL exato caso não haja colisão óbvia de serviceKey
+  if (/desconhecido/i.test(byId.error || '')) {
+    const colliding = allTabs.filter(
+      (t) =>
+        t.id !== match.id &&
+        !isOrbiexTabUrl(t.url || '') &&
+        t.serviceKey &&
+        match.serviceKey &&
+        t.serviceKey === match.serviceKey
+    );
+    const hasLowerLastAccessed = colliding.some(
+      (t) => (t.lastAccessed || 0) > (match.lastAccessed || 0) && !match.url.includes('/project/')
+    );
+    if (!hasLowerLastAccessed) {
+      const via23 = await sendCopilotCommand('FOCUS_EXISTING_TAB', { url: match.url, hint: '' }, 6000);
+      if (via23.ok) {
+        markExternalServiceOpened(via23.url || match.url);
+        return via23;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Retorno ESTRITO para aba já aberta: NUNCA cria nova aba no navegador!
- * Usa FOCUS_EXISTING_TAB (v2.3+) ou FOCUS_OR_OPEN_TAB(returnOnly=true) em v2.2.
+ * Usa FOCUS_EXISTING_TAB + LIST_OPEN_TABS/FOCUS_TAB_BY_ID (v2.4 / v2.3) ou FOCUS_OR_OPEN_TAB(returnOnly=true) em v2.2.
  */
 export async function copilotReturnToTab(
   url: string,
@@ -351,6 +493,25 @@ export async function copilotReturnToTab(
   const res = await sendCopilotCommand('FOCUS_EXISTING_TAB', { url, hint }, 8500);
   if (res.ok) {
     if (res.url || url) markExternalServiceOpened(res.url || url);
+    return res;
+  }
+
+  // Plano B (inclusive se a extensão do Chrome ainda for v2.3 que não conhecia flow.google.com):
+  // lista todas as abas abertas e encontra pelo nome/URL (ex.: "Flow" / flow.google.com)
+  if (res.notFound) {
+    const listRes = await sendCopilotCommand('LIST_OPEN_TABS', {}, 5000);
+    if (listRes.ok && Array.isArray(listRes.tabs)) {
+      const matched = findMatchingTabInList(listRes.tabs, url, hint);
+      if (matched) {
+        const focused = await tryFocusListedTab(matched, listRes.tabs);
+        if (focused?.ok) return focused;
+        return {
+          ok: false,
+          needsUpdateToReturn: true,
+          error: `Localizei sua aba aberta (${matched.title || matched.url}), mas sua extensão no Chrome ainda está na v${getCopilotVersion() || '2.3'}. Atualize para v2.4 (e remova versões antigas em chrome://extensions) para voltar direto nela!`,
+        };
+      }
+    }
     return res;
   }
 
@@ -369,7 +530,7 @@ export async function copilotReturnToTab(
     return {
       ok: false,
       needsUpdateToReturn: true,
-      error: `Sua extensão ativa no Chrome (${installedVer || 'antiga'}) não suporta o retorno garantido da v2.3. Clique para baixar a v2.3 e remova todas as versões antigas do Copilot em chrome://extensions.`,
+      error: `Sua extensão ativa no Chrome (${installedVer || 'antiga'}) não suporta o retorno garantido da v2.4. Clique para baixar a v2.4 e remova todas as versões antigas do Copilot em chrome://extensions.`,
     };
   }
 
@@ -378,7 +539,7 @@ export async function copilotReturnToTab(
       ok: false,
       needsUpdateToReturn: true,
       error:
-        'A extensão Copilot perdeu conexão com esta aba (ou há duas versões da extensão instaladas). Recarregue a aba da Orbiex e deixe apenas a v2.3 ativa em chrome://extensions.',
+        'A extensão Copilot perdeu conexão com esta aba (ou há duas versões da extensão instaladas). Recarregue a aba da Orbiex e deixe apenas a v2.4 ativa em chrome://extensions.',
     };
   }
 
@@ -402,7 +563,24 @@ export async function copilotOpenTab(
   }
 
   if (!forceNew) {
-    // 1. Comando nativo FOCUS_OR_OPEN_TAB (v2.1 / v2.2 / v2.3+) — sempre procura em TODAS as abas antes de criar!
+    // 0. Verifica antes via FOCUS_EXISTING_TAB + LIST_OPEN_TABS para nunca duplicar nem na v2.3!
+    const existingPreCheck = await sendCopilotCommand('FOCUS_EXISTING_TAB', { url, hint: opts?.hint }, 6000);
+    if (existingPreCheck.ok) {
+      markExternalServiceOpened(existingPreCheck.url || url);
+      return existingPreCheck;
+    }
+    if (existingPreCheck.notFound) {
+      const listRes = await sendCopilotCommand('LIST_OPEN_TABS', {}, 5000);
+      if (listRes.ok && Array.isArray(listRes.tabs)) {
+        const matched = findMatchingTabInList(listRes.tabs, url, opts?.hint);
+        if (matched) {
+          const focused = await tryFocusListedTab(matched, listRes.tabs);
+          if (focused?.ok) return focused;
+        }
+      }
+    }
+
+    // 1. Comando nativo FOCUS_OR_OPEN_TAB (v2.1 / v2.2 / v2.3 / v2.4) — procura e só cria se não existir
     const focusRes = await sendCopilotCommand(
       'FOCUS_OR_OPEN_TAB',
       { url, hint: opts?.hint, returnOnly: false, forceNewTab: false },
@@ -442,7 +620,7 @@ export async function copilotOpenTab(
           ok: false,
           needsUpdateToReturn: true,
           error:
-            'Sua extensão no Chrome ainda está na versão antiga (2.0), que não consegue localizar abas abertas em outras guias. Atualize para a v2.3 (e remova a antiga em chrome://extensions).',
+            'Sua extensão no Chrome ainda está na versão antiga (2.0), que não consegue localizar abas abertas em outras guias. Atualize para a v2.4 (e remova a antiga em chrome://extensions).',
         };
       }
     } else if (focusRes.notFound) {

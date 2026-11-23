@@ -322,10 +322,20 @@ function resolveVoiceDestination(
     t === 'retornar' ||
     t === 'previous' ||
     t === 'back' ||
+    t === 'aba' ||
+    t === 'pagina' ||
+    t === 'projeto' ||
     t.includes('ultima aba') ||
     t.includes('aba anterior') ||
+    t.includes('aba aberta') ||
+    t.includes('aba que') ||
+    t.includes('pagina anterior') ||
+    t.includes('mesma aba') ||
     t.includes('onde estava') ||
     t.includes('onde parou') ||
+    t.includes('onde parei') ||
+    t.includes('onde paramos') ||
+    t.includes('onde a gente') ||
     t.includes('estavamos')
   ) {
     return { kind: 'return_previous', label: 'Aba anterior onde estávamos' };
@@ -383,7 +393,7 @@ function resolveVoiceDestination(
 
   // 2. Ferramentas Externas & Sites (com Deep Links diretos para criação quando disponível)
   if (t.includes('flow') || t.includes('veo')) {
-    return { kind: 'external', url: 'https://labs.google/fx/pt/tools/flow', label: 'Google Flow (VEO)' };
+    return { kind: 'external', url: 'https://flow.google.com/', label: 'Google Flow' };
   }
   if (t.includes('tiktok shop') || t.includes('seller')) {
     return { kind: 'external', url: 'https://seller-br.tiktok.com/', label: 'TikTok Shop Seller Center' };
@@ -504,7 +514,7 @@ COMO CONVERSAR (MUITO IMPORTANTE):
 - Nunca leia símbolos, listas numeradas, markdown ou links. Nada de emojis.
 - Pode responder sobre qualquer assunto (perguntas gerais, contas, curiosidades), mas sua especialidade é TikTok Shop com IA.
 - COMANDOS DE AÇÃO, VISÃO ESPACIAL E INTERAÇÃO COM A INTERFACE (OBRIGATÓRIO):
-  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex e através da Extensão Orbiex Copilot v2.3 (com Visão Computacional da tela em tempo real e Localizador Inteligente de Abas) para você abrir sites, voltar às abas já abertas, enxergar posições da tela (canto inferior direito, topo, centro, laterais) e clicar ou digitar dentro das interfaces (Google Flow, Kling AI, TikTok, Seller Center, etc.).
+  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex e através da Extensão Orbiex Copilot v2.4 (com Visão Computacional da tela em tempo real e Localizador Inteligente de Abas por URL e nome) para você abrir sites, voltar às abas já abertas, enxergar posições da tela (canto inferior direito, topo, centro, laterais) e clicar ou digitar dentro das interfaces (Google Flow, Kling AI, TikTok, Seller Center, etc.).
   - PROIBIDO dizer que você "não enxerga a tela", "não tem acesso ao computador" ou "não pode clicar em botões de outros sites". Você ENXERGA e EXECUTA usando suas funções!
   - RETORNAR A ABAS JÁ ABERTAS (REGRA NÚMERO 1 — PROIBIDO DUPLICAR ABA): Sempre que o usuário disser "volta para o Google Flow", "retorne no Google Flow", "volte onde estávamos", "onde a gente parou", "volta pro Flow", "retorna lá", ou já tiver o Google Flow aberto no computador, chame IMEDIATAMENTE return_to_open_tab(target="flow") (ou target="anterior" se não citar o nome; para a Orbiex, target="orbiex"). NUNCA abra outra aba quando ele pedir para voltar! A função return_to_open_tab localiza a aba já aberta no Chrome do usuário e foca direto nela sem recarregar e sem criar nova guia!
   - Quando pedirem para abrir um site pela primeira vez ("abre o Flow", "abre o TikTok") ou trocar de ferramenta na Orbiex, chame open_destination (com forceNewTab=false por padrão — jamais force nova aba se o site já pode estar aberto).
@@ -661,7 +671,22 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   const currentViewRef = useRef(currentView);
   currentViewRef.current = currentView;
   const lastSurfaceRef = useRef<'orbiex' | 'external' | null>(null);
-  const lastOpenedExternalRef = useRef<{ url: string; label: string } | null>(null);
+  const lastOpenedExternalRef = useRef<{ url: string; label: string } | null>((() => {
+    try {
+      const raw = sessionStorage.getItem('orbiex_last_external_v1');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })());
+  const saveLastExternal = (item: { url: string; label: string }) => {
+    lastOpenedExternalRef.current = item;
+    try {
+      sessionStorage.setItem('orbiex_last_external_v1', JSON.stringify(item));
+    } catch {
+      /* ignore */
+    }
+  };
   const externalWinRefs = useRef<Record<string, Window | null>>({});
 
   // Mantém o Service Worker da extensão MV3 acordado enquanto a voz está ativa
@@ -1300,10 +1325,10 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   if (retRes.ok) {
                     lastSurfaceRef.current = 'external';
                     if (retRes.url || targetUrl) {
-                      lastOpenedExternalRef.current = {
+                      saveLastExternal({
                         url: retRes.url || targetUrl,
                         label: targetLabel,
-                      };
+                      });
                     }
                     reply(
                       `Voltei exatamente para a aba aberta (${retRes.title || targetLabel}) onde você estava, sem abrir nova aba! Pronto para comandos com surface "site_aberto".`
@@ -1317,7 +1342,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   }
                   reply(
                     retRes.error ||
-                      `Não abri uma nova aba de ${targetLabel} (${installedVer ? `versão ativa: ${installedVer}` : 'extensão desconectada'}). Verifique se a aba está aberta neste Chrome e deixe apenas a Copilot v2.3 ativa.`
+                      `Não abri uma nova aba de ${targetLabel} (${installedVer ? `versão ativa: ${installedVer}` : 'extensão desconectada'}). Verifique se a aba está aberta neste Chrome e deixe apenas a Copilot v2.4 ativa.`
                   );
                   continue;
                 }
@@ -1404,7 +1429,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     window.setTimeout(() => setActionBanner(null), 3000);
                     if (extOpen.ok) {
                       lastSurfaceRef.current = 'external';
-                      lastOpenedExternalRef.current = { url: extOpen.url || dest.url, label: dest.label };
+                      saveLastExternal({ url: extOpen.url || dest.url, label: dest.label });
                       reply(
                         extOpen.reused
                           ? `Retornado exatamente para a aba já aberta de ${dest.label} onde o usuário estava (sem recarregar e sem criar outra aba)! Pronto para comandos com surface "site_aberto".`
@@ -1416,7 +1441,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     if (extOpen.needsUpdateToReturn) openCopilotInstallModal();
                     reply(
                       extOpen.error ||
-                        `Não abri uma nova aba de ${dest.label} para proteger seu projeto aberto. Recarregue a aba da Orbiex ou atualize a extensão Copilot para v2.3.`
+                        `Não abri uma nova aba de ${dest.label} para proteger seu projeto aberto. Recarregue a aba da Orbiex ou atualize a extensão Copilot para v2.4.`
                     );
                     continue;
                   }
@@ -1435,7 +1460,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     window.setTimeout(() => setActionBanner(null), 2000);
                     openCopilotInstallModal();
                     reply(
-                      `Para eu localizar e voltar exatamente na aba aberta do ${dest.label} sem abrir outra nova, ative ou atualize a Extensão Orbiex Copilot v2.3.`
+                      `Para eu localizar e voltar exatamente na aba aberta do ${dest.label} sem abrir outra nova, ative ou atualize a Extensão Orbiex Copilot v2.4.`
                     );
                     continue;
                   }
@@ -1445,7 +1470,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     const w = window.open(dest.url, forceNew ? '_blank' : winKey);
                     if (w) {
                       externalWinRefs.current[winKey] = w;
-                      lastOpenedExternalRef.current = { url: dest.url, label: dest.label };
+                      saveLastExternal({ url: dest.url, label: dest.label });
                       lastSurfaceRef.current = 'external';
                       openedNewTab = true;
                     }

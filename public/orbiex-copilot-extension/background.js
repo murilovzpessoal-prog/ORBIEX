@@ -1,7 +1,7 @@
 /**
- * Orbiex Copilot v2.3 — Background Service Worker
- * - Busca GLOBAL em todas as janelas e abas do Chrome para localizar exatamente onde o usuário estava
- * - FOCUS_EXISTING_TAB e returnOnly NUNCA criam aba nova (zero duplicação de Google Flow / Kling / TikTok)
+ * Orbiex Copilot v2.4 — Background Service Worker
+ * - Busca GLOBAL em todas as janelas e abas por URL, domínio canonical (incluindo flow.google.com!), título da aba e tabId
+ * - FOCUS_EXISTING_TAB, FOCUS_TAB_BY_ID e returnOnly NUNCA criam aba nova (zero duplicação de Google Flow / Kling / TikTok)
  * - Persiste orbiexTabId, lastControlledTabId e mapa por ferramenta em chrome.storage.local
  */
 
@@ -12,36 +12,47 @@ let stateLoaded = false;
 let loadPromise = null;
 
 const STATE_KEY = 'orbiex_copilot_state_v2';
-const EXT_VERSION = '2.3.0';
+const EXT_VERSION = '2.4.0';
 
 function isOrbiexUrl(url = '') {
   return /https?:\/\/([a-z0-9-]+\.)?orbiex\.io/i.test(url) || /http:\/\/localhost:/i.test(url);
 }
 
-function getServiceKey(url = '', title = '') {
+function getKnownServiceKey(url = '', title = '') {
   if (!url || !/^https?:\/\//i.test(url) || isOrbiexUrl(url)) return '';
   try {
     const u = new URL(url);
     const host = u.hostname.replace(/^www\./i, '').toLowerCase();
     const path = (u.pathname || '').toLowerCase();
-    const ttl = String(title || '').toLowerCase();
+    const ttl = String(title || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
 
     if (
+      host === 'flow.google' ||
+      host.endsWith('.flow.google') ||
+      host === 'flow.google.com' ||
+      host.endsWith('.flow.google.com') ||
       host === 'labs.google' ||
       host.endsWith('.labs.google') ||
       host === 'labs.google.com' ||
-      host === 'flow.google' ||
-      host.endsWith('.flow.google') ||
+      host.endsWith('.labs.google.com') ||
       host.includes('aitestkitchen') ||
       host.includes('videofx') ||
-      (host.includes('google') && (path.includes('/flow') || path.includes('/fx')))
+      (host.includes('google') && (path.includes('/flow') || path.includes('/fx') || path.includes('videofx'))) ||
+      /\bgoogle\s*flow\b/i.test(ttl) ||
+      (/\bflow\b/i.test(ttl) && (host.includes('google') || ttl.includes('veo') || ttl.includes('labs')))
     ) {
       if (path.includes('/whisk')) return 'google_whisk';
       if (path.includes('/musicfx')) return 'google_musicfx';
       if (path.includes('/imagefx')) return 'google_imagefx';
       return 'google_flow';
     }
-    if (host === 'accounts.google.com' && (url.toLowerCase().includes('labs.google') || url.toLowerCase().includes('flow.google'))) {
+    if (
+      host === 'accounts.google.com' &&
+      (url.toLowerCase().includes('labs.google') || url.toLowerCase().includes('flow.google'))
+    ) {
       return 'google_flow';
     }
     if (host === 'tiktok.com' || host.endsWith('.tiktok.com')) {
@@ -50,12 +61,12 @@ function getServiceKey(url = '', title = '') {
       if (path.includes('/tiktokstudio')) return 'tiktok_studio';
       return 'tiktok';
     }
-    if (host.includes('klingai.com')) return 'kling';
-    if (host.includes('hailuo')) return 'hailuo';
-    if (host.includes('lumalabs.ai')) return 'luma';
-    if (host.includes('runwayml.com')) return 'runway';
-    if (host.includes('midjourney.com')) return 'midjourney';
-    if (host.includes('capcut.com')) return 'capcut';
+    if (host.includes('klingai.com') || /\bkling\b/i.test(ttl)) return 'kling';
+    if (host.includes('hailuo') || /\bhailuo\b/i.test(ttl)) return 'hailuo';
+    if (host.includes('lumalabs.ai') || /\bluma\b/i.test(ttl)) return 'luma';
+    if (host.includes('runwayml.com') || /\brunway\b/i.test(ttl)) return 'runway';
+    if (host.includes('midjourney.com') || /\bmidjourney\b/i.test(ttl)) return 'midjourney';
+    if (host.includes('capcut.com') || /\bcapcut\b/i.test(ttl)) return 'capcut';
     if (host.includes('canva.com')) return 'canva';
     if (host.includes('elevenlabs.io')) return 'elevenlabs';
     if (host.includes('chatgpt.com') || host.includes('openai.com')) return 'chatgpt';
@@ -67,9 +78,20 @@ function getServiceKey(url = '', title = '') {
     if (host.includes('mercadolivre.') || host.includes('mercadolibre.')) return 'mercadolivre';
     if (host.includes('amazon.')) return 'amazon';
     if (host.includes('cakto.')) return 'cakto';
+    return '';
+  } catch {
+    return '';
+  }
+}
 
-    const parts = host.split('.');
-    return parts.slice(-2).join('.');
+function getServiceKey(url = '', title = '') {
+  const known = getKnownServiceKey(url, title);
+  if (known) return known;
+  if (!url || !/^https?:\/\//i.test(url) || isOrbiexUrl(url)) return '';
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+    return host.split('.').slice(-2).join('.');
   } catch {
     return '';
   }
@@ -226,19 +248,23 @@ function waitForTabComplete(tabId, timeoutMs = 10000) {
 
 async function focusTabAndWindow(tab) {
   if (!tab || !tab.id) return false;
-  await chrome.tabs.update(tab.id, { active: true });
-  if (tab.windowId) {
-    try {
-      const win = await chrome.windows.get(tab.windowId);
-      const upd = { focused: true };
-      if (win?.state === 'minimized') upd.state = 'normal';
-      await chrome.windows.update(tab.windowId, upd);
-    } catch {
-      await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
+  try {
+    if (tab.windowId) {
+      try {
+        const win = await chrome.windows.get(tab.windowId);
+        const upd = { focused: true };
+        if (win?.state === 'minimized') upd.state = 'normal';
+        await chrome.windows.update(tab.windowId, upd);
+      } catch {
+        await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
+      }
     }
+    await chrome.tabs.update(tab.id, { active: true });
+    await new Promise((r) => setTimeout(r, 120));
+    return true;
+  } catch {
+    return false;
   }
-  await new Promise((r) => setTimeout(r, 120));
-  return true;
 }
 
 async function resolveTargetTab() {
@@ -279,34 +305,75 @@ async function resolveTargetTab() {
 
 async function findExistingServiceTab(targetUrl, hintText = '') {
   await ensureLoaded();
-  const targetSvc = getServiceKey(targetUrl) || getServiceKeyFromHint(hintText);
-  const hintLower = String(hintText || '').toLowerCase();
+  const targetSvc = getKnownServiceKey(targetUrl, hintText) || getServiceKeyFromHint(hintText);
+  const hintClean = String(hintText || '')
+    .replace(/\([^)]*\)/g, ' ')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s._-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const stopWords = new Set([
+    'para',
+    'com',
+    'aba',
+    'aberta',
+    'abrir',
+    'voltar',
+    'retornar',
+    'site',
+    'pagina',
+    'novo',
+    'projeto',
+    'veo',
+    'google',
+  ]);
+  const hintTokens = hintClean.split(' ').filter((w) => w.length >= 3 && !stopWords.has(w));
   const tabs = await chrome.tabs.query({});
+  const preferredId = targetSvc ? serviceTabMap[targetSvc] : lastControlledTabId;
 
   const matchTab = (t) => {
     const openUrl = t.url || t.pendingUrl || '';
-    if (!openUrl || isOrbiexUrl(openUrl)) return false;
-    if (!targetUrl && !targetSvc && !hintLower) return /^https?:\/\//i.test(openUrl);
+    if (!openUrl || !/^https?:\/\//i.test(openUrl) || isOrbiexUrl(openUrl)) return false;
+    if (!targetUrl && !targetSvc && !hintClean) return true;
 
-    const openSvc = getServiceKey(openUrl, t.title || '');
-    if (targetSvc && openSvc) return openSvc === targetSvc;
+    const titleNorm = String(t.title || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const urlLower = openUrl.toLowerCase();
+    const combined = `${urlLower} ${titleNorm}`;
 
-    const combined = `${openUrl} ${t.title || ''}`.toLowerCase();
+    const openSvc = getKnownServiceKey(openUrl, t.title || '');
+    if (targetSvc && openSvc) {
+      return openSvc === targetSvc;
+    }
+
+    // Lembrar diretamente do tab.id salvo se ainda pertence ao serviço ou ainda não mudou para outro serviço conhecido
+    if (preferredId && t.id === preferredId && (!openSvc || !targetSvc || openSvc === targetSvc)) {
+      return true;
+    }
+
     if (targetSvc === 'google_flow') {
       if (
-        combined.includes('labs.google') ||
-        combined.includes('flow.google') ||
-        combined.includes('fx/pt/tools/flow') ||
-        combined.includes('fx/tools/flow') ||
-        (combined.includes('flow') && (combined.includes('google') || combined.includes('veo')))
+        urlLower.includes('flow.google') ||
+        urlLower.includes('labs.google') ||
+        urlLower.includes('/tools/flow') ||
+        urlLower.includes('aitestkitchen') ||
+        urlLower.includes('videofx') ||
+        /\bgoogle\s*flow\b/i.test(combined) ||
+        (/\bflow\b/i.test(titleNorm) && (urlLower.includes('google') || !openSvc))
       ) {
         return true;
       }
     }
 
-    if (hintLower && hintLower.length >= 3 && combined.includes(hintLower)) return true;
+    if (hintClean && hintClean.length >= 3 && combined.includes(hintClean)) return true;
+    if (hintTokens.length > 0 && hintTokens.every((tk) => combined.includes(tk))) return true;
+    if (hintTokens.length > 0 && hintTokens.some((tk) => tk.length >= 4 && titleNorm.includes(tk))) return true;
 
-    if (targetUrl) {
+    if (targetUrl && !targetSvc) {
       try {
         const a = new URL(openUrl);
         const b = new URL(targetUrl);
@@ -323,7 +390,6 @@ async function findExistingServiceTab(targetUrl, hintText = '') {
   const matching = tabs.filter((t) => t.id && matchTab(t));
   if (!matching.length) return null;
 
-  const preferredId = targetSvc ? serviceTabMap[targetSvc] : lastControlledTabId;
   const scoreTab = (t) => {
     const u = (t.url || t.pendingUrl || '').toLowerCase();
     let score = 0;
@@ -382,6 +448,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             lastAccessed: t.lastAccessed || 0,
           })),
       };
+    }
+
+    // Retorno direto por ID exato da aba (NUNCA cria aba nova!)
+    if (type === 'FOCUS_TAB_BY_ID') {
+      const tabId = Number(payload.tabId);
+      if (!tabId) return { ok: false, version: EXT_VERSION, error: 'tabId inválido.' };
+      try {
+        const target = await chrome.tabs.get(tabId);
+        if (!target || !target.id) {
+          return { ok: false, version: EXT_VERSION, notFound: true, error: 'Aba não encontrada.' };
+        }
+        await recordTab(target, true);
+        const focused = await focusTabAndWindow(target);
+        if (!focused) {
+          return { ok: false, version: EXT_VERSION, notFound: true, error: 'Não foi possível focar essa aba.' };
+        }
+        return {
+          ok: true,
+          version: EXT_VERSION,
+          reused: true,
+          tabId: target.id,
+          url: target.url,
+          title: target.title,
+        };
+      } catch {
+        return { ok: false, version: EXT_VERSION, notFound: true, error: 'Aba fechada ou inacessível.' };
+      }
     }
 
     // Retorno ESTRITO: NUNCA cria aba nova! Só procura e foca onde o usuário estava.

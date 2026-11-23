@@ -1,10 +1,11 @@
 /**
- * Orbiex Bridge v2.3 — Conecta a plataforma web (orbiex.io) à Extensão Orbiex Copilot
- * Canal dedicado v23 garante isolamento total mesmo que uma versão 2.0/2.2 antiga exista no Chrome.
+ * Orbiex Bridge v2.4 — Conecta a plataforma web (orbiex.io) à Extensão Orbiex Copilot
+ * Canal dedicado v24 (e compatibilidade v23/legado) garante isolamento total mesmo se versões antigas existirem no Chrome.
  */
 (function () {
-  const EXT_VERSION = '2.3.0';
-  if (window.__ORBIEX_BRIDGE_V23__ === EXT_VERSION) return;
+  const EXT_VERSION = '2.4.0';
+  if (window.__ORBIEX_BRIDGE_V24__ === EXT_VERSION) return;
+  window.__ORBIEX_BRIDGE_V24__ = EXT_VERSION;
   window.__ORBIEX_BRIDGE_V23__ = EXT_VERSION;
   window.__ORBIEX_BRIDGE_V2__ = true;
 
@@ -22,6 +23,7 @@
       if (document.documentElement) {
         document.documentElement.setAttribute('data-orbiex-copilot', EXT_VERSION);
         document.documentElement.setAttribute('data-orbiex-copilot-v23', EXT_VERSION);
+        document.documentElement.setAttribute('data-orbiex-copilot-v24', EXT_VERSION);
       }
       window.dispatchEvent(
         new CustomEvent('orbiex-copilot:ready', { detail: { version: EXT_VERSION } })
@@ -51,12 +53,16 @@
     const data = event.data;
     if (!data) return;
 
+    const isV24 = data.source === 'orbiex-web-cmd-v24';
     const isV23 = data.source === 'orbiex-web-cmd-v23';
     const isLegacy = data.source === 'orbiex-web-cmd';
-    if (!isV23 && !isLegacy) return;
+    if (!isV24 && !isV23 && !isLegacy) return;
 
-    // Se a página estiver usando o canal exclusivo v23, ignoramos duplicatas legadas apenas se vierem para o mesmo listener
-    const sourceOut = isV23 ? 'orbiex-ext-res-v23' : 'orbiex-ext-res';
+    const sourceOut = isV24
+      ? 'orbiex-ext-res-v24'
+      : isV23
+      ? 'orbiex-ext-res-v23'
+      : 'orbiex-ext-res';
     const { reqId, type, payload } = data;
 
     if (type === 'WRITE_CLIPBOARD') {

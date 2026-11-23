@@ -280,10 +280,10 @@ export function PermissionsOnboardingModal() {
                     <Check size={24} strokeWidth={2.8} />
                   </div>
                   <h3 className="text-[16px] font-black text-emerald-300">
-                    Copilot v2.3 (Localizador Exato de Abas + Visão IA) Conectado!
+                    Copilot v2.4 (Localizador Exato de Abas + Visão IA) Conectado!
                   </h3>
                   <p className="text-[12.5px] leading-relaxed text-white/75">
-                    Tudo pronto! Agora o Agente localiza exatamente sua aba aberta do Google Flow pelo canal exclusivo v2.3 (nunca mais abre nova aba ao voltar), enxerga cantos e chats e copia/cola prompts completos. Peça por voz: <strong className="text-white">“Volta para o Google Flow”</strong> ou <strong className="text-white">“Cola o prompt no chat do canto inferior direito”</strong>.
+                    Tudo pronto! Agora o Agente localiza exatamente sua aba aberta do Google Flow pelo nome e domínio novo (<code className="text-white">flow.google.com</code>), pelo canal exclusivo v2.4, enxerga cantos e chats e copia/cola prompts completos. Peça por voz: <strong className="text-white">“Volta para o Google Flow”</strong> ou <strong className="text-white">“Cola o prompt no chat do canto inferior direito”</strong>.
                   </p>
                 </div>
 
@@ -301,12 +301,12 @@ export function PermissionsOnboardingModal() {
                 <p className="text-[12.5px] leading-relaxed text-white/75">
                   {needsV2Upgrade ? (
                     <>
-                      <strong className="text-amber-300">Nova atualização gratuita disponível (v2.3 — Localizador Exato de Abas + Visão IA)!</strong>{' '}
+                      <strong className="text-amber-300">Nova atualização gratuita disponível (v2.4 — Suporte flow.google.com + Localizador por Nome):</strong>{' '}
                       Atualize em 10 segundos e <strong className="text-white">remova todas as versões antigas repetidas</strong> em <code className="text-white">chrome://extensions</code> para o Agente voltar direto para a sua aba do Google Flow sem nunca criar outra:
                     </>
                   ) : (
                     <>
-                      Ative a extensão oficial gratuita <strong className="text-white">v2.3 (com Visão IA)</strong> no seu navegador para o Agente Orbiex conseguir <strong className="text-white">voltar direto para a sua aba aberta do Google Flow sem duplicar, enxergar a tela e clicar/colar sozinho</strong>:
+                      Ative a extensão oficial gratuita <strong className="text-white">v2.4 (com Visão IA)</strong> no seu navegador para o Agente Orbiex conseguir <strong className="text-white">voltar direto para a sua aba aberta do Google Flow sem duplicar, enxergar a tela e clicar/colar sozinho</strong>:
                     </>
                   )}
                 </p>
@@ -322,10 +322,10 @@ export function PermissionsOnboardingModal() {
                     {CHROME_STORE_URL
                       ? 'Adicionar Extensão no Chrome (Grátis)'
                       : downloadedZip
-                      ? 'Pacote v2.3 Baixado! (Baixar Novamente)'
+                      ? 'Pacote v2.4 Baixado! (Baixar Novamente)'
                       : needsV2Upgrade
-                      ? '1. Baixar Atualização Copilot v2.3'
-                      : '1. Baixar Extensão Orbiex Copilot v2.3 (Grátis)'}
+                      ? '1. Baixar Atualização Copilot v2.4'
+                      : '1. Baixar Extensão Orbiex Copilot v2.4 (Grátis)'}
                   </span>
                 </button>
 
@@ -333,7 +333,7 @@ export function PermissionsOnboardingModal() {
                   <div className="rounded-2xl border border-white/10 bg-black/55 p-4 space-y-2.5 text-[12px] text-white/80">
                     <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--mvz-gold-light)]">
                       {needsV2Upgrade
-                        ? 'Como atualizar em 10 segundos para a v2.3 (MUITO IMPORTANTE):'
+                        ? 'Como atualizar em 10 segundos para a v2.4 (MUITO IMPORTANTE):'
                         : 'Ativação rápida em 15 segundos:'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -355,7 +355,7 @@ export function PermissionsOnboardingModal() {
                           <strong className="text-white">2.</strong> Em <code className="text-white">chrome://extensions</code>, ative o <strong className="text-white">“Modo do desenvolvedor”</strong> (topo direito) e clique em <strong className="text-rose-300">“Remover”</strong> em <strong className="text-white">TODOS os cards antigos do Orbiex Copilot</strong> (<code className="text-white">{copilotInfo.version || 'antigos'}</code>) — deixe a tela limpa sem versões antigas!
                         </p>
                         <p>
-                          <strong className="text-white">3.</strong> Dê um duplo clique no <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code> v2.3 baixado para extrair a pasta nova, clique em <strong className="text-[#f4d77a]">“Carregar sem compactação”</strong> apontando para a pasta extraída (com <code className="text-white">v2.3</code>) e recarregue esta aba da Orbiex!
+                          <strong className="text-white">3.</strong> Dê um duplo clique no <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code> v2.4 baixado para extrair a pasta nova, clique em <strong className="text-[#f4d77a]">“Carregar sem compactação”</strong> apontando para a pasta extraída (com <code className="text-white">v2.4</code>) e recarregue esta aba da Orbiex!
                         </p>
                       </>
                     ) : (
@@ -374,7 +374,7 @@ export function PermissionsOnboardingModal() {
                 <div className="flex items-center justify-between pt-1">
                   <span className="inline-flex items-center gap-2 text-[11px] text-white/45">
                     <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                    {needsV2Upgrade ? 'Aguardando atualização v2.3...' : 'Aguardando ativação automática...'}
+                    {needsV2Upgrade ? 'Aguardando atualização v2.4...' : 'Aguardando ativação automática...'}
                   </span>
 
                   <button

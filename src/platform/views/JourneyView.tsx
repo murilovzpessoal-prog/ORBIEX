@@ -1196,10 +1196,6 @@ export function JourneyView({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between pt-1 pb-1">
           <div className="space-y-1.5">
             <div className="inline-flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-full border ${tierTheme.badgeBorder} ${tierTheme.badgeBg} px-3 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.22em] ${tierTheme.badgeText} shadow-sm`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${tierTheme.dotBg} animate-pulse`} />
-                MISSÃO ATIVA
-              </span>
               <span className="text-[11.5px] font-bold text-white/55">
                 {activeTier.focusTitle}
               </span>
@@ -1286,10 +1282,6 @@ export function JourneyView({
                       <RefreshCw size={11} className={generatingMissions ? 'animate-spin text-[var(--mvz-gold)]' : ''} />
                       <span>{generatingMissions ? 'Gerando...' : 'Renovar'}</span>
                     </button>
-
-                    <span className={`rounded-full border ${tierTheme.badgeBorder} ${tierTheme.badgeBg} px-2.5 py-0.5 text-[10.5px] font-bold ${tierTheme.badgeText}`}>
-                      {completedSteps.length} de 4
-                    </span>
                   </div>
                 </div>
 

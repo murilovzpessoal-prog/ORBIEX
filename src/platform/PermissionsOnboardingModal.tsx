@@ -352,10 +352,10 @@ export function PermissionsOnboardingModal() {
                     {needsV2Upgrade ? (
                       <>
                         <p>
-                          <strong className="text-white">2.</strong> Clique em <strong className="text-rose-300">“Remover”</strong> no card antigo (<code className="text-white">{copilotInfo.version || 'antiga'}</code>).
+                          <strong className="text-white">2.</strong> Em <code className="text-white">chrome://extensions</code>, ative o <strong className="text-white">“Modo do desenvolvedor”</strong> (topo direito) e clique em <strong className="text-rose-300">“Remover”</strong> no card antigo (<code className="text-white">{copilotInfo.version || 'antiga'}</code>).
                         </p>
                         <p>
-                          <strong className="text-white">3.</strong> Arraste o novo arquivo <strong className="text-[#f4d77a]"><code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code></strong> que acabou de baixar para o meio da página <code className="text-white">chrome://extensions</code> (vai aparecer <strong className="text-emerald-300">2.2.0</strong>) e atualize esta aba da Orbiex!
+                          <strong className="text-white">3.</strong> Dê um duplo clique no <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code> baixado para extrair a pasta, depois clique em <strong className="text-[#f4d77a]">“Carregar sem compactação”</strong> (ou arraste a pasta para a tela) e recarregue esta aba da Orbiex!
                         </p>
                       </>
                     ) : (
@@ -364,7 +364,7 @@ export function PermissionsOnboardingModal() {
                           <strong className="text-white">2.</strong> Ative a chave <strong className="text-white">“Modo do desenvolvedor”</strong> lá no canto superior direito.
                         </p>
                         <p>
-                          <strong className="text-white">3.</strong> Simplesmente <strong className="text-[#f4d77a]">arraste o arquivo <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code></strong> que baixou e solte no meio da página <code className="text-white">chrome://extensions</code>!
+                          <strong className="text-white">3.</strong> Dê um duplo clique no <strong className="text-[#f4d77a]"><code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">Orbiex-Copilot.zip</code></strong> para abrir a pasta e clique em <strong className="text-[#f4d77a]">“Carregar sem compactação”</strong> (ou arraste a pasta para <code className="text-white">chrome://extensions</code>)!
                         </p>
                       </>
                     )}

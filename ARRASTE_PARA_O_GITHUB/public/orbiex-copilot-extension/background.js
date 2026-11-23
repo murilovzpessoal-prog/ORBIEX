@@ -2,14 +2,15 @@
  * Orbiex Copilot v2.2 — Background Service Worker
  * - Persiste orbiexTabId, lastControlledTabId e mapa por ferramenta em chrome.storage.local
  *   (imune ao sleep de 30s do Service Worker MV3)
- * - Escuta troca de abas para sempre saber exatamente para onde o usuário quer retornar
- * - Busca inteligente em todas as janelas/abas para focar o projeto já aberto (ex: Google Flow)
- *   sem recarregar nem criar aba duplicada
+ * - Escuta troca/abertura de abas (inclusive já abertas antes da instalação) para sempre voltar
+ *   para a aba exata onde o usuário estava (ex: projeto no Google Flow) sem recarregar nem duplicar
  */
 
 let orbiexTabId = null;
 let lastControlledTabId = null;
 let serviceTabMap = {};
+let stateLoaded = false;
+let loadPromise = null;
 
 const STATE_KEY = 'orbiex_copilot_state_v2';
 
@@ -31,9 +32,17 @@ function getServiceKey(url = '', title = '') {
       host === 'flow.google' ||
       host.endsWith('.flow.google') ||
       host.includes('aitestkitchen') ||
-      (host.includes('google') && path.includes('/flow'))
+      host.includes('videofx') ||
+      (host.includes('google') && (path.includes('/flow') || path.includes('/fx')))
     ) {
-      if (path.includes('/flow') || path.includes('/fx') || host.includes('flow') || ttl.includes('flow')) return 'google_flow';
+      if (
+        path.includes('/flow') ||
+        path.includes('/fx') ||
+        host.includes('flow') ||
+        ttl.includes('flow')
+      ) {
+        return 'google_flow';
+      }
       return 'labs_google';
     }
     if (host === 'tiktok.com' || host.endsWith('.tiktok.com')) {
@@ -67,23 +76,31 @@ function getServiceKey(url = '', title = '') {
   }
 }
 
-async function loadState() {
-  try {
-    const res = await chrome.storage.local.get(STATE_KEY);
-    const st = res?.[STATE_KEY];
-    if (st && typeof st === 'object') {
-      if (typeof st.orbiexTabId === 'number') orbiexTabId = st.orbiexTabId;
-      if (typeof st.lastControlledTabId === 'number') lastControlledTabId = st.lastControlledTabId;
-      if (st.serviceTabMap && typeof st.serviceTabMap === 'object') {
-        serviceTabMap = { ...st.serviceTabMap };
+async function ensureLoaded() {
+  if (stateLoaded) return;
+  if (!loadPromise) {
+    loadPromise = (async () => {
+      try {
+        const res = await chrome.storage.local.get(STATE_KEY);
+        const st = res?.[STATE_KEY];
+        if (st && typeof st === 'object') {
+          if (typeof st.orbiexTabId === 'number') orbiexTabId = st.orbiexTabId;
+          if (typeof st.lastControlledTabId === 'number') lastControlledTabId = st.lastControlledTabId;
+          if (st.serviceTabMap && typeof st.serviceTabMap === 'object') {
+            serviceTabMap = { ...st.serviceTabMap };
+          }
+        }
+      } catch {
+        /* ignore */
       }
-    }
-  } catch {
-    /* ignore */
+      stateLoaded = true;
+    })();
   }
+  await loadPromise;
 }
 
 async function saveState() {
+  await ensureLoaded();
   try {
     await chrome.storage.local.set({
       [STATE_KEY]: { orbiexTabId, lastControlledTabId, serviceTabMap },
@@ -93,26 +110,32 @@ async function saveState() {
   }
 }
 
-function recordTab(tab) {
-  if (!tab || !tab.id || !tab.url) return;
-  if (isOrbiexUrl(tab.url)) {
+async function recordTab(tab, markAsLastControlled = true) {
+  if (!tab || !tab.id) return;
+  const tabUrl = tab.url || tab.pendingUrl || '';
+  if (!tabUrl) return;
+  await ensureLoaded();
+
+  if (isOrbiexUrl(tabUrl)) {
     orbiexTabId = tab.id;
-    saveState();
+    await saveState();
     return;
   }
-  if (/^https?:\/\//i.test(tab.url)) {
-    lastControlledTabId = tab.id;
-    const svc = getServiceKey(tab.url, tab.title || '');
+  if (/^https?:\/\//i.test(tabUrl)) {
+    if (markAsLastControlled) lastControlledTabId = tab.id;
+    const svc = getServiceKey(tabUrl, tab.title || '');
     if (svc) serviceTabMap[svc] = tab.id;
-    saveState();
+    await saveState();
   }
 }
 
-async function injectBridgeIntoOpenOrbiexTabs() {
+async function seedOpenTabsAndInjectBridge() {
+  await ensureLoaded();
   try {
     const tabs = await chrome.tabs.query({});
     for (const tab of tabs) {
-      if (tab.id && isOrbiexUrl(tab.url || '')) {
+      const tabUrl = tab.url || tab.pendingUrl || '';
+      if (tab.id && isOrbiexUrl(tabUrl)) {
         orbiexTabId = tab.id;
         try {
           await chrome.scripting.executeScript({
@@ -121,6 +144,11 @@ async function injectBridgeIntoOpenOrbiexTabs() {
           });
         } catch {
           /* ignore */
+        }
+      } else if (tab.id && /^https?:\/\//i.test(tabUrl)) {
+        const svc = getServiceKey(tabUrl, tab.title || '');
+        if (svc && !serviceTabMap[svc]) {
+          serviceTabMap[svc] = tab.id;
         }
       }
     }
@@ -131,22 +159,22 @@ async function injectBridgeIntoOpenOrbiexTabs() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  loadState().then(() => injectBridgeIntoOpenOrbiexTabs());
+  seedOpenTabsAndInjectBridge();
 });
 chrome.runtime.onStartup.addListener(() => {
-  loadState().then(() => injectBridgeIntoOpenOrbiexTabs());
+  seedOpenTabsAndInjectBridge();
 });
 
 chrome.tabs.onActivated.addListener(({ tabId }) => {
   chrome.tabs.get(tabId, (tab) => {
     if (chrome.runtime.lastError || !tab) return;
-    recordTab(tab);
+    recordTab(tab, true);
   });
 });
 
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if ((changeInfo.url || changeInfo.status === 'complete') && tab) {
-    recordTab(tab);
+    recordTab(tab, Boolean(tab.active));
   }
 });
 
@@ -179,20 +207,20 @@ function waitForTabComplete(tabId, timeoutMs = 10000) {
 
 async function focusTabAndWindow(tab) {
   if (!tab || !tab.id) return false;
+  await chrome.tabs.update(tab.id, { active: true });
   if (tab.windowId) {
     await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
   }
-  await chrome.tabs.update(tab.id, { active: true });
   await new Promise((r) => setTimeout(r, 120));
   return true;
 }
 
 async function resolveTargetTab() {
-  await loadState();
+  await ensureLoaded();
 
   const activeTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (activeTabs[0] && activeTabs[0].id && !isOrbiexUrl(activeTabs[0].url || '')) {
-    recordTab(activeTabs[0]);
+    await recordTab(activeTabs[0], true);
     return activeTabs[0];
   }
 
@@ -215,7 +243,7 @@ async function resolveTargetTab() {
   candidates.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
   const candidate = candidates[0] || null;
   if (candidate) {
-    recordTab(candidate);
+    await recordTab(candidate, true);
     await focusTabAndWindow(candidate);
     return candidate;
   }
@@ -224,7 +252,7 @@ async function resolveTargetTab() {
 }
 
 async function findExistingServiceTab(targetUrl) {
-  await loadState();
+  await ensureLoaded();
   const targetSvc = getServiceKey(targetUrl);
   const tabs = await chrome.tabs.query({});
 
@@ -234,6 +262,20 @@ async function findExistingServiceTab(targetUrl) {
     if (!targetUrl) return /^https?:\/\//i.test(openUrl);
     const openSvc = getServiceKey(openUrl, t.title || '');
     if (targetSvc && openSvc) return openSvc === targetSvc;
+
+    // Fallback extra para Google Flow (ex: redirect de login / subcaminho diferente)
+    if (targetSvc === 'google_flow') {
+      const combined = `${openUrl} ${t.title || ''}`.toLowerCase();
+      if (
+        combined.includes('labs.google') ||
+        combined.includes('flow.google') ||
+        combined.includes('fx/pt/tools/flow') ||
+        combined.includes('fx/tools/flow')
+      ) {
+        return true;
+      }
+    }
+
     try {
       const a = new URL(openUrl);
       const b = new URL(targetUrl);
@@ -245,17 +287,19 @@ async function findExistingServiceTab(targetUrl) {
     }
   };
 
-  // 1. Prioriza a aba registrada para este serviço (onde o usuário estava trabalhando)
+  // 1. Prioriza a aba exata registrada no mapa deste serviço (onde o usuário estava!)
   const preferredIds = [];
-  if (lastControlledTabId) preferredIds.push(lastControlledTabId);
-  if (targetSvc && serviceTabMap[targetSvc]) preferredIds.unshift(serviceTabMap[targetSvc]);
+  if (targetSvc && serviceTabMap[targetSvc]) preferredIds.push(serviceTabMap[targetSvc]);
+  if (lastControlledTabId && !preferredIds.includes(lastControlledTabId)) {
+    preferredIds.push(lastControlledTabId);
+  }
 
   for (const pid of preferredIds) {
     const hit = tabs.find((t) => t.id === pid && matchTab(t));
     if (hit) return hit;
   }
 
-  // 2. Caso contrário, escolhe a melhor aba aberta daquele serviço (priorizando projetos / último acesso)
+  // 2. Varre todas as abas abertas do computador que combinam com o serviço
   const matching = tabs.filter((t) => t.id && matchTab(t));
   if (!matching.length) return null;
 
@@ -285,12 +329,14 @@ async function sendToTabWithAutoInject(tabId, message) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (sender?.tab?.id && isOrbiexUrl(sender.tab.url || '')) {
-    orbiexTabId = sender.tab.id;
-    saveState();
-  }
-
   (async () => {
+    await ensureLoaded();
+
+    if (sender?.tab?.id && isOrbiexUrl(sender.tab.url || '')) {
+      orbiexTabId = sender.tab.id;
+      await saveState();
+    }
+
     const type = msg?.type;
     const payload = msg?.payload || {};
 
@@ -299,7 +345,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (type === 'FOCUS_PREVIOUS_TAB') {
-      await loadState();
       const targetTab = await resolveTargetTab();
       if (!targetTab) {
         return { ok: false, error: 'Nenhuma aba anterior encontrada para retornar.' };
@@ -322,7 +367,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!forceNewTab) {
         const existing = await findExistingServiceTab(url);
         if (existing && existing.id) {
-          recordTab(existing);
+          await recordTab(existing, true);
           await focusTabAndWindow(existing);
           return {
             ok: true,
@@ -333,21 +378,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           };
         }
 
-        if (returnOnly) {
-          // Mesmo que a URL exacta não tenha sido achada, verifica se há uma última aba não-Orbiex
-          await loadState();
-          if (lastControlledTabId) {
-            try {
-              const prev = await chrome.tabs.get(lastControlledTabId);
-              if (prev?.id && !isOrbiexUrl(prev.url || '') && getServiceKey(prev.url, prev.title) === getServiceKey(url)) {
-                await focusTabAndWindow(prev);
-                return { ok: true, reused: true, tabId: prev.id, url: prev.url, title: prev.title };
-              }
-            } catch {
-              lastControlledTabId = null;
-            }
-          }
-          if (!url) return { ok: false, error: 'Nenhuma aba aberta encontrada para retornar.' };
+        if (returnOnly && !url) {
+          return { ok: false, error: 'Nenhuma aba aberta encontrada para retornar.' };
         }
       }
 
@@ -362,7 +394,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await waitForTabComplete(tab.id, 9000);
         try {
           const updated = await chrome.tabs.get(tab.id);
-          if (updated) recordTab(updated);
+          if (updated) await recordTab(updated, true);
         } catch {
           /* ignore */
         }
@@ -371,7 +403,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (type === 'FOCUS_ORBIEX') {
-      await loadState();
       if (orbiexTabId) {
         try {
           const t = await chrome.tabs.get(orbiexTabId);

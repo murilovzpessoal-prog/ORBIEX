@@ -219,6 +219,7 @@ function getServiceKey(url: string): string {
   }
 }
 
+const OPENED_SERVICES_KEY = 'orbiex_opened_services_v1';
 const SESSION_OPENED_SERVICES = new Set<string>();
 
 export function markExternalServiceOpened(url: string): void {
@@ -226,7 +227,10 @@ export function markExternalServiceOpened(url: string): void {
   if (!key) return;
   SESSION_OPENED_SERVICES.add(key);
   try {
-    sessionStorage.setItem('orbiex_opened_services_v1', JSON.stringify(Array.from(SESSION_OPENED_SERVICES)));
+    sessionStorage.setItem(OPENED_SERVICES_KEY, JSON.stringify(Array.from(SESSION_OPENED_SERVICES)));
+    const prev = JSON.parse(localStorage.getItem(OPENED_SERVICES_KEY) || '{}') || {};
+    prev[key] = Date.now();
+    localStorage.setItem(OPENED_SERVICES_KEY, JSON.stringify(prev));
   } catch {
     /* ignore */
   }
@@ -237,13 +241,18 @@ export function wasExternalServiceOpened(url: string): boolean {
   if (!key) return false;
   if (SESSION_OPENED_SERVICES.has(key)) return true;
   try {
-    const raw = sessionStorage.getItem('orbiex_opened_services_v1');
+    const raw = sessionStorage.getItem(OPENED_SERVICES_KEY);
     if (raw) {
       const list = JSON.parse(raw);
       if (Array.isArray(list)) {
         list.forEach((k) => typeof k === 'string' && SESSION_OPENED_SERVICES.add(k));
-        return SESSION_OPENED_SERVICES.has(key);
+        if (SESSION_OPENED_SERVICES.has(key)) return true;
       }
+    }
+    const localMap = JSON.parse(localStorage.getItem(OPENED_SERVICES_KEY) || '{}') || {};
+    if (typeof localMap[key] === 'number' && Date.now() - localMap[key] < 12 * 60 * 60 * 1000) {
+      SESSION_OPENED_SERVICES.add(key);
+      return true;
     }
   } catch {
     /* ignore */
@@ -324,14 +333,14 @@ export async function copilotOpenTab(
         };
       }
 
-      // Se o usuário pediu para VOLTAR (ou já abriu essa ferramenta nesta sessão) e a v2.0 não conseguiu enxergar
-      // a aba porque outra aba/sleep do MV3 entrou no meio, NUNCA abre aba duplicada do zero!
-      if (wantReturnOnly || alreadyOpenedBefore) {
+      // Se a extensão instalada ainda é v2.0 (não possui busca global de abas), NUNCA cria outra aba repetida!
+      const installedVer = getCopilotVersion();
+      if (wantReturnOnly || alreadyOpenedBefore || (installedVer && !isVersionAtLeast(installedVer, '2.1.0'))) {
         return {
           ok: false,
           needsUpdateToReturn: true,
           error:
-            'Sua extensão ainda está na versão 2.0 e não conseguiu localizar a aba já aberta entre as abas sem abrir outra nova. Atualize a extensão para a v2.2 no botão "Atualizar Copilot" (leva 10 segundos) ou clique na aba do Google Flow e me dê o comando de lá.',
+            'Sua extensão no Chrome ainda está na versão 2.0, que não consegue procurar abas abertas como o Google Flow em outras guias. Clique para atualizar para a v2.2 em 10 segundos (sem perder sua aba aberta!).',
         };
       }
     }

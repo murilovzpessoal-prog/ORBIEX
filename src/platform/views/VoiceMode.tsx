@@ -284,11 +284,13 @@ function resolveVoiceDestination(
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
   const q = String(searchQuery || '').trim();
 
   // 0. Focar abas já abertas (Orbiex atual ou última aba externa anterior)
-  if (t === 'orbiex' || t === 'orbix' || t === 'plataforma' || t === 'voltar_orbiex' || t === 'site_orbiex') {
+  if (t === 'orbiex' || t === 'orbix' || t === 'plataforma' || t === 'voltar orbiex' || t === 'site orbiex') {
     return { kind: 'focus_orbiex', label: 'Orbiex' };
   }
   if (
@@ -300,6 +302,7 @@ function resolveVoiceDestination(
     t.includes('ultima aba') ||
     t.includes('aba anterior') ||
     t.includes('onde estava') ||
+    t.includes('onde parou') ||
     t.includes('estavamos')
   ) {
     return { kind: 'return_previous', label: 'Aba anterior onde estávamos' };
@@ -318,10 +321,10 @@ function resolveVoiceDestination(
   if (t === 'products' || t === 'catalogo' || t === 'produtos' || t.includes('campeoes')) {
     return { kind: 'internal', viewId: 'products', label: 'Produtos Campeões' };
   }
-  if (t.includes('product_score') || t === 'product' || t.includes('score produto')) {
+  if (t.includes('product score') || t === 'product' || t.includes('score produto')) {
     return { kind: 'internal', viewId: 'product', label: 'Score Produto' };
   }
-  if (t.includes('store_score') || t === 'store' || t.includes('score lojista') || t.includes('lojista')) {
+  if (t.includes('store score') || t === 'store' || t.includes('score lojista') || t.includes('lojista')) {
     return { kind: 'internal', viewId: 'store', label: 'Score Lojista' };
   }
   if (t.includes('scanner')) {
@@ -359,7 +362,7 @@ function resolveVoiceDestination(
   if (t.includes('flow') || t.includes('veo')) {
     return { kind: 'external', url: 'https://labs.google/fx/pt/tools/flow', label: 'Google Flow (VEO)' };
   }
-  if (t.includes('tiktok_shop') || t.includes('seller') || t.includes('tiktok shop')) {
+  if (t.includes('tiktok shop') || t.includes('seller')) {
     return { kind: 'external', url: 'https://seller-br.tiktok.com/', label: 'TikTok Shop Seller Center' };
   }
   if (t.includes('upload') || t.includes('postar')) {
@@ -618,6 +621,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   const dropAudioRef = useRef(false);
 
   const userTextRef = useRef('');
+  const lastHeardUtteranceRef = useRef('');
   const agentTextRef = useRef('');
   const lastUserVoiceRef = useRef(0);
 
@@ -1182,6 +1186,9 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                         lastSurfaceRef.current = 'external';
                         reply(`De volta exatamente para a aba anterior onde estávamos (${prevRes.title || lastOpenedExternalRef.current?.label || 'site aberto'}), sem abrir nova aba!`);
                       } else {
+                        if ((prevRes as { needsUpdateToReturn?: boolean }).needsUpdateToReturn) {
+                          openCopilotInstallModal();
+                        }
                         reply(prevRes.error || 'Não encontrei uma aba anterior aberta.');
                       }
                     } else if (lastOpenedExternalRef.current) {
@@ -1245,6 +1252,9 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                           `Retornado exatamente para a aba anterior onde estávamos (${prevRes.title || lastOpenedExternalRef.current?.label || 'site aberto'}), sem abrir nova aba!`
                         );
                       } else {
+                        if ((prevRes as { needsUpdateToReturn?: boolean }).needsUpdateToReturn) {
+                          openCopilotInstallModal();
+                        }
                         reply(prevRes.error || 'Não encontrei aba anterior para retornar sem duplicar.');
                       }
                     } else {
@@ -1269,8 +1279,16 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     continue;
                   }
 
-                  const wantReturn = Boolean(args.returnToExisting);
-                  const forceNew = Boolean(args.forceNewTab);
+                  const heardNow = `${lastHeardUtteranceRef.current} ${userTextRef.current}`
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '');
+                  const spokeReturnIntent =
+                    /\b(volt\w*|retorn\w*|parou|estav\w*|mesma aba|de volta|ja abert\w*|la no flow|pro flow)\b/i.test(
+                      heardNow
+                    );
+                  const forceNew = Boolean(args.forceNewTab) && !spokeReturnIntent;
+                  const wantReturn = (Boolean(args.returnToExisting) || spokeReturnIntent) && !forceNew;
                   setActionBanner({
                     label: wantReturn ? `Retornando para ${dest.label}...` : `Acessando ${dest.label}...`,
                     url: dest.url,
@@ -1293,11 +1311,12 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                       );
                       continue;
                     }
-                    // Proteção crítica anti-duplicação: se pediu para voltar (ou já havia aba aberta na v2.0), NUNCA cai para window.open('_blank')!
+                    // Proteção crítica anti-duplicação: NUNCA cai para window.open('_blank')!
                     if (extOpen.needsUpdateToReturn || wantReturn) {
+                      if (extOpen.needsUpdateToReturn) openCopilotInstallModal();
                       reply(
                         extOpen.error ||
-                          `Não abri uma nova aba de ${dest.label} para proteger seu projeto aberto. Atualize a extensão Copilot para v2.2 no botão do topo da aba Agente ou clique na aba já aberta.`
+                          `Não abri uma nova aba de ${dest.label} para proteger seu projeto aberto. Clique para atualizar a extensão Copilot para v2.2 na janela que abri na tela.`
                       );
                       continue;
                     }
@@ -1375,7 +1394,8 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
           if (sc.inputTranscription?.text) {
             if (agentTextRef.current && !userTextRef.current) commitTurn();
             userTextRef.current += sc.inputTranscription.text;
-            setUserCaption(userTextRef.current.trim());
+            lastHeardUtteranceRef.current = userTextRef.current.trim();
+            setUserCaption(lastHeardUtteranceRef.current);
             setAgentCaption('');
             lastUserVoiceRef.current = performance.now();
           }

@@ -1351,70 +1351,53 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
       ? 'Conectando ao núcleo de voz Orbiex...'
       : '';
 
-  /* ───── Mini-painel: a voz segue ativa enquanto o usuário navega e usa a Orbiex ───── */
+  /* ───── Mini-painel compacto: só a esfera + botõezinhos (a voz segue ativa) ───── */
   if (compact) {
-    const caption =
-      phase === 'error'
-        ? errorMsg
-        : actionBanner?.label ||
-          (agentCaption && (phase === 'speaking' || phase === 'listening')
-            ? agentCaption
-            : userCaption
-            ? `“${userCaption}”`
-            : PHASE_LABEL[phase]);
+    const statusTitle = phase === 'error' ? errorMsg : actionBanner?.label || PHASE_LABEL[phase];
+    const btn =
+      'flex h-7 w-7 items-center justify-center rounded-full border transition';
     return (
       <div
         data-orbiex-voice-ui="1"
-        className="mvz-fade-up fixed bottom-4 right-4 z-[200] flex w-[min(360px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-[var(--mvz-gold)]/40 bg-[#0a0907]/95 p-2.5 pr-3 shadow-[0_18px_50px_rgba(0,0,0,0.75),0_0_24px_rgba(212,175,55,0.18)] backdrop-blur-xl"
+        title={statusTitle}
+        className="mvz-fade-up fixed bottom-4 right-4 z-[200] flex items-center gap-1.5 rounded-full border border-[var(--mvz-gold)]/35 bg-[#0a0907]/95 py-1 pl-1 pr-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.7),0_0_16px_rgba(212,175,55,0.15)] backdrop-blur-xl"
       >
         <button
           type="button"
           onClick={onOrbClick}
-          aria-label="Esfera de voz Orbiex"
-          className="relative h-14 w-14 shrink-0 cursor-pointer rounded-full outline-none"
+          aria-label={`Orbiex Voice · ${PHASE_LABEL[phase]}`}
+          className="relative h-9 w-9 shrink-0 cursor-pointer rounded-full outline-none"
         >
-          <canvas ref={canvasRef} style={{ width: 56, height: 56 }} />
+          <canvas ref={canvasRef} style={{ width: 36, height: 36 }} />
+          {phase === 'error' && <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-rose-500" />}
         </button>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${phase === 'error' || phase === 'paused' ? 'bg-white/30' : 'animate-pulse bg-[var(--mvz-gold)]'}`} />
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#f4d77a]">
-              Orbiex Voice · {PHASE_LABEL[phase]}
-            </span>
-          </div>
-          <p className={`mt-0.5 line-clamp-2 text-[12px] leading-snug ${phase === 'error' ? 'text-rose-300' : 'text-white/85'}`}>{caption}</p>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={toggleMute}
-            aria-label={phase === 'paused' ? 'Ativar microfone' : 'Pausar microfone'}
-            className={`flex h-8 w-8 items-center justify-center rounded-full border transition ${
-              phase === 'paused' ? 'border-white/20 bg-white text-black' : 'border-white/10 bg-white/[0.06] text-white hover:bg-white/[0.12]'
-            }`}
-          >
-            {phase === 'paused' ? <MicOff size={14} /> : <Mic size={14} />}
-          </button>
-          <button
-            type="button"
-            onClick={() => setCompact(false)}
-            aria-label="Expandir Orbiex Voice"
-            title="Expandir"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/80 transition hover:bg-white/[0.12] hover:text-white"
-          >
-            <Maximize2 size={13} />
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Encerrar conversa por voz"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500/90 text-white transition hover:bg-rose-500"
-          >
-            <X size={14} />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={phase === 'paused' ? 'Ativar microfone' : 'Pausar microfone'}
+          title={phase === 'paused' ? 'Ativar microfone' : 'Pausar microfone'}
+          className={`${btn} ${phase === 'paused' ? 'border-white/20 bg-white text-black' : 'border-white/10 bg-white/[0.06] text-white hover:bg-white/[0.12]'}`}
+        >
+          {phase === 'paused' ? <MicOff size={12} /> : <Mic size={12} />}
+        </button>
+        <button
+          type="button"
+          onClick={() => setCompact(false)}
+          aria-label="Expandir Orbiex Voice"
+          title="Expandir"
+          className={`${btn} border-white/10 bg-white/[0.06] text-white/80 hover:bg-white/[0.12] hover:text-white`}
+        >
+          <Maximize2 size={11} />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Encerrar conversa por voz"
+          title="Encerrar"
+          className={`${btn} border-transparent bg-rose-500/90 text-white hover:bg-rose-500`}
+        >
+          <X size={12} />
+        </button>
       </div>
     );
   }

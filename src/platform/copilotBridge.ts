@@ -1,7 +1,20 @@
 import { useEffect, useState } from 'react';
 import { setAgentClipboard } from './clipboard';
 
-export const LATEST_COPILOT_VERSION = '2.0.0';
+export const LATEST_COPILOT_VERSION = '2.2.0';
+
+function isVersionAtLeast(current: string, minVer: string): boolean {
+  if (!current) return false;
+  const pa = current.split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = minVer.split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const a = pa[i] || 0;
+    const b = pb[i] || 0;
+    if (a > b) return true;
+    if (a < b) return false;
+  }
+  return true;
+}
 
 export interface CopilotInteractPayload {
   command: 'click' | 'type' | 'scroll' | 'scan';
@@ -169,54 +182,139 @@ export async function pingCopilot(): Promise<boolean> {
   return isCopilotInstalled();
 }
 
+function getServiceKey(url: string): string {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    const ha = u.hostname.replace(/^www\./i, '').toLowerCase();
+    const path = (u.pathname || '').toLowerCase();
+
+    if (
+      ha === 'labs.google' ||
+      ha.endsWith('.labs.google') ||
+      ha === 'flow.google' ||
+      ha.endsWith('.flow.google') ||
+      ha.includes('aitestkitchen') ||
+      (ha.includes('google') && path.includes('/flow'))
+    ) {
+      if (path.includes('/flow') || path.includes('/fx') || ha.includes('flow')) return 'google_flow';
+      return 'labs_google';
+    }
+    if (ha === 'tiktok.com' || ha.endsWith('.tiktok.com')) {
+      if (ha.includes('seller')) return 'tiktok_seller';
+      if (path.includes('/tiktokstudio/upload')) return 'tiktok_studio_upload';
+      if (path.includes('/tiktokstudio')) return 'tiktok_studio';
+      return 'tiktok';
+    }
+    if (ha.includes('klingai.com')) return 'kling';
+    if (ha.includes('hailuo')) return 'hailuo';
+    if (ha.includes('lumalabs.ai')) return 'luma';
+    if (ha.includes('runwayml.com')) return 'runway';
+    if (ha.includes('midjourney.com')) return 'midjourney';
+    if (ha.includes('capcut.com')) return 'capcut';
+    if (ha.includes('canva.com')) return 'canva';
+    return ha.split('.').slice(-2).join('.');
+  } catch {
+    return '';
+  }
+}
+
+const SESSION_OPENED_SERVICES = new Set<string>();
+
+export function markExternalServiceOpened(url: string): void {
+  const key = getServiceKey(url);
+  if (!key) return;
+  SESSION_OPENED_SERVICES.add(key);
+  try {
+    sessionStorage.setItem('orbiex_opened_services_v1', JSON.stringify(Array.from(SESSION_OPENED_SERVICES)));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function wasExternalServiceOpened(url: string): boolean {
+  const key = getServiceKey(url);
+  if (!key) return false;
+  if (SESSION_OPENED_SERVICES.has(key)) return true;
+  try {
+    const raw = sessionStorage.getItem('orbiex_opened_services_v1');
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        list.forEach((k) => typeof k === 'string' && SESSION_OPENED_SERVICES.add(k));
+        return SESSION_OPENED_SERVICES.has(key);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 function isSameExternalService(openUrl: string, targetUrl: string): boolean {
   if (!openUrl || !targetUrl) return false;
-  try {
-    const a = new URL(openUrl);
-    const b = new URL(targetUrl);
-    const ha = a.hostname.replace(/^www\./i, '').toLowerCase();
-    const hb = b.hostname.replace(/^www\./i, '').toLowerCase();
+  const ka = getServiceKey(openUrl);
+  const kb = getServiceKey(targetUrl);
+  return Boolean(ka && kb && ka === kb);
+}
 
-    // Google Flow (labs.google/fx/...)
-    if (hb === 'labs.google') {
-      return ha === 'labs.google' && a.pathname.includes('/flow');
+/**
+ * Retorna para a última aba externa onde o usuário estava trabalhando (sem recarregar nem duplicar).
+ */
+export async function copilotFocusPreviousTab(): Promise<CopilotResult & { needsUpdateToReturn?: boolean }> {
+  const res = await sendCopilotCommand('FOCUS_PREVIOUS_TAB', {}, 5000);
+  if (res.ok) return res;
+
+  if (/desconhecido/i.test(res.error || '')) {
+    const ctx = await sendCopilotCommand('CAPTURE_SCREEN_CONTEXT', {}, 10000);
+    if (ctx.ok && ctx.url) {
+      return {
+        ok: true,
+        reused: true,
+        url: ctx.url,
+        title: ctx.title,
+        message: `Retornou para a aba aberta (${ctx.title || ctx.url}).`,
+      };
     }
-    // TikTok Studio vs TikTok Feed vs Seller Center
-    if (hb === 'tiktok.com') {
-      if (b.pathname.includes('/tiktokstudio')) return ha === 'tiktok.com' && a.pathname.includes('/tiktokstudio');
-      return ha === 'tiktok.com' && !a.pathname.includes('/tiktokstudio');
-    }
-    // Demais ferramentas (klingai.com, capcut.com, canva.com, seller-br.tiktok.com, midjourney.com, etc.)
-    const rootDomain = (h: string) => h.split('.').slice(-2).join('.');
-    return ha === hb || rootDomain(ha) === rootDomain(hb);
-  } catch {
-    return false;
+    return {
+      ok: false,
+      needsUpdateToReturn: true,
+      error: 'Extensão v2.0 não conseguiu localizar a aba anterior automaticamente. Atualize para a versão 2.2 em "Atualizar Copilot".',
+    };
   }
+  return res;
 }
 
 /**
  * Abre um site externo OU retorna exatamente para a aba onde o usuário já estava trabalhando
- * (ex: "retorne no Google Flow" foca a aba aberta do projeto no Flow sem recarregar nem criar outra!).
- * Compatível tanto com a extensão v2.1 (FOCUS_OR_OPEN_TAB) quanto com a v2.0 já instalada!
+ * (ex: "volta pro Google Flow" foca a aba aberta do projeto no Flow sem recarregar nem criar outra!).
+ * Compatível com v2.2/v2.1 (FOCUS_OR_OPEN_TAB) e protege usuários na v2.0 contra duplicação acidental!
  */
 export async function copilotOpenTab(
   url: string,
   opts?: { forceNewTab?: boolean; returnOnly?: boolean }
-): Promise<CopilotResult> {
-  if (!opts?.forceNewTab) {
-    // 1. Tenta comando nativo FOCUS_OR_OPEN_TAB (v2.1+)
+): Promise<CopilotResult & { needsUpdateToReturn?: boolean }> {
+  const forceNew = Boolean(opts?.forceNewTab);
+  const wantReturnOnly = Boolean(opts?.returnOnly);
+  const alreadyOpenedBefore = wasExternalServiceOpened(url);
+
+  if (!forceNew) {
+    // 1. Comando nativo FOCUS_OR_OPEN_TAB (v2.1 / v2.2+)
     const focusRes = await sendCopilotCommand(
       'FOCUS_OR_OPEN_TAB',
-      { url, returnOnly: Boolean(opts?.returnOnly) },
+      { url, returnOnly: wantReturnOnly || alreadyOpenedBefore },
       10000
     );
-    if (focusRes.ok) return focusRes;
+    if (focusRes.ok) {
+      markExternalServiceOpened(focusRes.url || url);
+      return focusRes;
+    }
 
-    // 2. Compatibilidade instantânea com extensão v2.0 já instalada:
-    //    CAPTURE_SCREEN_CONTEXT aciona resolveTargetTab() no background, que foca lastControlledTabId sem criar aba!
+    // 2. Compatibilidade segura com extensão v2.0 já instalada:
     if (/desconhecido/i.test(focusRes.error || '')) {
-      const ctx = await sendCopilotCommand('CAPTURE_SCREEN_CONTEXT', {}, 6000);
-      if (ctx.ok && ctx.url && (opts?.returnOnly || isSameExternalService(ctx.url, url))) {
+      const ctx = await sendCopilotCommand('CAPTURE_SCREEN_CONTEXT', {}, 10500);
+      if (ctx.ok && ctx.url && isSameExternalService(ctx.url, url)) {
+        markExternalServiceOpened(ctx.url);
         return {
           ok: true,
           reused: true,
@@ -225,10 +323,23 @@ export async function copilotOpenTab(
           message: `Retornou para a aba aberta (${ctx.title || ctx.url}).`,
         };
       }
+
+      // Se o usuário pediu para VOLTAR (ou já abriu essa ferramenta nesta sessão) e a v2.0 não conseguiu enxergar
+      // a aba porque outra aba/sleep do MV3 entrou no meio, NUNCA abre aba duplicada do zero!
+      if (wantReturnOnly || alreadyOpenedBefore) {
+        return {
+          ok: false,
+          needsUpdateToReturn: true,
+          error:
+            'Sua extensão ainda está na versão 2.0 e não conseguiu localizar a aba já aberta entre as abas sem abrir outra nova. Atualize a extensão para a v2.2 no botão "Atualizar Copilot" (leva 10 segundos) ou clique na aba do Google Flow e me dê o comando de lá.',
+        };
+      }
     }
   }
 
-  return sendCopilotCommand('OPEN_TAB', { url, forceNewTab: Boolean(opts?.forceNewTab) }, 11000);
+  const openRes = await sendCopilotCommand('OPEN_TAB', { url, forceNewTab: forceNew }, 11000);
+  if (openRes.ok) markExternalServiceOpened(openRes.url || url);
+  return openRes;
 }
 
 export function copilotFocusOrbiex(): Promise<CopilotResult> {
@@ -382,7 +493,7 @@ export function useCopilotInfo(): { installed: boolean; version: string; isLates
     };
   }, []);
 
-  const isLatest = info.installed && (info.version === LATEST_COPILOT_VERSION || info.version.startsWith('2.'));
+  const isLatest = info.installed && isVersionAtLeast(info.version, LATEST_COPILOT_VERSION);
   return { ...info, isLatest };
 }
 

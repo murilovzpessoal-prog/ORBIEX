@@ -5,7 +5,7 @@
   if (window.__ORBIEX_BRIDGE_V2__) return;
   window.__ORBIEX_BRIDGE_V2__ = true;
 
-  const EXT_VERSION = '2.1.0';
+  const EXT_VERSION = '2.2.0';
 
   function announceReady() {
     try {

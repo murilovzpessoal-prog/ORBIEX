@@ -3,6 +3,7 @@ import { Check, Maximize2, Mic, MicOff, Minimize2, X } from 'lucide-react';
 import type { ViewId } from '../data';
 import {
   copilotFocusOrbiex,
+  copilotFocusPreviousTab,
   copilotInteractPage,
   copilotOpenTab,
   copilotSmartAction,
@@ -60,12 +61,12 @@ const VOICE_TOOLS = [
             target: {
               type: 'STRING',
               description:
-                'Identificador do destino pedido: flow, tiktok, tiktok_shop, tiktok_studio, kling, midjourney, hailuo, luma, runway, capcut, canva, elevenlabs, chatgpt, youtube, instagram, whatsapp, gmail, google, shopee, mercadolivre, amazon, cakto, ou abas internas da Orbiex: home, agent, journey, products, product_score, store_score, scanner, hooks, headlines, prompt_gen, prompts, motion, turbo, antirestriction, members, support.',
+                'Identificador do destino pedido: flow, tiktok, tiktok_shop, tiktok_studio, kling, midjourney, hailuo, luma, runway, capcut, canva, elevenlabs, chatgpt, youtube, instagram, whatsapp, gmail, google, shopee, mercadolivre, amazon, cakto, "anterior" (para voltar à última aba externa onde estava sem dizer o nome), "orbiex" (para focar a aba da Orbiex sem mudar de ferramenta), ou abas internas da Orbiex: home, agent, journey, products, product_score, store_score, scanner, hooks, headlines, prompt_gen, prompts, motion, turbo, antirestriction, members, support.',
             },
             returnToExisting: {
               type: 'BOOLEAN',
               description:
-                'true quando o usuário pedir para RETORNAR / VOLTAR para a aba onde já estava (ex: "retorne no Google Flow", "volta pro Flow", "vai lá no Flow").',
+                'true SEMPRE que o usuário disser "volta", "volte", "retorne", "volta lá" ou pedir para abrir de novo uma aba que já está aberta (ex: "volta para o Google Flow", "retorne no Flow", "volta pro Flow"). Foca a aba exata sem criar outra!',
             },
             forceNewTab: {
               type: 'BOOLEAN',
@@ -251,7 +252,8 @@ const VOICE_TOOLS = [
           properties: {
             action: {
               type: 'STRING',
-              description: '"scroll" para rolar, "scan" para ler o que está na tela agora, ou "focus_orbiex" para voltar à aba da Orbiex.',
+              description:
+                '"scroll" para rolar, "scan" para ler o que está na tela agora, "focus_orbiex" para voltar à aba da Orbiex, ou "focus_previous" para voltar à última aba externa onde estávamos (ex: Google Flow, Kling) sem abrir nova aba.',
             },
             direction: {
               type: 'STRING',
@@ -273,13 +275,35 @@ function resolveVoiceDestination(
   rawTarget: string,
   customUrl?: string,
   searchQuery?: string
-): { kind: 'internal'; viewId: ViewId; label: string } | { kind: 'external'; url: string; label: string } {
+):
+  | { kind: 'internal'; viewId: ViewId; label: string }
+  | { kind: 'focus_orbiex'; label: string }
+  | { kind: 'return_previous'; label: string }
+  | { kind: 'external'; url: string; label: string } {
   const t = String(rawTarget || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
   const q = String(searchQuery || '').trim();
+
+  // 0. Focar abas já abertas (Orbiex atual ou última aba externa anterior)
+  if (t === 'orbiex' || t === 'orbix' || t === 'plataforma' || t === 'voltar_orbiex' || t === 'site_orbiex') {
+    return { kind: 'focus_orbiex', label: 'Orbiex' };
+  }
+  if (
+    t === 'anterior' ||
+    t === 'voltar' ||
+    t === 'retornar' ||
+    t === 'previous' ||
+    t === 'back' ||
+    t.includes('ultima aba') ||
+    t.includes('aba anterior') ||
+    t.includes('onde estava') ||
+    t.includes('estavamos')
+  ) {
+    return { kind: 'return_previous', label: 'Aba anterior onde estávamos' };
+  }
 
   // 1. Abas internas da Orbiex
   if (t === 'agent' || t === 'agente' || t.includes('agente orbiex') || t === 'chat') {
@@ -462,7 +486,7 @@ COMO CONVERSAR (MUITO IMPORTANTE):
   - Quando pedirem para rolar a tela, escanear o que está visível ou voltar para a Orbiex, chame scroll_or_control_page.
   - Quando pedirem para copiar algo da tela ou clicar num botão "Copiar Prompt" / "Copiar" ("clica em copiar prompt", "copia a segunda headline", "copia o script"), chame copy_from_page (ou click_element_on_page): o sistema clica e GUARDA automaticamente 100% do comando na memória interna!
   - Quando pedirem para COLAR o prompt/texto copiado ("vai no chat no canto inferior direito e cola o prompt", "cola lá no Flow"), chame IMEDIATAMENTE paste_copied_content passando fieldHint (ex.: "chat") e spatialHint (ex.: "canto inferior direito")! NUNCA invente ou resuma o prompt — o paste_copied_content cola o comando completo guardado!
-  - RETORNAR A ABAS JÁ ABERTAS (CRÍTICO): Quando o usuário disser "retorne no Google Flow", "volta pro Flow", "volta lá onde eu estava", chame open_destination com target="flow" e returnToExisting=true (e forceNewTab=false). Isso foca exatamente a aba do Google Flow onde o projeto já está aberto, SEM abrir aba repetida e SEM recarregar!
+  - RETORNAR A ABAS JÁ ABERTAS (REGRA DE OURO ANTI-DUPLICAÇÃO): Sempre que o usuário disser "volta para o Google Flow", "retorne no Google Flow", "volte lá onde estávamos", "volta pro Flow", ou pedir para abrir novamente o Flow enquanto já está aberto, chame open_destination(target="flow", returnToExisting=true, forceNewTab=false) — ou scroll_or_control_page(action="focus_previous") se não citar o nome do site. NUNCA defina forceNewTab=true quando ele pedir para voltar! O sistema foca exatamente a aba/projeto já aberto sem criar uma nova aba e sem recarregar! Para voltar para a Orbiex, chame scroll_or_control_page(action="focus_orbiex") ou open_destination(target="orbiex").
   - COMANDOS COMPOSTOS DE PRODUÇÃO DE VÍDEO: Se o usuário falar tudo de uma vez (ex.: "Abre o Google Flow, clica em novo projeto, vai no chat no canto inferior direito e cola o prompt"), execute todas as funções na ordem exata (open_destination -> click_element_on_page -> paste_copied_content). Se pedir para baixar/abrir as duas imagens (produto + influenciadora), chame download_workflow_images!
   - IDIOMA DE FALA NOS PROMPTS DE VÍDEO (ANTI-INGLÊS NO GOOGLE FLOW): Se o usuário pedir para você criar ou digitar um prompt de fala do zero (usando type_text_on_page no Google Flow ou no Gerador de Prompts), inclua SEMPRE a especificação explícita de que a fala é 100% em Português do Brasil (pt-BR) nativo, proibido falar em inglês (NO English speech). Quando usar paste_copied_content, cole fielmente o prompt já guardado na memória!
 
@@ -610,6 +634,17 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   const currentViewRef = useRef(currentView);
   currentViewRef.current = currentView;
   const lastSurfaceRef = useRef<'orbiex' | 'external' | null>(null);
+  const lastOpenedExternalRef = useRef<{ url: string; label: string } | null>(null);
+  const externalWinRefs = useRef<Record<string, Window | null>>({});
+
+  // Mantém o Service Worker da extensão MV3 acordado enquanto a voz está ativa
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setInterval(() => {
+      if (isCopilotInstalled()) pingCopilot();
+    }, 18000);
+    return () => window.clearInterval(t);
+  }, [open]);
 
   useEffect(() => {
     const onVis = () => {
@@ -1127,7 +1162,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   continue;
                 }
 
-                // 5. Rolar / escanear / voltar para a Orbiex
+                // 5. Rolar / escanear / voltar para a Orbiex ou para a aba anterior
                 if (fnName === 'scroll_or_control_page') {
                   prevExternalClick = false;
                   const act = String(args.action || 'scroll').toLowerCase();
@@ -1136,6 +1171,34 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     lastSurfaceRef.current = 'orbiex';
                     setCompact(true);
                     reply(`De volta à aba da Orbiex${viewInfo()}.`);
+                    continue;
+                  }
+                  if (act === 'focus_previous' || act === 'return_external' || act === 'focus_external') {
+                    if (await hasExtension()) {
+                      const prevRes = lastOpenedExternalRef.current
+                        ? await copilotOpenTab(lastOpenedExternalRef.current.url, { returnOnly: true })
+                        : await copilotFocusPreviousTab();
+                      if (prevRes.ok) {
+                        lastSurfaceRef.current = 'external';
+                        reply(`De volta exatamente para a aba anterior onde estávamos (${prevRes.title || lastOpenedExternalRef.current?.label || 'site aberto'}), sem abrir nova aba!`);
+                      } else {
+                        reply(prevRes.error || 'Não encontrei uma aba anterior aberta.');
+                      }
+                    } else if (lastOpenedExternalRef.current) {
+                      const k = lastOpenedExternalRef.current.label.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+                      const w = externalWinRefs.current[k];
+                      if (w && !w.closed) {
+                        w.focus();
+                        lastSurfaceRef.current = 'external';
+                        reply(`Focado na aba já aberta de ${lastOpenedExternalRef.current.label}.`);
+                      } else {
+                        const r = needExtension(fnName);
+                        functionResponses.push({ id: call.id, ...r });
+                      }
+                    } else {
+                      const r = needExtension(fnName);
+                      functionResponses.push({ id: call.id, ...r });
+                    }
                     continue;
                   }
                   if (resolveSurface(args.surface) === 'orbiex') {
@@ -1162,6 +1225,34 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                 if (fnName === 'open_destination') {
                   prevExternalClick = false;
                   const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
+
+                  if (dest.kind === 'focus_orbiex') {
+                    if (await hasExtension()) await copilotFocusOrbiex();
+                    lastSurfaceRef.current = 'orbiex';
+                    setCompact(true);
+                    reply(`De volta à aba da Orbiex${viewInfo()} exatamente onde estávamos.`);
+                    continue;
+                  }
+
+                  if (dest.kind === 'return_previous') {
+                    if (await hasExtension()) {
+                      const prevRes = lastOpenedExternalRef.current
+                        ? await copilotOpenTab(lastOpenedExternalRef.current.url, { returnOnly: true })
+                        : await copilotFocusPreviousTab();
+                      if (prevRes.ok) {
+                        lastSurfaceRef.current = 'external';
+                        reply(
+                          `Retornado exatamente para a aba anterior onde estávamos (${prevRes.title || lastOpenedExternalRef.current?.label || 'site aberto'}), sem abrir nova aba!`
+                        );
+                      } else {
+                        reply(prevRes.error || 'Não encontrei aba anterior para retornar sem duplicar.');
+                      }
+                    } else {
+                      const r = needExtension(fnName);
+                      functionResponses.push({ id: call.id, ...r });
+                    }
+                    continue;
+                  }
 
                   if (dest.kind === 'internal') {
                     if (document.visibilityState !== 'visible' && (await hasExtension())) await copilotFocusOrbiex();
@@ -1194,18 +1285,52 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     window.setTimeout(() => setActionBanner(null), 3000);
                     if (extOpen.ok) {
                       lastSurfaceRef.current = 'external';
+                      lastOpenedExternalRef.current = { url: extOpen.url || dest.url, label: dest.label };
                       reply(
                         extOpen.reused
-                          ? `Retornado exatamente para a aba já aberta de ${dest.label} onde o usuário estava (sem recarregar)! Pronto para comandos com surface "site_aberto".`
+                          ? `Retornado exatamente para a aba já aberta de ${dest.label} onde o usuário estava (sem recarregar e sem criar outra aba)! Pronto para comandos com surface "site_aberto".`
                           : `${dest.label} aberto e pronto para comandos na interface (surface "site_aberto").`
+                      );
+                      continue;
+                    }
+                    // Proteção crítica anti-duplicação: se pediu para voltar (ou já havia aba aberta na v2.0), NUNCA cai para window.open('_blank')!
+                    if (extOpen.needsUpdateToReturn || wantReturn) {
+                      reply(
+                        extOpen.error ||
+                          `Não abri uma nova aba de ${dest.label} para proteger seu projeto aberto. Atualize a extensão Copilot para v2.2 no botão do topo da aba Agente ou clique na aba já aberta.`
                       );
                       continue;
                     }
                   }
 
+                  // Reaproveita referência de janela nomeada se sem extensão
+                  const winKey = `orbiex_ext_${dest.label.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+                  const existingWin = !forceNew ? externalWinRefs.current[winKey] : null;
+                  if (existingWin && !existingWin.closed) {
+                    existingWin.focus();
+                    lastSurfaceRef.current = 'external';
+                    window.setTimeout(() => setActionBanner(null), 2000);
+                    reply(`Focado na aba já aberta de ${dest.label}. Confirme em uma frase curtíssima.`);
+                    continue;
+                  }
+                  if (wantReturn) {
+                    window.setTimeout(() => setActionBanner(null), 2000);
+                    openCopilotInstallModal();
+                    reply(
+                      `Para eu alternar diretamente entre a aba da Orbiex e a aba já aberta do ${dest.label} sem criar outra nova, ative/atualize a Extensão Orbiex Copilot v2.2.`
+                    );
+                    continue;
+                  }
+
                   let openedNewTab = false;
                   try {
-                    openedNewTab = Boolean(window.open(dest.url, '_blank'));
+                    const w = window.open(dest.url, forceNew ? '_blank' : winKey);
+                    if (w) {
+                      externalWinRefs.current[winKey] = w;
+                      lastOpenedExternalRef.current = { url: dest.url, label: dest.label };
+                      lastSurfaceRef.current = 'external';
+                      openedNewTab = true;
+                    }
                   } catch {
                     openedNewTab = false;
                   }

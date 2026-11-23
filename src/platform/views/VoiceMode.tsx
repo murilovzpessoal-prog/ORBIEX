@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Maximize2, Mic, MicOff, Minimize2, Puzzle, Sparkles, X } from 'lucide-react';
+import { Check, Maximize2, Mic, MicOff, Minimize2, Sparkles, X } from 'lucide-react';
 import type { ViewId } from '../data';
 import {
   copilotFocusOrbiex,
@@ -8,7 +8,6 @@ import {
   copilotSmartAction,
   isCopilotInstalled,
   pingCopilot,
-  useCopilotInfo,
 } from '../copilotBridge';
 import { describeOrbiexScreen, orbiexSmartAction, scrollOrbiex } from '../orbiexPageAgent';
 import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
@@ -486,7 +485,6 @@ function makeImpulse(ctx: BaseAudioContext, seconds = 0.35, decay = 3.2): AudioB
 /* ───────── componente ───────── */
 
 export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName, currentView }: Props) {
-  const copilotInfo = useCopilotInfo();
   const [phase, setPhase] = useState<Phase>('connecting');
   const [userCaption, setUserCaption] = useState('');
   const [agentCaption, setAgentCaption] = useState('');
@@ -1404,51 +1402,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
   return (
     <div data-orbiex-voice-ui="1" className="mvz-fade-up fixed inset-0 z-[200] flex flex-col items-center justify-between bg-[#050505]/[0.97] px-6 py-8 backdrop-blur-xl">
-      <div className="flex w-full max-w-xl items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <span className={`h-2 w-2 rounded-full ${phase === 'error' || phase === 'paused' ? 'bg-white/30' : 'animate-pulse bg-[var(--mvz-gold)]'}`} />
-          <span className="text-[12px] font-bold uppercase tracking-[0.22em] text-[#f4d77a]">Orbiex Voice</span>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          {copilotInfo.isLatest ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Copilot v2.0 • Visão IA
-            </span>
-          ) : copilotInfo.installed ? (
-            <button
-              type="button"
-              onClick={openCopilotInstallModal}
-              className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-200 hover:bg-amber-400/25 transition"
-            >
-              <Puzzle size={11} />
-              <span>Atualizar p/ Copilot v2.0 (Visão IA)</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={openCopilotInstallModal}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#f4d77a] hover:bg-[var(--mvz-gold)]/20 transition"
-            >
-              <Puzzle size={11} />
-              <span>Ativar Extensão Copilot</span>
-            </button>
-          )}
-          <span className="hidden sm:inline text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
-            {PHASE_LABEL[phase]}
-          </span>
-          <button
-            type="button"
-            onClick={() => setCompact(true)}
-            title="Minimizar e continuar usando a Orbiex (a voz segue ativa)"
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.05] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/75 transition hover:bg-white/[0.12] hover:text-white"
-          >
-            <Minimize2 size={11} />
-            <span className="hidden sm:inline">Minimizar</span>
-          </button>
-        </div>
-      </div>
+      <div className="h-2" />
 
       <div className="flex flex-1 flex-col items-center justify-center">
         <button
@@ -1484,6 +1438,15 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
       </div>
 
       <div className="flex items-center gap-5">
+        <button
+          type="button"
+          onClick={() => setCompact(true)}
+          aria-label="Minimizar"
+          title="Minimizar (a voz continua ativa)"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:bg-white/[0.1] hover:text-white"
+        >
+          <Minimize2 size={17} />
+        </button>
         <button
           type="button"
           onClick={() => setAiFx((v) => !v)}

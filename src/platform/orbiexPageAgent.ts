@@ -3,7 +3,7 @@
  * (sem extensão): mapa espacial da tela, ícones, contexto de cards,
  * cliques, digitação e cópia com destaque dourado.
  */
-import { copyText } from './clipboard';
+import { CLIPBOARD_CAPTURED_EVENT, copyText, getAgentClipboard, setAgentClipboard } from './clipboard';
 
 export interface OrbiexScreenElement {
   uid: number;
@@ -141,8 +141,13 @@ function iconHint(el: HTMLElement): string {
   return names.join(' ');
 }
 
-/** Contexto do card/seção onde o elemento está (ex.: título do hook, nome do produto) */
+/** Contexto do card/seção onde o elemento está (ex.: Card 1 · título do prompt, nome do produto) */
 function cardContext(el: HTMLElement): string {
+  const explicitCard = el.closest('[data-card-context]') as HTMLElement | null;
+  if (explicitCard) {
+    const attr = explicitCard.getAttribute('data-card-context') || '';
+    if (attr) return attr.slice(0, 100);
+  }
   let node: HTMLElement | null = el.parentElement;
   for (let depth = 0; node && depth < 7; depth++, node = node.parentElement) {
     if (node.id === 'mvz-main') break;
@@ -154,6 +159,11 @@ function cardContext(el: HTMLElement): string {
   return '';
 }
 
+function isInsideOpenModal(el: HTMLElement): boolean {
+  const modalBackdrop = el.closest('.fixed.inset-0, [role="dialog"]') as HTMLElement | null;
+  return Boolean(modalBackdrop && !isInsideVoiceUI(modalBackdrop));
+}
+
 function computeRegion(xPct: number, yPct: number, offscreen: 'acima' | 'abaixo' | null): string {
   if (offscreen) return `fora-da-tela-${offscreen}`;
   const v = yPct < 30 ? 'topo' : yPct > 66 ? 'inferior' : 'meio';
@@ -163,6 +173,7 @@ function computeRegion(xPct: number, yPct: number, offscreen: 'acima' | 'abaixo'
 }
 
 function zoneName(el: HTMLElement): string {
+  if (isInsideOpenModal(el)) return 'modal aberto em destaque';
   if (el.closest('aside, nav')) return 'menu lateral';
   if (el.closest('header')) return 'barra superior';
   return '';
@@ -269,7 +280,18 @@ const SYNONYMS: string[][] = [
   ['chat', 'mensagem', 'conversa', 'pergunte', 'digite'],
 ];
 
-function localScore(el: OrbiexScreenElement, input: OrbiexActionInput): number {
+function ordinalBonus(queryAndInstruction: string, ctx: string, uid: number): number {
+  const s = norm(queryAndInstruction);
+  const c = norm(ctx);
+  if (/\b(primeir[oa]|card 1|numero 1|1o|1a)\b/.test(s) && c.includes('card 1')) return 45;
+  if (/\b(segund[oa]|card 2|numero 2|2o|2a)\b/.test(s) && c.includes('card 2')) return 45;
+  if (/\b(terceir[oa]|card 3|numero 3|3o|3a)\b/.test(s) && c.includes('card 3')) return 45;
+  if (/\b(quart[oa]|card 4|numero 4|4o|4a)\b/.test(s) && c.includes('card 4')) return 45;
+  // Desempate suave a favor do primeiro item visível quando há vários botões idênticos (ex: "Copiar Prompt")
+  return Math.max(0, 6 - uid * 0.08);
+}
+
+function localScore(el: OrbiexScreenElement, input: OrbiexActionInput, anyModalOpen: boolean): number {
   const meta = norm(`${el.label} ${el.context || ''}`);
   const q = norm(`${input.target}`);
   if (!q) return 0;
@@ -283,6 +305,10 @@ function localScore(el: OrbiexScreenElement, input: OrbiexActionInput): number {
   }
   if (input.actionType === 'type') score += el.kind === 'input' ? 45 : -20;
   if (input.actionType !== 'type' && el.kind === 'input') score -= 25;
+  if (anyModalOpen && (el.context || '').includes('modal aberto em destaque')) {
+    score += 80;
+  }
+  score += ordinalBonus(`${input.target} ${input.userInstruction || ''}`, el.context || '', el.uid);
   score += spatialBonus(`${input.spatialHint || ''} ${input.userInstruction || ''}`, el.xPct, el.yPct, el.region);
   return score;
 }
@@ -364,10 +390,30 @@ function copyableTextAround(el: HTMLElement): string {
   return (el.innerText || '').trim();
 }
 
+async function clickAndCaptureClipboard(btn: HTMLElement): Promise<string> {
+  let captured = btn.getAttribute('data-copy-text') || '';
+  const onCaptured = (ev: Event) => {
+    const t = (ev as CustomEvent<{ text?: string }>).detail?.text;
+    if (t) captured = t;
+  };
+  window.addEventListener(CLIPBOARD_CAPTURED_EVENT, onCaptured);
+  try {
+    btn.click();
+    await wait(60);
+  } finally {
+    window.removeEventListener(CLIPBOARD_CAPTURED_EVENT, onCaptured);
+  }
+  if (captured) {
+    setAgentClipboard(captured);
+    await copyText(captured);
+  }
+  return captured;
+}
+
 async function executeOn(el: HTMLElement, input: OrbiexActionInput): Promise<OrbiexActionResult> {
   const label = (el.getAttribute('aria-label') || el.innerText || el.getAttribute('placeholder') || '').replace(/\s+/g, ' ').trim().slice(0, 60);
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  await wait(260);
+  await wait(240);
 
   if (input.actionType === 'type') {
     let field = el;
@@ -379,38 +425,64 @@ async function executeOn(el: HTMLElement, input: OrbiexActionInput): Promise<Orb
       field = (active && isEditable(active) ? active : inner) || field;
     }
     if (!isEditable(field)) return { ok: false, error: `O elemento "${label}" não é um campo de texto.` };
-    highlight(field, `Digitando: "${String(input.textToType || '').slice(0, 24)}"`);
-    setNativeValue(field, String(input.textToType || ''));
+    const resolvedText =
+      input.textToType === '__ORBIEX_CLIPBOARD__' ? getAgentClipboard() : String(input.textToType || '');
+    if (!resolvedText) {
+      return { ok: false, error: 'Nenhum prompt ou texto foi copiado ainda para colar.' };
+    }
+    highlight(field, `Digitando: "${resolvedText.slice(0, 24)}"`);
+    setNativeValue(field, resolvedText);
     if (input.pressEnter) {
       await wait(160);
       pressEnterOn(field);
     }
-    return { ok: true, message: `Texto digitado em "${label || 'campo'}"${input.pressEnter ? ' e enviado' : ''}.`, clickedLabel: label };
+    return { ok: true, message: `Texto preenchido em "${label || 'campo'}"${input.pressEnter ? ' e enviado' : ''}.`, clickedLabel: label };
   }
 
   if (input.actionType === 'copy') {
-    // 1) botão de copiar dentro/perto do alvo
     const copyBtn: HTMLElement | null = isCopyButton(el)
       ? el
       : Array.from(el.querySelectorAll<HTMLElement>('button')).find(isCopyButton) ||
         Array.from(el.parentElement?.querySelectorAll<HTMLElement>('button') || []).find(isCopyButton) ||
         null;
     if (copyBtn) {
-      highlight(copyBtn, 'Copiando...');
-      copyBtn.click();
-      return { ok: true, message: `Conteúdo copiado pelo botão de copiar de "${label || 'item'}".`, clickedLabel: label };
+      highlight(copyBtn, 'Copiando e guardando...');
+      const captured = await clickAndCaptureClipboard(copyBtn);
+      const fallback = captured || copyableTextAround(copyBtn);
+      if (fallback && !captured) await copyText(fallback);
+      const finalCopied = captured || fallback;
+      return {
+        ok: true,
+        message: finalCopied
+          ? `Prompt/conteúdo copiado e guardado na memória do Agente (${finalCopied.length} caracteres) — pronto para colar!`
+          : `Conteúdo copiado pelo botão de "${label || 'item'}".`,
+        clickedLabel: label,
+        copiedText: finalCopied.slice(0, 300),
+      };
     }
-    // 2) copia o texto do card
     const text = copyableTextAround(el);
     if (!text) return { ok: false, error: 'Não encontrei texto para copiar nesse local.' };
     await copyText(text);
-    highlight(el, 'Copiado!');
-    return { ok: true, message: `Texto copiado para a área de transferência (${text.length} caracteres).`, copiedText: text.slice(0, 300) };
+    highlight(el, 'Copiado e guardado!');
+    return {
+      ok: true,
+      message: `Conteúdo copiado e salvo na memória do Agente (${text.length} caracteres).`,
+      copiedText: text.slice(0, 300),
+    };
   }
 
+  // Mesmo num clique normal (ex: "clica no botão Copiar Prompt"), captura e guarda o comando copiado!
   highlight(el, `Clicou: ${label.slice(0, 28) || 'elemento'}`);
-  await wait(120);
-  el.click();
+  await wait(100);
+  const capturedOnClick = await clickAndCaptureClipboard(el);
+  if (capturedOnClick) {
+    return {
+      ok: true,
+      clickedLabel: label,
+      copiedText: capturedOnClick.slice(0, 300),
+      message: `Cliquei em "${label || 'botão'}" e GUARDEI o prompt/conteúdo completo (${capturedOnClick.length} caracteres) na memória e na área de transferência — pronto para colar no Google Flow ou onde você pedir!`,
+    };
+  }
   return { ok: true, message: `Cliquei em "${label || 'elemento'}".`, clickedLabel: label };
 }
 
@@ -423,13 +495,17 @@ export async function orbiexSmartAction(input: OrbiexActionInput): Promise<Orbie
   const elements = scanOrbiexScreen();
   if (!elements.length) return { ok: false, error: 'Nenhum elemento interativo encontrado na tela da Orbiex.' };
 
+  const anyModalOpen = elements.some((e) => (e.context || '').includes('modal aberto em destaque'));
   const ranked = elements
-    .map((e) => ({ e, s: localScore(e, input) }))
+    .map((e) => ({ e, s: localScore(e, input, anyModalOpen) }))
     .sort((a, b) => b.s - a.s);
   const best = ranked[0];
   const second = ranked[1];
   const hasSpatial = Boolean((input.spatialHint || '').trim());
-  const clearWinner = best && best.s >= 105 && (!second || best.s - second.s >= 35) && !hasSpatial;
+  const identicalRepeatedButton =
+    best && second && norm(best.e.label) === norm(second.e.label) && !hasSpatial && best.s >= 105;
+  const clearWinner =
+    (best && best.s >= 105 && (!second || best.s - second.s >= 35) && !hasSpatial) || Boolean(identicalRepeatedButton);
 
   let chosenUid: number | null = clearWinner ? best.e.uid : null;
 

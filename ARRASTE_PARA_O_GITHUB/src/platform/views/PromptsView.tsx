@@ -484,14 +484,16 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {displayedPrompts.map((item) => {
+          {displayedPrompts.map((item, idx) => {
             const isFav = favorites.includes(item.id);
             const isCopied = copiedId === item.id;
             const isVideo = item.mediaType === 'video';
+            const fullPromptText = item.prompt && item.prompt.length > 5 ? item.prompt : item.description || item.mediaUrl;
 
             return (
               <div
                 key={item.id}
+                data-card-context={`Card ${idx + 1} · ${item.title} (${item.filterCategory})`}
                 onClick={() => setActiveModalPrompt(item)}
                 className="group relative flex aspect-[3/4] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-[26px] border border-[var(--mvz-line)] bg-[#0d0c0a] shadow-[0_14px_35px_rgba(0,0,0,0.7)] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--mvz-line-strong)] hover:shadow-[0_20px_50px_rgba(212,175,55,0.14)]"
               >
@@ -602,6 +604,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     </button>
                   ) : (
                     <button
+                      data-copy-text={fullPromptText}
                       onClick={(e) => copyPrompt(item.id, item.prompt, item.description || item.mediaUrl, e)}
                       className={`mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl border text-[11.5px] font-bold uppercase tracking-wider transition-all duration-200 ${
                         isCopied
@@ -709,6 +712,11 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     Prompt Pronto para Execução
                   </span>
                   <button
+                    data-copy-text={
+                      activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                        ? activeModalPrompt.prompt
+                        : activeModalPrompt.description || activeModalPrompt.mediaUrl
+                    }
                     onClick={() => {
                       const text =
                         activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
@@ -750,6 +758,11 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                         : 'Baixar Imagem de Referência (Alta Resolução)'}
                     </button>
                     <button
+                      data-copy-text={
+                        activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                          ? activeModalPrompt.prompt
+                          : activeModalPrompt.description
+                      }
                       onClick={() => {
                         const text =
                           activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
@@ -768,6 +781,11 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                 ) : (
                   <div className="flex flex-1 flex-col gap-2 sm:flex-row">
                     <button
+                      data-copy-text={
+                        activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                          ? activeModalPrompt.prompt
+                          : activeModalPrompt.description
+                      }
                       onClick={() => {
                         const text =
                           activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5

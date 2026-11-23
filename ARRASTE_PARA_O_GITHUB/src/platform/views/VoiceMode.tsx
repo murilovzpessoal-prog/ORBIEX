@@ -11,6 +11,8 @@ import {
 } from '../copilotBridge';
 import { describeOrbiexScreen, orbiexSmartAction, scrollOrbiex } from '../orbiexPageAgent';
 import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
+import { getAgentClipboard, setAgentClipboard } from '../clipboard';
+import { downloadOrOpenWorkflowImages } from '../voiceMediaHelper';
 
 /* ───────────────────────────────────────────────────────────────
    ORBIEX VOICE — Conversa por voz em TEMPO REAL (Gemini Live API)
@@ -51,7 +53,7 @@ const VOICE_TOOLS = [
       {
         name: 'open_destination',
         description:
-          'Abre imediatamente no computador/navegador do usuário qualquer site, ferramenta externa (Google Flow, TikTok, TikTok Shop, Seller Center, TikTok Studio, Kling AI, Midjourney, Hailuo, CapCut, Canva, YouTube, Google, Instagram, WhatsApp, Shopee, Mercado Livre, etc.) ou aba interna da plataforma Orbiex quando o usuário pedir para abrir ou acessar.',
+          'Abre OU RETORNA para qualquer ferramenta externa (Google Flow, TikTok, TikTok Shop, Seller Center, TikTok Studio, Kling AI, Midjourney, Hailuo, CapCut, Canva, YouTube, etc.) ou aba interna da plataforma Orbiex. Se a ferramenta externa já estiver aberta no navegador, foca automaticamente a aba existente sem recarregar nem criar outra!',
         parameters: {
           type: 'OBJECT',
           properties: {
@@ -59,6 +61,16 @@ const VOICE_TOOLS = [
               type: 'STRING',
               description:
                 'Identificador do destino pedido: flow, tiktok, tiktok_shop, tiktok_studio, kling, midjourney, hailuo, luma, runway, capcut, canva, elevenlabs, chatgpt, youtube, instagram, whatsapp, gmail, google, shopee, mercadolivre, amazon, cakto, ou abas internas da Orbiex: home, agent, journey, products, product_score, store_score, scanner, hooks, headlines, prompt_gen, prompts, motion, turbo, antirestriction, members, support.',
+            },
+            returnToExisting: {
+              type: 'BOOLEAN',
+              description:
+                'true quando o usuário pedir para RETORNAR / VOLTAR para a aba onde já estava (ex: "retorne no Google Flow", "volta pro Flow", "vai lá no Flow").',
+            },
+            forceNewTab: {
+              type: 'BOOLEAN',
+              description:
+                'true SOMENTE se o usuário pedir explicitamente para abrir uma OUTRA aba nova do zero; deixe false por padrão para reaproveitar a aba já aberta!',
             },
             customUrl: {
               type: 'STRING',
@@ -139,8 +151,68 @@ const VOICE_TOOLS = [
               type: 'STRING',
               description: '"orbiex", "site_aberto" ou "auto".',
             },
+            useCopiedClipboard: {
+              type: 'BOOLEAN',
+              description: 'true se o usuário pediu para colar o prompt/conteúdo que já foi copiado anteriormente.',
+            },
           },
           required: ['text'],
+        },
+      },
+      {
+        name: 'paste_copied_content',
+        description:
+          'COLA integralmente o último prompt, hook, headline ou comando que foi copiado/guardado na memória do Agente dentro de qualquer campo ou chat (ex.: "vai no chat no canto inferior direito e cola o prompt", "cola o prompt lá no Flow", "cola o que você copiou"). SEMPRE use esta função quando o usuário pedir para COLAR algo copiado!',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            fieldHint: {
+              type: 'STRING',
+              description: 'Onde colar (ex.: "chat", "caixa de prompt", "campo de texto").',
+            },
+            spatialHint: {
+              type: 'STRING',
+              description: 'Posição na tela citada pelo usuário (ex.: "canto inferior direito", "centro inferior", "topo"). SEMPRE preencha se ele citar posição!',
+            },
+            userInstruction: {
+              type: 'STRING',
+              description: 'Pedido completo do usuário (ex.: "Colar o prompt no chat do canto inferior direito").',
+            },
+            pressEnterAfter: {
+              type: 'BOOLEAN',
+              description: 'true SOMENTE se o usuário pediu explicitamente para enviar / apertar Enter após colar.',
+            },
+            clickButtonAfter: {
+              type: 'STRING',
+              description: 'Botão opcional para clicar após colar (ex.: "Gerar", "Enviar").',
+            },
+            surface: {
+              type: 'STRING',
+              description: '"orbiex", "site_aberto" ou "auto".',
+            },
+          },
+        },
+      },
+      {
+        name: 'download_workflow_images',
+        description:
+          'Baixa automaticamente para o computador do usuário as imagens de referência (foto do Produto Campeão e/ou foto da Influenciadora/Ambiente da Biblioteca) prontas para subir no Google Flow ou Kling AI quando o usuário pedir para baixar/abrir as imagens.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            productQuery: {
+              type: 'STRING',
+              description: 'Nome do produto desejado, se mencionado (ex.: "Shorts Modelador", "Calça Flare", "Conjunto Fitness").',
+            },
+            influencerOrSceneQuery: {
+              type: 'STRING',
+              description: 'Descrição da influenciadora ou ambiente da biblioteca, se mencionado (ex.: "influenciadora", "espelho", "quarto").',
+            },
+            includeBothPair: {
+              type: 'BOOLEAN',
+              description: 'true quando o usuário pedir "as duas imagens" (produto + influenciadora de referência).',
+            },
+          },
         },
       },
       {
@@ -388,7 +460,10 @@ COMO CONVERSAR (MUITO IMPORTANTE):
   - Quando pedirem para clicar em qualquer botão, ícone ou região ("clica em Criar novo projeto", "clica no chat lá no canto inferior direito"), chame IMEDIATAMENTE click_element_on_page preenchendo buttonText, spatialHint (se mencionou posição) e userInstruction.
   - Quando pedirem para escrever/digitar/colar em um campo específico ou chat ("no canto inferior direito, onde tem o chat, escreve oi", "digita esse prompt na caixa central"), chame IMEDIATAMENTE type_text_on_page preenchendo text, fieldHint (ex: "chat"), spatialHint (ex: "canto inferior direito") e userInstruction!
   - Quando pedirem para rolar a tela, escanear o que está visível ou voltar para a Orbiex, chame scroll_or_control_page.
-  - Quando pedirem para copiar algo da tela ("copia a segunda headline", "copia o script", "copia a resposta"), chame copy_from_page.
+  - Quando pedirem para copiar algo da tela ou clicar num botão "Copiar Prompt" / "Copiar" ("clica em copiar prompt", "copia a segunda headline", "copia o script"), chame copy_from_page (ou click_element_on_page): o sistema clica e GUARDA automaticamente 100% do comando na memória interna!
+  - Quando pedirem para COLAR o prompt/texto copiado ("vai no chat no canto inferior direito e cola o prompt", "cola lá no Flow"), chame IMEDIATAMENTE paste_copied_content passando fieldHint (ex.: "chat") e spatialHint (ex.: "canto inferior direito")! NUNCA invente ou resuma o prompt — o paste_copied_content cola o comando completo guardado!
+  - RETORNAR A ABAS JÁ ABERTAS (CRÍTICO): Quando o usuário disser "retorne no Google Flow", "volta pro Flow", "volta lá onde eu estava", chame open_destination com target="flow" e returnToExisting=true (e forceNewTab=false). Isso foca exatamente a aba do Google Flow onde o projeto já está aberto, SEM abrir aba repetida e SEM recarregar!
+  - COMANDOS COMPOSTOS DE PRODUÇÃO DE VÍDEO: Se o usuário falar tudo de uma vez (ex.: "Abre o Google Flow, clica em novo projeto, vai no chat no canto inferior direito e cola o prompt"), execute todas as funções na ordem exata (open_destination -> click_element_on_page -> paste_copied_content). Se pedir para baixar/abrir as duas imagens (produto + influenciadora), chame download_workflow_images!
 
 NAVEGAÇÃO DENTRO DA PRÓPRIA ORBIEX (MUITO IMPORTANTE):
   - Você continua ativo e ouvindo enquanto o usuário navega pela Orbiex: ao abrir uma aba interna, a esfera vira um mini-painel no canto da tela e a conversa segue normalmente. NUNCA diga que a conversa vai encerrar.
@@ -533,6 +608,15 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   historyRef.current = history;
   const currentViewRef = useRef(currentView);
   currentViewRef.current = currentView;
+  const lastSurfaceRef = useRef<'orbiex' | 'external' | null>(null);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') lastSurfaceRef.current = 'orbiex';
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
   /** Painel compacto: a voz continua ativa enquanto o usuário vê/navega na Orbiex */
   const [compact, setCompact] = useState(false);
@@ -545,7 +629,9 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
     const s = String(raw || 'auto').toLowerCase();
     if (s.startsWith('orbiex')) return 'orbiex';
     if (s.includes('site') || s.includes('extern')) return 'external';
-    return typeof document !== 'undefined' && document.visibilityState === 'visible' ? 'orbiex' : 'external';
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return 'external';
+    if (lastSurfaceRef.current) return lastSurfaceRef.current;
+    return 'orbiex';
   }, []);
 
   const go = useCallback((p: Phase) => {
@@ -831,8 +917,9 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
             const viewInfo = () => (currentViewRef.current ? ` (aba atual da Orbiex: ${currentViewRef.current})` : '');
 
             const functionResponses: Array<{ id: string; name: string; response: { result: unknown } }> = [];
+            let prevExternalClick = false;
 
-            // Executa EM SEQUÊNCIA (ex.: abrir aba → digitar → clicar em gerar)
+            // Executa EM SEQUÊNCIA (ex.: abrir Flow → clicar Novo projeto → ir no chat inferior direito → colar prompt!)
             for (const call of msg.toolCall.functionCalls as any[]) { // eslint-disable-line @typescript-eslint/no-explicit-any
               const fnName = String(call?.name || '');
               const args = call?.args || {};
@@ -847,6 +934,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   setActionBanner({ label: `Localizando "${btnName}"${spatialHint ? ` (${spatialHint})` : ''}...`, openedAuto: true });
 
                   if (resolveSurface(args.surface) === 'orbiex') {
+                    prevExternalClick = false;
                     setCompact(true);
                     await new Promise((r) => window.setTimeout(r, 120));
                     const res = await orbiexSmartAction({
@@ -870,26 +958,60 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     functionResponses.push({ id: call.id, ...r });
                     continue;
                   }
+                  if (prevExternalClick) {
+                    await new Promise((r) => window.setTimeout(r, 1400));
+                  }
                   const res = await copilotSmartAction({ actionType: 'click', target: btnName, spatialHint, userInstruction });
+                  prevExternalClick = res.ok;
                   window.setTimeout(() => setActionBanner(null), 3000);
-                  const v2Hint = res.needsV2Update ? ' (A extensão está na v1.0; sugira atualizar para a v2.0 no topo da tela.)' : '';
                   reply(
                     res.ok
-                      ? `Sucesso! "${res.clickedLabel || btnName}" clicado no site aberto.${v2Hint}`
-                      : `${res.error || 'Elemento não localizado.'}${res.availableButtons?.length ? ` Na tela agora: ${res.availableButtons.join(', ')}` : ''}${v2Hint}`
+                      ? `Sucesso! "${res.clickedLabel || btnName}" clicado no site aberto.`
+                      : `${res.error || 'Elemento não localizado.'}${res.availableButtons?.length ? ` Na tela agora: ${res.availableButtons.join(', ')}` : ''}`
                   );
                   continue;
                 }
 
-                // 2. Digitar
-                if (fnName === 'type_text_on_page') {
+                // 2. Digitar OU Colar Prompt Guardado (paste_copied_content / type_text_on_page)
+                if (fnName === 'type_text_on_page' || fnName === 'paste_copied_content') {
+                  const isPasteCall =
+                    fnName === 'paste_copied_content' ||
+                    Boolean(args.useCopiedClipboard) ||
+                    /^(\{\{clipboard\}\}|__clipboard__|colar( o)? prompt|prompt copiado)$/i.test(String(args.text || '').trim());
+
+                  let text = String(args.text || '');
+                  if (isPasteCall) {
+                    text = getAgentClipboard();
+                    if (!text && typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+                      try {
+                        const sysClip = await navigator.clipboard.readText();
+                        if (sysClip) {
+                          text = sysClip;
+                          setAgentClipboard(sysClip);
+                        }
+                      } catch {
+                        /* ignore */
+                      }
+                    }
+                    if (!text) {
+                      reply('Ainda não há nenhum prompt ou texto copiado na memória. Copie um prompt na Biblioteca ou no Gerador primeiro.');
+                      continue;
+                    }
+                  }
+
                   const spatialHint = String(args.spatialHint || '').trim();
-                  const fieldHint = String(args.fieldHint || 'campo de texto').trim();
-                  const userInstruction = String(args.userInstruction || '').trim();
-                  const text = String(args.text || '');
-                  setActionBanner({ label: `Escrevendo em ${fieldHint}${spatialHint ? ` (${spatialHint})` : ''}...`, openedAuto: true });
+                  const fieldHint = String(args.fieldHint || (spatialHint ? 'chat' : 'campo de texto')).trim();
+                  const userInstruction = String(
+                    args.userInstruction || `${isPasteCall ? 'Colar prompt' : 'Digitar'} em ${fieldHint}${spatialHint ? ` (${spatialHint})` : ''}`
+                  ).trim();
+
+                  setActionBanner({
+                    label: `${isPasteCall ? 'Colando prompt' : 'Escrevendo'} em ${fieldHint}${spatialHint ? ` (${spatialHint})` : ''}...`,
+                    openedAuto: true,
+                  });
 
                   if (resolveSurface(args.surface) === 'orbiex') {
+                    prevExternalClick = false;
                     setCompact(true);
                     await new Promise((r) => window.setTimeout(r, 120));
                     const res = await orbiexSmartAction({
@@ -922,6 +1044,11 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     functionResponses.push({ id: call.id, ...r });
                     continue;
                   }
+                  if (prevExternalClick) {
+                    // Aguarda o workspace do Google Flow / Kling terminar de montar após clicar em "Novo projeto"
+                    await new Promise((r) => window.setTimeout(r, 1600));
+                    prevExternalClick = false;
+                  }
                   const res = await copilotSmartAction({
                     actionType: 'type',
                     target: fieldHint,
@@ -932,17 +1059,23 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     clickAfter: args.clickButtonAfter ? String(args.clickButtonAfter) : undefined,
                   });
                   window.setTimeout(() => setActionBanner(null), 3000);
-                  const v2Hint = res.needsV2Update ? ' (A extensão está na v1.0; sugira atualizar para a v2.0.)' : '';
-                  reply(`${res.ok ? res.message || 'Texto digitado.' : res.error || 'Campo não encontrado.'}${v2Hint}`);
+                  reply(
+                    res.ok
+                      ? isPasteCall
+                        ? `Prompt completo (${text.length} caracteres) colado com sucesso em ${fieldHint}${spatialHint ? ` (${spatialHint})` : ''}!`
+                        : res.message || 'Texto digitado com sucesso.'
+                      : res.error || 'Campo não encontrado.'
+                  );
                   continue;
                 }
 
-                // 3. Copiar
+                // 3. Copiar e Guardar Comando na Memória do Agente
                 if (fnName === 'copy_from_page') {
+                  prevExternalClick = false;
                   const what = String(args.whatToCopy || '').trim();
                   const spatialHint = String(args.spatialHint || '').trim();
                   const userInstruction = String(args.userInstruction || '').trim();
-                  setActionBanner({ label: `Copiando ${what}...`, openedAuto: true });
+                  setActionBanner({ label: `Copiando e guardando ${what}...`, openedAuto: true });
 
                   if (resolveSurface(args.surface) === 'orbiex') {
                     setCompact(true);
@@ -957,7 +1090,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     window.setTimeout(() => setActionBanner(null), 3000);
                     reply(
                       res.ok
-                        ? `${res.message}${res.copiedText ? ` Trecho: "${res.copiedText.slice(0, 160)}"` : ''}`
+                        ? `${res.message}${res.copiedText ? ` Trecho guardado: "${res.copiedText.slice(0, 140)}..."` : ''}`
                         : `${res.error}${res.availableButtons?.length ? ` Na tela agora: ${res.availableButtons.join('; ')}` : ''}`
                     );
                     continue;
@@ -968,7 +1101,6 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     functionResponses.push({ id: call.id, ...r });
                     continue;
                   }
-                  // No site externo: clica no botão de copiar correspondente
                   const res = await copilotSmartAction({
                     actionType: 'click',
                     target: `botão copiar ${what}`,
@@ -980,11 +1112,27 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   continue;
                 }
 
-                // 4. Rolar / escanear / voltar para a Orbiex
+                // 4. Baixar / Preparar as 2 Imagens (Produto + Influenciadora/Ambiente)
+                if (fnName === 'download_workflow_images') {
+                  prevExternalClick = false;
+                  setActionBanner({ label: 'Baixando imagens de referência...', openedAuto: true });
+                  const dl = await downloadOrOpenWorkflowImages({
+                    productQuery: args.productQuery ? String(args.productQuery) : undefined,
+                    influencerOrSceneQuery: args.influencerOrSceneQuery ? String(args.influencerOrSceneQuery) : undefined,
+                    includeBothPair: Boolean(args.includeBothPair),
+                  });
+                  window.setTimeout(() => setActionBanner(null), 3500);
+                  reply(dl.summary);
+                  continue;
+                }
+
+                // 5. Rolar / escanear / voltar para a Orbiex
                 if (fnName === 'scroll_or_control_page') {
+                  prevExternalClick = false;
                   const act = String(args.action || 'scroll').toLowerCase();
                   if (act === 'focus_orbiex') {
                     if (await hasExtension()) await copilotFocusOrbiex();
+                    lastSurfaceRef.current = 'orbiex';
                     setCompact(true);
                     reply(`De volta à aba da Orbiex${viewInfo()}.`);
                     continue;
@@ -1009,31 +1157,47 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   continue;
                 }
 
-                // 5. Abrir destino (aba interna da Orbiex ou site externo)
+                // 6. Abrir OU Retornar ao Destino (aba interna da Orbiex ou site externo sem duplicar!)
                 if (fnName === 'open_destination') {
+                  prevExternalClick = false;
                   const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
 
                   if (dest.kind === 'internal') {
-                    // A voz NÃO fecha: vira mini-painel e segue ouvindo enquanto o usuário usa a aba
                     if (document.visibilityState !== 'visible' && (await hasExtension())) await copilotFocusOrbiex();
+                    lastSurfaceRef.current = 'orbiex';
                     onNavigateRef.current?.(dest.viewId);
                     currentViewRef.current = dest.label;
                     setCompact(true);
                     setActionBanner({ label: `Abrindo ${dest.label}...`, openedAuto: true });
                     window.setTimeout(() => setActionBanner(null), 2500);
-                    await new Promise((r) => window.setTimeout(r, 450)); // aguarda a aba renderizar
+                    await new Promise((r) => window.setTimeout(r, 500));
                     reply(
-                      `Aba "${dest.label}" aberta na Orbiex. A conversa por voz continua ativa (mini-painel no canto). Agora você pode clicar, digitar e copiar dentro dela com surface "orbiex".`
+                      `Aba "${dest.label}" aberta na Orbiex. A conversa por voz continua ativa e pronta para clicar, copiar ou digitar (surface "orbiex").`
                     );
                     continue;
                   }
 
-                  setActionBanner({ label: `Abrindo ${dest.label}...`, url: dest.url, openedAuto: true });
+                  const wantReturn = Boolean(args.returnToExisting);
+                  const forceNew = Boolean(args.forceNewTab);
+                  setActionBanner({
+                    label: wantReturn ? `Retornando para ${dest.label}...` : `Acessando ${dest.label}...`,
+                    url: dest.url,
+                    openedAuto: true,
+                  });
+
                   if (await hasExtension()) {
-                    const extOpen = await copilotOpenTab(dest.url);
+                    const extOpen = await copilotOpenTab(dest.url, {
+                      forceNewTab: forceNew,
+                      returnOnly: wantReturn,
+                    });
                     window.setTimeout(() => setActionBanner(null), 3000);
                     if (extOpen.ok) {
-                      reply(`${dest.label} aberto em nova aba e pronto para comandos de clique (surface "site_aberto").`);
+                      lastSurfaceRef.current = 'external';
+                      reply(
+                        extOpen.reused
+                          ? `Retornado exatamente para a aba já aberta de ${dest.label} onde o usuário estava (sem recarregar)! Pronto para comandos com surface "site_aberto".`
+                          : `${dest.label} aberto e pronto para comandos na interface (surface "site_aberto").`
+                      );
                       continue;
                     }
                   }

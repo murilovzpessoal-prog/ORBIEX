@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { setAgentClipboard } from './clipboard';
 
 export const LATEST_COPILOT_VERSION = '2.0.0';
 
@@ -27,7 +28,9 @@ export interface CopilotScreenElement {
 export interface CopilotResult {
   ok: boolean;
   version?: string;
+  reused?: boolean;
   clickedLabel?: string;
+  copiedText?: string;
   message?: string;
   error?: string;
   availableButtons?: string[];
@@ -166,8 +169,66 @@ export async function pingCopilot(): Promise<boolean> {
   return isCopilotInstalled();
 }
 
-export function copilotOpenTab(url: string): Promise<CopilotResult> {
-  return sendCopilotCommand('OPEN_TAB', { url }, 11000);
+function isSameExternalService(openUrl: string, targetUrl: string): boolean {
+  if (!openUrl || !targetUrl) return false;
+  try {
+    const a = new URL(openUrl);
+    const b = new URL(targetUrl);
+    const ha = a.hostname.replace(/^www\./i, '').toLowerCase();
+    const hb = b.hostname.replace(/^www\./i, '').toLowerCase();
+
+    // Google Flow (labs.google/fx/...)
+    if (hb === 'labs.google') {
+      return ha === 'labs.google' && a.pathname.includes('/flow');
+    }
+    // TikTok Studio vs TikTok Feed vs Seller Center
+    if (hb === 'tiktok.com') {
+      if (b.pathname.includes('/tiktokstudio')) return ha === 'tiktok.com' && a.pathname.includes('/tiktokstudio');
+      return ha === 'tiktok.com' && !a.pathname.includes('/tiktokstudio');
+    }
+    // Demais ferramentas (klingai.com, capcut.com, canva.com, seller-br.tiktok.com, midjourney.com, etc.)
+    const rootDomain = (h: string) => h.split('.').slice(-2).join('.');
+    return ha === hb || rootDomain(ha) === rootDomain(hb);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Abre um site externo OU retorna exatamente para a aba onde o usuário já estava trabalhando
+ * (ex: "retorne no Google Flow" foca a aba aberta do projeto no Flow sem recarregar nem criar outra!).
+ * Compatível tanto com a extensão v2.1 (FOCUS_OR_OPEN_TAB) quanto com a v2.0 já instalada!
+ */
+export async function copilotOpenTab(
+  url: string,
+  opts?: { forceNewTab?: boolean; returnOnly?: boolean }
+): Promise<CopilotResult> {
+  if (!opts?.forceNewTab) {
+    // 1. Tenta comando nativo FOCUS_OR_OPEN_TAB (v2.1+)
+    const focusRes = await sendCopilotCommand(
+      'FOCUS_OR_OPEN_TAB',
+      { url, returnOnly: Boolean(opts?.returnOnly) },
+      10000
+    );
+    if (focusRes.ok) return focusRes;
+
+    // 2. Compatibilidade instantânea com extensão v2.0 já instalada:
+    //    CAPTURE_SCREEN_CONTEXT aciona resolveTargetTab() no background, que foca lastControlledTabId sem criar aba!
+    if (/desconhecido/i.test(focusRes.error || '')) {
+      const ctx = await sendCopilotCommand('CAPTURE_SCREEN_CONTEXT', {}, 6000);
+      if (ctx.ok && ctx.url && (opts?.returnOnly || isSameExternalService(ctx.url, url))) {
+        return {
+          ok: true,
+          reused: true,
+          url: ctx.url,
+          title: ctx.title,
+          message: `Retornou para a aba aberta (${ctx.title || ctx.url}).`,
+        };
+      }
+    }
+  }
+
+  return sendCopilotCommand('OPEN_TAB', { url, forceNewTab: Boolean(opts?.forceNewTab) }, 11000);
 }
 
 export function copilotFocusOrbiex(): Promise<CopilotResult> {
@@ -213,62 +274,72 @@ export async function copilotSmartAction(input: CopilotSmartActionInput): Promis
     clickAfter = '',
   } = input;
 
-  // 1. Captura o contexto visual + espacial da tela aberta
-  const ctx = await copilotCaptureScreenContext();
+  // Tenta até 2 vezes caso a página tenha acabado de trocar de tela (ex: acabou de clicar em "Novo projeto" no Flow)
+  let lastCtx: CopilotResult = { ok: false };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => window.setTimeout(r, 1350));
+    }
+    const ctx = await copilotCaptureScreenContext();
+    lastCtx = ctx;
 
-  if (ctx.ok && (ctx.screenshot || (ctx.elements && ctx.elements.length > 0))) {
-    try {
-      const r = await fetch('/api/ai-generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'vision_grounding',
-          actionType,
-          userInstruction: userInstruction || `${spatialHint ? `[${spatialHint}] ` : ''}${target}`,
-          target,
-          spatialHint,
-          clickAfter,
-          url: ctx.url || '',
-          title: ctx.title || '',
-          elements: ctx.elements || [],
-          imageDataUrl: ctx.screenshot || undefined,
-        }),
-      });
-
-      if (r.ok) {
-        const json = await r.json();
-        const g = json?.data;
-        if (json?.success && g && (g.uid !== null || typeof g.xPct === 'number')) {
-          // Refina coordenadas com base no uid caso o modelo tenha escolhido um uid válido
-          const matchedEl =
-            g.uid != null ? (ctx.elements || []).find((e) => Number(e.uid) === Number(g.uid)) : undefined;
-          const finalXPct = typeof g.xPct === 'number' ? g.xPct : matchedEl?.xPct ?? 50;
-          const finalYPct = typeof g.yPct === 'number' ? g.yPct : matchedEl?.yPct ?? 50;
-
-          const execRes = await copilotExecuteGrounded({
+    if (ctx.ok && (ctx.screenshot || (ctx.elements && ctx.elements.length > 0))) {
+      try {
+        const r = await fetch('/api/ai-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'vision_grounding',
             actionType,
-            uid: g.uid ?? null,
-            xPct: finalXPct,
-            yPct: finalYPct,
-            textToType,
-            pressEnter,
-            submitUid: g.submitUid ?? null,
-          });
+            userInstruction: userInstruction || `${spatialHint ? `[${spatialHint}] ` : ''}${target}`,
+            target,
+            spatialHint,
+            clickAfter,
+            url: ctx.url || '',
+            title: ctx.title || '',
+            elements: ctx.elements || [],
+            imageDataUrl: ctx.screenshot || undefined,
+          }),
+        });
 
-          if (execRes.ok) {
-            return {
-              ...execRes,
-              clickedLabel: execRes.clickedLabel || g.targetLabel || target,
-            };
+        if (r.ok) {
+          const json = await r.json();
+          const g = json?.data;
+          if (json?.success && g && (g.uid !== null || typeof g.xPct === 'number')) {
+            const matchedEl =
+              g.uid != null ? (ctx.elements || []).find((e) => Number(e.uid) === Number(g.uid)) : undefined;
+            const finalXPct = typeof g.xPct === 'number' ? g.xPct : matchedEl?.xPct ?? 50;
+            const finalYPct = typeof g.yPct === 'number' ? g.yPct : matchedEl?.yPct ?? 50;
+
+            const execRes = await copilotExecuteGrounded({
+              actionType,
+              uid: g.uid ?? null,
+              xPct: finalXPct,
+              yPct: finalYPct,
+              textToType,
+              pressEnter,
+              submitUid: g.submitUid ?? null,
+            });
+
+            if (execRes.ok) {
+              if (execRes.copiedText) setAgentClipboard(execRes.copiedText);
+              return {
+                ...execRes,
+                clickedLabel: execRes.clickedLabel || g.targetLabel || target,
+              };
+            }
           }
         }
+      } catch {
+        /* fallback ou retry */
       }
-    } catch {
-      /* fallback para busca espacial local abaixo */
     }
+
+    // Se a extensão for v1.0, não adianta repetir o CAPTURE_SCREEN_CONTEXT
+    if (!ctx.ok && /desconhecido/i.test(ctx.error || '')) break;
   }
 
-  const isOldV1 = !ctx.ok && /desconhecido/i.test(ctx.error || '');
+  const isOldV1 = !lastCtx.ok && /desconhecido/i.test(lastCtx.error || '');
 
   // Fallback espacial local (ou compatibilidade caso o usuário ainda esteja na extensão v1.0)
   const fallbackRes = await copilotInteractPage({
@@ -311,7 +382,7 @@ export function useCopilotInfo(): { installed: boolean; version: string; isLates
     };
   }, []);
 
-  const isLatest = info.installed && info.version === LATEST_COPILOT_VERSION;
+  const isLatest = info.installed && (info.version === LATEST_COPILOT_VERSION || info.version.startsWith('2.'));
   return { ...info, isLatest };
 }
 

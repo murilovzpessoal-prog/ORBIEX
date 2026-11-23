@@ -5,7 +5,7 @@
   if (window.__ORBIEX_BRIDGE_V2__) return;
   window.__ORBIEX_BRIDGE_V2__ = true;
 
-  const EXT_VERSION = '2.0.0';
+  const EXT_VERSION = '2.1.0';
 
   function announceReady() {
     try {
@@ -30,6 +30,27 @@
     if (!data || data.source !== 'orbiex-web-cmd') return;
 
     const { reqId, type, payload } = data;
+
+    if (type === 'WRITE_CLIPBOARD') {
+      const txt = String(payload?.text || '');
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+        document.body.appendChild(ta);
+        ta.focus({ preventScroll: true });
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        /* ignore */
+      }
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(txt).catch(() => {});
+      }
+      window.postMessage({ source: 'orbiex-ext-res', reqId, result: { ok: true } }, '*');
+      return;
+    }
 
     if (type === 'PING') {
       announceReady();

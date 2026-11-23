@@ -122,19 +122,85 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const payload = msg?.payload || {};
 
     if (type === 'PING') {
-      return { ok: true, version: '2.0.0' };
+      return { ok: true, version: '2.1.0' };
     }
 
-    if (type === 'OPEN_TAB') {
+    if (type === 'FOCUS_OR_OPEN_TAB' || type === 'OPEN_TAB') {
       const url = String(payload.url || '').trim();
-      if (!url) return { ok: false, error: 'URL vazia' };
+      const forceNewTab = Boolean(payload.forceNewTab);
+      const returnOnly = Boolean(payload.returnOnly);
+
+      if (!forceNewTab) {
+        const tabs = await chrome.tabs.query({});
+        const matchSameTool = (openUrl = '') => {
+          if (!openUrl || isOrbiexUrl(openUrl)) return false;
+          if (!url) return /^https?:\/\//i.test(openUrl);
+          try {
+            const a = new URL(openUrl);
+            const b = new URL(url);
+            const ha = a.hostname.replace(/^www\./i, '').toLowerCase();
+            const hb = b.hostname.replace(/^www\./i, '').toLowerCase();
+            if (hb === 'labs.google') return ha === 'labs.google' && a.pathname.includes('/flow');
+            if (hb === 'tiktok.com') {
+              if (b.pathname.includes('/tiktokstudio')) return ha === 'tiktok.com' && a.pathname.includes('/tiktokstudio');
+              return ha === 'tiktok.com' && !a.pathname.includes('/tiktokstudio');
+            }
+            const root = (h) => h.split('.').slice(-2).join('.');
+            return ha === hb || root(ha) === root(hb);
+          } catch {
+            return false;
+          }
+        };
+
+        // Prioriza lastControlledTabId se for da mesma ferramenta (mantém o projeto exato aberto no Google Flow!)
+        let existing = null;
+        if (lastControlledTabId) {
+          existing = tabs.find((t) => t.id === lastControlledTabId && matchSameTool(t.url || ''));
+        }
+        if (!existing) {
+          const matching = tabs.filter((t) => t.id && matchSameTool(t.url || ''));
+          // Prefere abas internas de projeto (URL mais longa, ex: /flow/project/...)
+          matching.sort((a, b) => (b.url || '').length - (a.url || '').length);
+          existing = matching[0] || null;
+        }
+
+        if (existing && existing.id) {
+          lastControlledTabId = existing.id;
+          await chrome.tabs.update(existing.id, { active: true });
+          if (existing.windowId) {
+            await chrome.windows.update(existing.windowId, { focused: true }).catch(() => {});
+          }
+          return {
+            ok: true,
+            reused: true,
+            tabId: existing.id,
+            url: existing.url,
+            title: existing.title,
+          };
+        }
+
+        if (returnOnly && lastControlledTabId) {
+          try {
+            const prev = await chrome.tabs.get(lastControlledTabId);
+            if (prev?.id && !isOrbiexUrl(prev.url || '')) {
+              await chrome.tabs.update(prev.id, { active: true });
+              if (prev.windowId) await chrome.windows.update(prev.windowId, { focused: true }).catch(() => {});
+              return { ok: true, reused: true, tabId: prev.id, url: prev.url, title: prev.title };
+            }
+          } catch {
+            lastControlledTabId = null;
+          }
+        }
+      }
+
+      if (!url) return { ok: false, error: 'Nenhuma aba aberta encontrada para retornar.' };
 
       const tab = await chrome.tabs.create({ url, active: true });
       if (tab?.id) {
         lastControlledTabId = tab.id;
         await waitForTabComplete(tab.id, 9000);
       }
-      return { ok: true, tabId: tab?.id, url };
+      return { ok: true, reused: false, tabId: tab?.id, url };
     }
 
     if (type === 'FOCUS_ORBIEX') {

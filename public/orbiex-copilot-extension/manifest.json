@@ -2,13 +2,15 @@
   "manifest_version": 3,
   "name": "Orbiex Copilot — Visão IA & Controle de Tela",
   "short_name": "Orbiex Copilot",
-  "version": "2.0.0",
-  "description": "Visão computacional e controle espacial por voz: enxerga a tela do Google Flow, TikTok e Kling AI para clicar e digitar exatamente onde você pedir.",
+  "version": "2.1.0",
+  "description": "Visão computacional e controle espacial por voz: enxerga a tela do Google Flow, TikTok e Kling AI para clicar, copiar, colar e navegar sem duplicar abas.",
   "permissions": [
     "tabs",
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "clipboardRead",
+    "clipboardWrite"
   ],
   "host_permissions": [
     "<all_urls>"

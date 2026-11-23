@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Maximize2, Mic, MicOff, Minimize2, Sparkles, X } from 'lucide-react';
+import { Check, Maximize2, Mic, MicOff, X } from 'lucide-react';
 import type { ViewId } from '../data';
 import {
   copilotFocusOrbiex,
@@ -490,7 +490,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   const [agentCaption, setAgentCaption] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [actionBanner, setActionBanner] = useState<ActionBannerState | null>(null);
-  const [aiFx, setAiFx] = useState<boolean>(() => {
+  const [aiFx] = useState<boolean>(() => {
     try {
       return localStorage.getItem('orbiex_voice_fx') !== 'off';
     } catch {
@@ -1437,27 +1437,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
         </div>
       </div>
 
-      <div className="flex items-center gap-5">
-        <button
-          type="button"
-          onClick={() => setCompact(true)}
-          aria-label="Minimizar"
-          title="Minimizar (a voz continua ativa)"
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition hover:bg-white/[0.1] hover:text-white"
-        >
-          <Minimize2 size={17} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setAiFx((v) => !v)}
-          aria-label="Assinatura sonora de IA"
-          title={aiFx ? 'Efeito de voz IA: ligado' : 'Efeito de voz IA: desligado'}
-          className={`flex h-12 w-12 items-center justify-center rounded-full border transition ${
-            aiFx ? 'border-[var(--mvz-gold)]/50 bg-[rgba(212,175,55,0.15)] text-[#f4d77a]' : 'border-white/10 bg-white/[0.04] text-white/50'
-          }`}
-        >
-          <Sparkles size={18} />
-        </button>
+      <div className="flex w-full items-center justify-center gap-5">
         <button
           type="button"
           onClick={toggleMute}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ScanSearch,
@@ -9,50 +9,9 @@ import {
   Bot,
   X,
   TrendingUp,
-  Copy,
-  Check,
   Zap,
-  Loader2,
-  RefreshCw,
 } from 'lucide-react';
 import { Pill } from '../ui';
-import { copyText as copyToClipboard } from '../clipboard';
-import { aiGenerateJSON, getGenMemory, addGenMemory, shuffle, pickOne } from '../aiGenerate';
-
-/* ───── Geração de hooks inéditos modelados no perfil (IA + fallback local variado) ───── */
-
-const HOOK_TEMPLATES: ((p: string, cat: string) => string)[] = [
-  (p) => `Ninguém tá falando disso: ${p} esgotando no carrinho laranja.`,
-  (p) => `Eu duvidei até provar na frente do espelho: ${p}.`,
-  (p) => `Dúvida no tamanho? Provei ${p} e mostro tudo até o final.`,
-  (p) => `3 jeitos de usar ${p} que ninguém te mostrou ainda.`,
-  (p) => `${p} com cara de loja cara, custando menos que um lanche.`,
-  (p) => `Para tudo! Chegou ${p} e eu não tô acreditando no caimento.`,
-  (p) => `Teste real: ${p} aguenta o dia inteiro sem marcar?`,
-  (p) => `Vocês perguntaram tanto que resolvi mostrar de perto: ${p}.`,
-  (p) => `Comprei com medo (${p}) e olha o que aconteceu.`,
-  (p) => `Repara nesse detalhe — é por isso que ${p} valoriza tanto o corpo.`,
-  (p) => `Antes de comprar qualquer peça parecida, veja ${p}.`,
-  (p) => `POV: você achou ${p} e não quer contar pra ninguém.`,
-  (p, cat) => `Achado de ${cat.toLowerCase()} da semana: ${p} com preço de promoção.`,
-  (p) => `Look montado em 10 segundos com ${p} — salva pra copiar depois.`,
-  (p) => `Resolveu um problema que eu tinha há anos com roupa: ${p}.`,
-  (p) => `Se eu pudesse indicar só uma peça hoje, seria ${p}.`,
-];
-
-function localProfileHooks(profile: CreatorProfile, avoid: string[]): string[] {
-  const products = profile.topProducts?.length ? profile.topProducts : ['look da semana'];
-  const avoidSet = new Set(avoid.map((s) => s.toLowerCase()));
-  const out: string[] = [];
-  for (const tpl of shuffle(HOOK_TEMPLATES)) {
-    const h = tpl(pickOne(products), profile.category || 'moda');
-    if (!avoidSet.has(h.toLowerCase()) && !out.includes(h)) out.push(h);
-    if (out.length >= 3) break;
-  }
-  // se tudo já foi usado, aceita repetição de template mas com outro produto
-  while (out.length < 3) out.push(pickOne(HOOK_TEMPLATES)(pickOne(products), profile.category || 'moda'));
-  return out;
-}
 
 export interface CreatorProfile {
   id: string;
@@ -216,63 +175,6 @@ export function ScannerView({
   onUseInAgent: (prompt: string) => void;
 }) {
   const [selectedProfile, setSelectedProfile] = useState<CreatorProfile | null>(null);
-  const [copiedHook, setCopiedHook] = useState<string | null>(null);
-  const [genHooks, setGenHooks] = useState<string[]>([]);
-  const [genLoading, setGenLoading] = useState(false);
-  const genReq = useRef(0);
-
-  const generateHooks = async (profile: CreatorProfile) => {
-    const id = ++genReq.current;
-    setGenLoading(true);
-    setGenHooks([]);
-    const memoryKey = `scanner-hooks:${profile.name}`;
-    const ai = await aiGenerateJSON<{ hooks?: unknown }>({
-      memoryKey,
-      task:
-        `Você é estrategista de conteúdo para afiliados do TikTok Shop Brasil. Modele o estilo do perfil viral ${profile.name} ` +
-        `(nicho: ${profile.category}) e crie 3 hooks INÉDITOS (frase dos 3 primeiros segundos do vídeo) para o afiliado usar, ` +
-        'cada um focado em um dos produtos mais vendidos dele e seguindo o padrão de vídeo descrito. ' +
-        'Não copie os hooks de referência — use a mesma lógica com outras palavras e outros gatilhos (curiosidade, prova, objeção, comparação, POV, urgência). ' +
-        'Máximo 18 palavras cada, linguagem falada natural em português do Brasil, sem hashtags e sem emojis.',
-      input: {
-        perfil: profile.name,
-        nicho: profile.category,
-        seguidores: profile.followers,
-        curtidas: profile.likes,
-        produtosMaisVendidos: profile.topProducts ?? [],
-        padraoDeVideo: profile.strategyNote ?? '',
-        hooksDeReferencia: profile.winningHooks ?? [],
-      },
-      format: '{"hooks": ["string", "string", "string"]}',
-      remember: (d) => (Array.isArray(d?.hooks) ? d.hooks.map(String) : []),
-    });
-    if (id !== genReq.current) return;
-    const reference = new Set((profile.winningHooks ?? []).map((h) => h.toLowerCase()));
-    let hooks = Array.isArray(ai?.hooks)
-      ? (ai!.hooks as unknown[])
-          .map((h) => String(h ?? '').replace(/^["“]|["”]$/g, '').trim())
-          .filter((h) => h && !reference.has(h.toLowerCase()))
-      : [];
-    if (hooks.length < 3) {
-      const local = localProfileHooks(profile, [...getGenMemory(memoryKey), ...hooks]);
-      const fill = local.slice(0, 3 - hooks.length);
-      if (!ai) addGenMemory(memoryKey, fill);
-      hooks = [...hooks, ...fill];
-    }
-    setGenHooks(hooks.slice(0, 3));
-    setGenLoading(false);
-  };
-
-  useEffect(() => {
-    if (selectedProfile) {
-      generateHooks(selectedProfile);
-    } else {
-      genReq.current++;
-      setGenHooks([]);
-      setGenLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProfile]);
 
   useEffect(() => {
     if (selectedProfile) {
@@ -283,12 +185,6 @@ export function ScannerView({
       };
     }
   }, [selectedProfile]);
-
-  const handleCopy = (hookText: string) => {
-    copyToClipboard(hookText);
-    setCopiedHook(hookText);
-    setTimeout(() => setCopiedHook(null), 2000);
-  };
 
   const handleOpenTikTok = (e: React.MouseEvent, url: string) => {
     e.stopPropagation();
@@ -437,7 +333,7 @@ export function ScannerView({
 
               {/* Top Products Sold */}
               {selectedProfile.topProducts && (
-                <div className="mb-4 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-4">
+                <div className="mb-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-4">
                   <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
                     <Zap size={14} /> Produtos Mais Vendidos na Vitrine
                   </div>
@@ -455,72 +351,6 @@ export function ScannerView({
                 </div>
               )}
 
-              {/* Winning Hooks */}
-              {selectedProfile.winningHooks && (
-                <div className="mb-6 rounded-2xl border border-[var(--mvz-line)] bg-white/[0.02] p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
-                      <Sparkles size={14} /> Hooks Virais Mais Usados por {selectedProfile.name}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    {selectedProfile.winningHooks.map((hook, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-3"
-                      >
-                        <p className="text-[12.5px] italic text-white/85">“{hook}”</p>
-                        <button
-                          onClick={() => handleCopy(hook)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/60 hover:bg-white/5 hover:text-white"
-                          title="Copiar Hook"
-                        >
-                          {copiedHook === hook ? <Check size={12} className="text-[#7fcf9f]" /> : <Copy size={12} />}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Hooks inéditos gerados pela IA, modelados neste perfil */}
-              <div className="mb-6 rounded-2xl border border-[var(--mvz-gold)]/30 bg-[rgba(212,175,55,0.04)] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[var(--mvz-gold)]">
-                    <Bot size={14} /> Hooks Inéditos Modelados pela IA
-                  </div>
-                  <button
-                    onClick={() => generateHooks(selectedProfile)}
-                    disabled={genLoading}
-                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
-                  >
-                    {genLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                    {genLoading ? 'Gerando…' : 'Gerar novos'}
-                  </button>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {genLoading
-                    ? [0, 1, 2].map((i) => <div key={i} className="mvz-shimmer h-[46px] rounded-xl" />)
-                    : genHooks.map((hook, idx) => (
-                        <div
-                          key={`${idx}-${hook}`}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-[var(--mvz-line)] bg-[#070605] p-3"
-                        >
-                          <p className="text-[12.5px] italic text-white/85">“{hook}”</p>
-                          <button
-                            onClick={() => handleCopy(hook)}
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/60 hover:bg-white/5 hover:text-white"
-                            title="Copiar Hook"
-                          >
-                            {copiedHook === hook ? <Check size={12} className="text-[#7fcf9f]" /> : <Copy size={12} />}
-                          </button>
-                        </div>
-                      ))}
-                </div>
-              </div>
-
               {/* Modal Actions */}
               <div className="flex flex-col gap-2.5 sm:flex-row">
                 <button
@@ -528,7 +358,7 @@ export function ScannerView({
                     onUseInAgent(
                       `Modele o estilo de vídeo e a estratégia do perfil viral "${selectedProfile.name}". Crie 3 conceitos de roteiros de 30s sem aparecer com base nos produtos mais vendidos desse criador${
                         selectedProfile.topProducts?.length ? ` (${selectedProfile.topProducts.join(', ')})` : ''
-                      }.${genHooks.length ? ` Use como ponto de partida estes hooks: ${genHooks.map((h) => `"${h}"`).join(' | ')}.` : ''}`
+                      }.`
                     );
                     setSelectedProfile(null);
                   }}

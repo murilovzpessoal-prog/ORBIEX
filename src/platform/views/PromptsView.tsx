@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Film,
   Image as ImageIcon,
-  ExternalLink,
   ChevronDown,
   Download,
 } from 'lucide-react';
@@ -801,16 +800,6 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     </button>
                   </div>
                 )}
-
-                <a
-                  href={resolveMediaUrl(activeModalPrompt.mediaUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--mvz-line-strong)] px-5 text-[12.5px] font-semibold text-white/80 transition hover:border-[var(--mvz-gold)] hover:bg-[rgba(212,175,55,0.08)] hover:text-white"
-                >
-                  <ExternalLink size={13} className="text-[var(--mvz-gold)]" />
-                  Abrir Mídia Original
-                </a>
               </div>
             </div>
           </div>,

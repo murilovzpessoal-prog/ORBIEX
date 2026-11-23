@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Maximize2, Mic, MicOff, X } from 'lucide-react';
+import { Check, Maximize2, Mic, MicOff, Minimize2, X } from 'lucide-react';
 import type { ViewId } from '../data';
 import {
   copilotFocusOrbiex,
@@ -1447,6 +1447,15 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
           }`}
         >
           {phase === 'paused' ? <MicOff size={22} /> : <Mic size={22} />}
+        </button>
+        <button
+          type="button"
+          onClick={() => setCompact(true)}
+          aria-label="Sair da tela cheia"
+          title="Sair da tela cheia (a conversa continua)"
+          className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white transition hover:bg-white/[0.12]"
+        >
+          <Minimize2 size={20} />
         </button>
         <button
           type="button"

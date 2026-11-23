@@ -30,6 +30,27 @@ import { AccessInstructionsView } from './views/AccessInstructionsView';
 import { MembersView } from './views/MembersView';
 import { PermissionsOnboardingModal } from './PermissionsOnboardingModal';
 import { LoginView } from './views/LoginView';
+import { VoiceMode } from './views/VoiceMode';
+import { emitVoiceTurn, getVoiceHistory, onVoiceOpenRequest, type VoiceTurn } from './voiceBus';
+
+const VIEW_LABEL: Partial<Record<ViewId, string>> = {
+  home: 'Início',
+  members: 'Área de Membros',
+  agent: 'Agente Orbiex',
+  journey: 'Minha Jornada',
+  products: 'Produtos Campeões',
+  product: 'Score de Produto',
+  store: 'Score Lojista',
+  scanner: 'Scanner de Perfis',
+  motion: 'Extrator de Movimentos',
+  turbo: 'Turbo de Seguidores',
+  headlines: 'Gerador de Headlines',
+  hooks: 'Hooks Virais',
+  prompts: 'Biblioteca de Prompts',
+  'prompt-gen': 'Gerador de Prompts',
+  antirestriction: 'Scanner Antirrestrição',
+  support: 'Suporte',
+};
 
 const VALID: ViewId[] = [
   'home',
@@ -66,6 +87,19 @@ export default function PlatformApp() {
   const [seed, setSeed] = useState<string>();
   const [startNew, setStartNew] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Orbiex Voice GLOBAL: a sessão de voz sobrevive à troca de abas
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceHistory, setVoiceHistory] = useState<VoiceTurn[]>([]);
+  useEffect(
+    () =>
+      onVoiceOpenRequest(() => {
+        setVoiceHistory(getVoiceHistory());
+        setVoiceOpen(true);
+      }),
+    [],
+  );
+  const closeVoice = useCallback(() => setVoiceOpen(false), []);
 
   // Controle oficial de autenticação na plataforma
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -262,6 +296,16 @@ export default function PlatformApp() {
       <CommandPalette open={palette} onClose={() => setPalette(false)} onNavigate={navigate} onPrompt={useInAgent} />
 
       <PermissionsOnboardingModal />
+
+      <VoiceMode
+        open={voiceOpen}
+        onClose={closeVoice}
+        history={voiceHistory}
+        onTurn={emitVoiceTurn}
+        onNavigate={navigate}
+        userName={profile?.name?.split(' ')[0]}
+        currentView={VIEW_LABEL[view] || view}
+      />
 
       <ProfileSettingsModal
         open={settingsOpen}

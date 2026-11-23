@@ -30,7 +30,8 @@ import type { ViewId } from '../data';
 import { generateAIReply } from '../aiService';
 import { useUserProfile } from '../useUserProfile';
 import { ResultCard, Rich, copyText } from './ChatParts';
-import { VoiceMode, VoiceWaveIcon } from './VoiceMode';
+import { VoiceWaveIcon } from './VoiceMode';
+import { getVoiceChatId, openOrbiexVoice, setVoiceChatId, subscribeVoiceTurns } from '../voiceBus';
 import { useCopilotInfo } from '../copilotBridge';
 import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
 
@@ -204,7 +205,7 @@ interface Props {
   onNavigate?: (view: ViewId) => void;
 }
 
-export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }: Props) {
+export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
   const { displayName } = useUserProfile();
   const copilotInfo = useCopilotInfo();
   const [chats, setChats] = useState<Chat[]>(loadChats);
@@ -541,35 +542,36 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }:
     }, 10);
   };
 
-  /* ───── modo voz ao vivo (Orbiex Voice) ───── */
-  const [voiceOpen, setVoiceOpen] = useState(false);
-  const voiceChatRef = useRef<number | null>(null);
-
+  /* ───── modo voz ao vivo (Orbiex Voice) — sessão GLOBAL, sobrevive à troca de abas ───── */
   const openVoice = () => {
     if (busy) stop();
     if (listening) recRef.current?.stop();
-    voiceChatRef.current = activeId;
-    setVoiceOpen(true);
+    openOrbiexVoice(activeId);
   };
-  const closeVoice = useCallback(() => setVoiceOpen(false), []);
 
   const handleVoiceTurn = useCallback((userText: string, agentText: string) => {
     const userMsg: Msg = { id: nextId(), role: 'user', text: userText };
     const agentMsg: Msg = { id: nextId(), role: 'agent', text: agentText, status: 'done', prompt: userText };
-    const id = voiceChatRef.current;
+    const id = getVoiceChatId();
     if (id === null) {
       const newId = nextId();
-      voiceChatRef.current = newId;
+      setVoiceChatId(newId);
       const title = userText.length > 40 ? `${userText.slice(0, 40)}…` : userText;
       setChats((prev) => [{ id: newId, title, updatedAt: Date.now(), msgs: [userMsg, agentMsg] }, ...prev]);
       setActiveId(newId);
     } else {
-      setChats((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, updatedAt: Date.now(), msgs: [...c.msgs, userMsg, agentMsg] } : c)),
-      );
+      setChats((prev) => {
+        if (!prev.some((c) => c.id === id)) {
+          const title = userText.length > 40 ? `${userText.slice(0, 40)}…` : userText;
+          return [{ id, title, updatedAt: Date.now(), msgs: [userMsg, agentMsg] }, ...prev];
+        }
+        return prev.map((c) => (c.id === id ? { ...c, updatedAt: Date.now(), msgs: [...c.msgs, userMsg, agentMsg] } : c));
+      });
     }
     stick.current = true;
   }, []);
+
+  useEffect(() => subscribeVoiceTurns(handleVoiceTurn), [handleVoiceTurn]);
 
   const toggleMic = () => {
     if (!SpeechRec) return;
@@ -1107,14 +1109,6 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted, onNavigate }:
           </div>
         </div>
       </section>
-      <VoiceMode
-        open={voiceOpen}
-        onClose={closeVoice}
-        history={msgs.map((m) => ({ role: m.role, text: m.text }))}
-        onTurn={handleVoiceTurn}
-        onNavigate={onNavigate}
-        userName={displayName?.split(' ')[0]}
-      />
     </div>
   );
 }

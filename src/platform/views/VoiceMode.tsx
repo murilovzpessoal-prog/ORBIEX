@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Mic, MicOff, Puzzle, Sparkles, X } from 'lucide-react';
+import { Check, Maximize2, Mic, MicOff, Minimize2, Puzzle, Sparkles, X } from 'lucide-react';
 import type { ViewId } from '../data';
 import {
   copilotFocusOrbiex,
@@ -10,6 +10,7 @@ import {
   pingCopilot,
   useCopilotInfo,
 } from '../copilotBridge';
+import { describeOrbiexScreen, orbiexSmartAction, scrollOrbiex } from '../orbiexPageAgent';
 import { openCopilotInstallModal } from '../PermissionsOnboardingModal';
 
 /* ───────────────────────────────────────────────────────────────
@@ -35,6 +36,8 @@ interface Props {
   onTurn: (userText: string, agentText: string) => void;
   onNavigate?: (view: ViewId) => void;
   userName?: string;
+  /** Aba atual da Orbiex (a voz é global e acompanha a navegação) */
+  currentView?: string;
 }
 
 interface ActionBannerState {
@@ -56,7 +59,7 @@ const VOICE_TOOLS = [
             target: {
               type: 'STRING',
               description:
-                'Identificador do destino pedido: flow, tiktok, tiktok_shop, tiktok_studio, kling, midjourney, hailuo, luma, runway, capcut, canva, elevenlabs, chatgpt, youtube, instagram, whatsapp, gmail, google, shopee, mercadolivre, amazon, cakto, ou abas internas da Orbiex: home, journey, products, product_score, store_score, scanner, hooks, headlines, prompt_gen, prompts, motion, turbo, antirestriction, members, support.',
+                'Identificador do destino pedido: flow, tiktok, tiktok_shop, tiktok_studio, kling, midjourney, hailuo, luma, runway, capcut, canva, elevenlabs, chatgpt, youtube, instagram, whatsapp, gmail, google, shopee, mercadolivre, amazon, cakto, ou abas internas da Orbiex: home, agent, journey, products, product_score, store_score, scanner, hooks, headlines, prompt_gen, prompts, motion, turbo, antirestriction, members, support.',
             },
             customUrl: {
               type: 'STRING',
@@ -75,24 +78,28 @@ const VOICE_TOOLS = [
       {
         name: 'click_element_on_page',
         description:
-          'Enxerga a tela aberta (com Visão Computacional + Mapa Espacial) e clica em qualquer botão, ícone, chat, link ou aba na interface (ex: "Criar novo projeto" no Google Flow, ícone do chat no canto inferior direito, "Gerar", etc.). Use sempre que o usuário pedir para clicar, apertar ou abrir um menu/chat dentro da página.',
+          'Enxerga a tela e clica em qualquer botão, ícone, card, aba, chat ou link — TANTO dentro da própria plataforma Orbiex (ex.: "Gerar Headlines", "Analisar Produto", botão de um produto, aba do menu lateral) QUANTO no site externo aberto (Google Flow, Kling, TikTok). O usuário pode descrever pelo nome, pela função ("o botão de gerar", "o primeiro produto") ou pela posição ("o chat do canto inferior direito").',
         parameters: {
           type: 'OBJECT',
           properties: {
             buttonText: {
               type: 'STRING',
               description:
-                'Nome, texto ou descrição visual do botão/ícone que o usuário pediu para clicar (ex: "Criar novo projeto", "chat", "Gerar", "Configurações").',
+                'Nome, texto ou descrição visual/funcional do que clicar (ex.: "Gerar Headlines", "chat", "primeiro produto", "botão de enviar", "Criar novo projeto").',
             },
             spatialHint: {
               type: 'STRING',
               description:
-                'Posição ou canto da tela citado pelo usuário, se houver (ex: "canto inferior direito", "topo direito", "barra lateral esquerda", "centro inferior").',
+                'Posição citada pelo usuário, se houver (ex.: "canto inferior direito", "topo direito", "menu lateral esquerdo", "centro", "embaixo").',
             },
             userInstruction: {
               type: 'STRING',
+              description: 'Pedido completo do usuário com contexto (ex.: "Clicar no chat do canto inferior direito").',
+            },
+            surface: {
+              type: 'STRING',
               description:
-                'Descrição completa do pedido do usuário incluindo onde fica o elemento (ex: "Clicar no botão do chat no canto inferior direito").',
+                '"orbiex" se o elemento está na própria plataforma Orbiex; "site_aberto" se está no site externo aberto (Flow, TikTok...); "auto" se não tiver certeza (o sistema detecta pela aba que o usuário está olhando).',
             },
           },
           required: ['buttonText'],
@@ -101,56 +108,87 @@ const VOICE_TOOLS = [
       {
         name: 'type_text_on_page',
         description:
-          'Enxerga a tela aberta, localiza exatamente o campo ou chat indicado pelo usuário (inclusive abrindo chats retráteis em cantos específicos como canto inferior direito), digita o texto/prompt pedido e opcionalmente envia ou clica em um botão.',
+          'Enxerga a tela, localiza o campo ou chat indicado (inclusive pela posição, ex.: "o chat da direita embaixo") e digita o texto pedido — na própria Orbiex (campo de produto, headline, chat do Agente, suporte) ou no site externo aberto. Pode enviar em seguida.',
         parameters: {
           type: 'OBJECT',
           properties: {
             text: {
               type: 'STRING',
-              description: 'Texto exato ou prompt a ser digitado (ex: "oi", ou o prompt completo de vídeo).',
+              description: 'Texto exato a digitar.',
             },
             fieldHint: {
               type: 'STRING',
-              description:
-                'Qual campo ou área procurar (ex: "chat", "assistente", "caixa de prompt", "barra de pesquisa").',
+              description: 'Qual campo (ex.: "chat", "nome do produto", "link da loja", "caixa de prompt", "pesquisa").',
             },
             spatialHint: {
               type: 'STRING',
-              description:
-                'Posição exata na tela mencionada pelo usuário (ex: "canto inferior direito", "centro inferior", "topo", "lateral direita"). SEMPRE preencha quando o usuário mencionar um canto ou lado!',
+              description: 'Posição citada pelo usuário (ex.: "canto inferior direito", "centro", "topo"). Preencha SEMPRE que ele citar posição.',
             },
             userInstruction: {
               type: 'STRING',
-              description:
-                'Pedido completo do usuário com contexto visual e posição (ex: "No canto inferior direito, onde tem o chat, escrever oi").',
+              description: 'Pedido completo do usuário com contexto e posição.',
             },
             pressEnterAfter: {
               type: 'BOOLEAN',
-              description:
-                'true SOMENTE se o usuário pediu explicitamente para enviar / apertar Enter após escrever; false se pediu apenas para escrever.',
+              description: 'true SOMENTE se o usuário pediu para enviar / dar enter após escrever.',
             },
             clickButtonAfter: {
               type: 'STRING',
-              description: 'Nome do botão para clicar logo após preencher o texto, se o usuário pediu (ex: "Gerar", "Enviar").',
+              description: 'Botão para clicar logo após preencher, se o usuário pediu (ex.: "Gerar", "Analisar").',
+            },
+            surface: {
+              type: 'STRING',
+              description: '"orbiex", "site_aberto" ou "auto".',
             },
           },
           required: ['text'],
         },
       },
       {
+        name: 'copy_from_page',
+        description:
+          'Copia para a área de transferência um conteúdo da tela (headline, hook, prompt, roteiro, resposta do agente, script de amostra, link de produto). Usa o botão "Copiar" do card quando existir ou copia o texto do bloco indicado. Ex.: "copia a segunda headline", "copia o script de amostra", "copia a última resposta".',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            whatToCopy: {
+              type: 'STRING',
+              description: 'O que copiar (ex.: "segunda headline", "script de amostra grátis", "prompt gerado", "última resposta").',
+            },
+            spatialHint: {
+              type: 'STRING',
+              description: 'Posição citada, se houver.',
+            },
+            userInstruction: {
+              type: 'STRING',
+              description: 'Pedido completo do usuário.',
+            },
+            surface: {
+              type: 'STRING',
+              description: '"orbiex", "site_aberto" ou "auto".',
+            },
+          },
+          required: ['whatToCopy'],
+        },
+      },
+      {
         name: 'scroll_or_control_page',
         description:
-          'Rola a tela da página aberta para cima/baixo, lê quais botões estão visíveis na tela atual ou traz o foco de volta para a aba da Orbiex.',
+          'Rola a tela para cima/baixo, lê o que está visível na tela atual (botões, campos, cards) ou traz o foco de volta para a aba da Orbiex. Funciona na Orbiex e no site externo.',
         parameters: {
           type: 'OBJECT',
           properties: {
             action: {
               type: 'STRING',
-              description: '"scroll" para rolar a página, "scan" para listar os botões da tela atual, ou "focus_orbiex" para voltar à aba da Orbiex.',
+              description: '"scroll" para rolar, "scan" para ler o que está na tela agora, ou "focus_orbiex" para voltar à aba da Orbiex.',
             },
             direction: {
               type: 'STRING',
               description: 'Direção da rolagem quando action="scroll": "down", "up", "top" ou "bottom".',
+            },
+            surface: {
+              type: 'STRING',
+              description: '"orbiex", "site_aberto" ou "auto".',
             },
           },
           required: ['action'],
@@ -173,6 +211,9 @@ function resolveVoiceDestination(
   const q = String(searchQuery || '').trim();
 
   // 1. Abas internas da Orbiex
+  if (t === 'agent' || t === 'agente' || t.includes('agente orbiex') || t === 'chat') {
+    return { kind: 'internal', viewId: 'agent', label: 'Agente Orbiex' };
+  }
   if (t === 'home' || t === 'inicio' || t === 'dashboard') {
     return { kind: 'internal', viewId: 'home', label: 'Início da Orbiex' };
   }
@@ -321,7 +362,7 @@ const PHASE_LABEL: Record<Phase, string> = {
 const WS_BASE =
   'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
 
-function buildSystemPrompt(userName: string | undefined, history: Turn[]): string {
+function buildSystemPrompt(userName: string | undefined, history: Turn[], currentView?: string): string {
   const recent = history
     .filter((h) => h.text)
     .slice(-8)
@@ -348,6 +389,16 @@ COMO CONVERSAR (MUITO IMPORTANTE):
   - Quando pedirem para clicar em qualquer botão, ícone ou região ("clica em Criar novo projeto", "clica no chat lá no canto inferior direito"), chame IMEDIATAMENTE click_element_on_page preenchendo buttonText, spatialHint (se mencionou posição) e userInstruction.
   - Quando pedirem para escrever/digitar/colar em um campo específico ou chat ("no canto inferior direito, onde tem o chat, escreve oi", "digita esse prompt na caixa central"), chame IMEDIATAMENTE type_text_on_page preenchendo text, fieldHint (ex: "chat"), spatialHint (ex: "canto inferior direito") e userInstruction!
   - Quando pedirem para rolar a tela, escanear o que está visível ou voltar para a Orbiex, chame scroll_or_control_page.
+  - Quando pedirem para copiar algo da tela ("copia a segunda headline", "copia o script", "copia a resposta"), chame copy_from_page.
+
+NAVEGAÇÃO DENTRO DA PRÓPRIA ORBIEX (MUITO IMPORTANTE):
+  - Você continua ativo e ouvindo enquanto o usuário navega pela Orbiex: ao abrir uma aba interna, a esfera vira um mini-painel no canto da tela e a conversa segue normalmente. NUNCA diga que a conversa vai encerrar.
+  - Abas internas (use open_destination): home, journey (Minha Jornada), products (Produtos Campeões), product_score (Score de Produto), store_score (Score Lojista), scanner, hooks, headlines, prompt_gen (Gerador de Prompts), prompts (Biblioteca), motion (Extrator de Movimentos), turbo, antirestriction, members (Área de Membros/aulas), support, agent (Agente).
+  - Depois de abrir uma aba, você pode clicar, digitar e copiar dentro dela com click_element_on_page, type_text_on_page e copy_from_page (surface "orbiex"). Ex.: "abre headlines, digita shorts modelador e clica em gerar" = open_destination + type_text_on_page + click_element_on_page em sequência.
+  - O usuário NÃO precisa dizer o nome exato do botão: passe a descrição dele ("o botão de gerar", "o primeiro produto", "o chat da direita embaixo") e a posição em spatialHint. O sistema enxerga a tela e escolhe o elemento certo.
+  - Se a tela tiver dois elementos parecidos (ex.: dois chats), use a posição que o usuário disse para diferenciar. Se ele não disse e houver ambiguidade, pergunte em uma frase curta qual deles.
+  - Se não souber o que existe na tela, chame scroll_or_control_page com action "scan" antes de agir.
+  - Após cada ação, confirme em uma frase curtíssima o que fez.${currentView ? `\n  - O usuário está agora na aba "${currentView}" da Orbiex.` : ''}
 
 ESPECIALIDADE:
 - TikTok Shop e afiliados (comissão pelo carrinho amarelo), começar do zero, liberar o carrinho, escolher produtos, roteiros de 15 a 30 segundos, ganchos dos primeiros 3 segundos, headlines POV, vídeos sem aparecer com IA (Kling, Google Flow VEO 3, Midjourney, Hailuo, CapCut), como evitar restrições e escalar postagens.
@@ -434,7 +485,7 @@ function makeImpulse(ctx: BaseAudioContext, seconds = 0.35, decay = 3.2): AudioB
 
 /* ───────── componente ───────── */
 
-export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName }: Props) {
+export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName, currentView }: Props) {
   const copilotInfo = useCopilotInfo();
   const [phase, setPhase] = useState<Phase>('connecting');
   const [userCaption, setUserCaption] = useState('');
@@ -479,10 +530,25 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   onNavigateRef.current = onNavigate;
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-  const pendingInternalCloseRef = useRef(false);
   const pendingExternalRedirectRef = useRef<string | null>(null);
   const historyRef = useRef(history);
   historyRef.current = history;
+  const currentViewRef = useRef(currentView);
+  currentViewRef.current = currentView;
+
+  /** Painel compacto: a voz continua ativa enquanto o usuário vê/navega na Orbiex */
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    if (!open) setCompact(false);
+  }, [open]);
+
+  /** Onde executar a ação: Orbiex (aba visível) ou site externo aberto pela extensão */
+  const resolveSurface = useCallback((raw?: unknown): 'orbiex' | 'external' => {
+    const s = String(raw || 'auto').toLowerCase();
+    if (s.startsWith('orbiex')) return 'orbiex';
+    if (s.includes('site') || s.includes('extern')) return 'external';
+    return typeof document !== 'undefined' && document.visibilityState === 'visible' ? 'orbiex' : 'external';
+  }, []);
 
   const go = useCallback((p: Phase) => {
     phaseRef.current = p;
@@ -679,7 +745,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
     // 3) sessão Live (tenta os modelos em ordem)
     let models = ['gemini-3.8-live', 'gemini-3.1-flash-live-preview', 'gemini-2.5-flash-native-audio-latest'];
-    const system = buildSystemPrompt(userName, historyRef.current);
+    const system = buildSystemPrompt(userName, historyRef.current, currentViewRef.current);
 
     for (let attempt = 0; attempt < models.length; attempt++) {
       if (mySession !== sessionRef.current) return;
@@ -747,195 +813,259 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
             return;
           }
 
-          // Execução em tempo real de comandos de voz (abrir sites, clicar em botões no Flow/TikTok, digitar prompts e rolar páginas!)
+          // Execução em tempo real de comandos de voz — na própria Orbiex OU no site externo (extensão)
           if (msg.toolCall && Array.isArray(msg.toolCall.functionCalls)) {
-            const hasExt = isCopilotInstalled() || (await pingCopilot());
+            let extChecked: boolean | null = null;
+            const hasExtension = async () => {
+              if (extChecked === null) extChecked = isCopilotInstalled() || (await pingCopilot());
+              return extChecked;
+            };
+            const needExtension = (fnName: string) => {
+              openCopilotInstallModal();
+              return {
+                name: fnName,
+                response: {
+                  result:
+                    'Para agir dentro de sites externos é preciso a Extensão Orbiex Copilot ativa. Peça ao usuário para ativá-la (ou atualizar a página da Orbiex com Cmd+R se acabou de instalar). Dentro da própria Orbiex você já consegue agir normalmente.',
+                },
+              };
+            };
+            const viewInfo = () => (currentViewRef.current ? ` (aba atual da Orbiex: ${currentViewRef.current})` : '');
 
-            const functionResponses = await Promise.all(
-              msg.toolCall.functionCalls.map(async (call: any) => {
-                const fnName = call?.name;
-                const args = call?.args || {};
+            const functionResponses: Array<{ id: string; name: string; response: { result: unknown } }> = [];
 
-                // 1. Clicar em botão/ícone/região na interface da aba aberta com Visão IA + Mapa Espacial
+            // Executa EM SEQUÊNCIA (ex.: abrir aba → digitar → clicar em gerar)
+            for (const call of msg.toolCall.functionCalls as any[]) { // eslint-disable-line @typescript-eslint/no-explicit-any
+              const fnName = String(call?.name || '');
+              const args = call?.args || {};
+              const reply = (result: unknown) => functionResponses.push({ id: call.id, name: fnName, response: { result } });
+
+              try {
+                // 1. Clicar
                 if (fnName === 'click_element_on_page') {
-                  if (!hasExt) {
-                    openCopilotInstallModal();
-                    return {
-                      id: call.id,
-                      name: fnName,
-                      response: {
-                        result:
-                          'A Extensão Orbiex Copilot ainda não foi detectada nesta aba. Peça ao usuário para atualizar a página da Orbiex (F5 ou Cmd+R) caso tenha acabado de instalar a extensão.',
-                      },
-                    };
-                  }
                   const btnName = String(args.buttonText || '').trim();
                   const spatialHint = String(args.spatialHint || '').trim();
                   const userInstruction = String(args.userInstruction || '').trim();
-                  setActionBanner({
-                    label: `Localizando "${btnName}"${spatialHint ? ` (${spatialHint})` : ''}...`,
-                    openedAuto: true,
-                  });
-                  const res = await copilotSmartAction({
-                    actionType: 'click',
-                    target: btnName,
-                    spatialHint,
-                    userInstruction,
-                  });
-                  window.setTimeout(() => setActionBanner(null), 4000);
-                  const v2Hint = res.needsV2Update
-                    ? ' (Aviso: a extensão ainda está na versão 1.0; sugira atualizar gratuitamente para o Copilot v2.0 no topo da tela para ter Visão Espacial IA).'
-                    : '';
-                  return {
-                    id: call.id,
-                    name: fnName,
-                    response: res.ok
-                      ? { result: `Sucesso! Elemento "${res.clickedLabel || btnName}" clicado na tela.${v2Hint}` }
-                      : {
-                          result: `${res.error || 'Elemento não localizado.'}${
-                            res.availableButtons?.length
-                              ? ` Elementos visíveis na tela agora: ${res.availableButtons.join(', ')}`
-                              : ''
-                          }${v2Hint}`,
-                        },
-                  };
+                  setActionBanner({ label: `Localizando "${btnName}"${spatialHint ? ` (${spatialHint})` : ''}...`, openedAuto: true });
+
+                  if (resolveSurface(args.surface) === 'orbiex') {
+                    setCompact(true);
+                    await new Promise((r) => window.setTimeout(r, 120));
+                    const res = await orbiexSmartAction({
+                      actionType: 'click',
+                      target: btnName,
+                      spatialHint,
+                      userInstruction,
+                      currentViewLabel: currentViewRef.current,
+                    });
+                    window.setTimeout(() => setActionBanner(null), 3000);
+                    reply(
+                      res.ok
+                        ? `${res.message} na Orbiex${viewInfo()}.`
+                        : `${res.error}${res.availableButtons?.length ? ` Na tela agora: ${res.availableButtons.join('; ')}` : ''}`
+                    );
+                    continue;
+                  }
+
+                  if (!(await hasExtension())) {
+                    const r = needExtension(fnName);
+                    functionResponses.push({ id: call.id, ...r });
+                    continue;
+                  }
+                  const res = await copilotSmartAction({ actionType: 'click', target: btnName, spatialHint, userInstruction });
+                  window.setTimeout(() => setActionBanner(null), 3000);
+                  const v2Hint = res.needsV2Update ? ' (A extensão está na v1.0; sugira atualizar para a v2.0 no topo da tela.)' : '';
+                  reply(
+                    res.ok
+                      ? `Sucesso! "${res.clickedLabel || btnName}" clicado no site aberto.${v2Hint}`
+                      : `${res.error || 'Elemento não localizado.'}${res.availableButtons?.length ? ` Na tela agora: ${res.availableButtons.join(', ')}` : ''}${v2Hint}`
+                  );
+                  continue;
                 }
 
-                // 2. Digitar prompt / texto em um campo ou chat específico da página aberta com Visão IA + Mapa Espacial
+                // 2. Digitar
                 if (fnName === 'type_text_on_page') {
-                  if (!hasExt) {
-                    openCopilotInstallModal();
-                    return {
-                      id: call.id,
-                      name: fnName,
-                      response: {
-                        result:
-                          'Para preencher campos dentro de sites externos, atualize a aba da Orbiex (Cmd+R) após instalar a Extensão Orbiex Copilot.',
-                      },
-                    };
-                  }
                   const spatialHint = String(args.spatialHint || '').trim();
-                  const fieldHint = String(args.fieldHint || 'chat').trim();
+                  const fieldHint = String(args.fieldHint || 'campo de texto').trim();
                   const userInstruction = String(args.userInstruction || '').trim();
-                  setActionBanner({
-                    label: `Escrevendo em ${fieldHint}${spatialHint ? ` (${spatialHint})` : ''}...`,
-                    openedAuto: true,
-                  });
+                  const text = String(args.text || '');
+                  setActionBanner({ label: `Escrevendo em ${fieldHint}${spatialHint ? ` (${spatialHint})` : ''}...`, openedAuto: true });
+
+                  if (resolveSurface(args.surface) === 'orbiex') {
+                    setCompact(true);
+                    await new Promise((r) => window.setTimeout(r, 120));
+                    const res = await orbiexSmartAction({
+                      actionType: 'type',
+                      target: fieldHint,
+                      spatialHint,
+                      userInstruction,
+                      textToType: text,
+                      pressEnter: Boolean(args.pressEnterAfter),
+                      currentViewLabel: currentViewRef.current,
+                    });
+                    let extra = '';
+                    if (res.ok && args.clickButtonAfter) {
+                      await new Promise((r) => window.setTimeout(r, 250));
+                      const after = await orbiexSmartAction({
+                        actionType: 'click',
+                        target: String(args.clickButtonAfter),
+                        userInstruction: `Clicar em ${args.clickButtonAfter} depois de preencher ${fieldHint}`,
+                        currentViewLabel: currentViewRef.current,
+                      });
+                      extra = after.ok ? ` E ${after.message?.toLowerCase()}` : ` Mas não achei o botão "${args.clickButtonAfter}".`;
+                    }
+                    window.setTimeout(() => setActionBanner(null), 3000);
+                    reply(res.ok ? `${res.message}${extra}` : res.error || 'Campo não encontrado.');
+                    continue;
+                  }
+
+                  if (!(await hasExtension())) {
+                    const r = needExtension(fnName);
+                    functionResponses.push({ id: call.id, ...r });
+                    continue;
+                  }
                   const res = await copilotSmartAction({
                     actionType: 'type',
                     target: fieldHint,
                     spatialHint,
                     userInstruction,
-                    textToType: String(args.text || ''),
+                    textToType: text,
                     pressEnter: Boolean(args.pressEnterAfter),
                     clickAfter: args.clickButtonAfter ? String(args.clickButtonAfter) : undefined,
                   });
-                  window.setTimeout(() => setActionBanner(null), 4000);
-                  const v2Hint = res.needsV2Update
-                    ? ' (Nota: a extensão do usuário está na v1.0; avise que ele pode clicar em Atualizar Copilot v2.0 no topo para ativar a leitura visual de cantos e chats).'
-                    : '';
-                  return {
-                    id: call.id,
-                    name: fnName,
-                    response: {
-                      result: `${res.ok ? res.message || 'Texto digitado com sucesso.' : res.error || 'Campo não encontrado.'}${v2Hint}`,
-                    },
-                  };
+                  window.setTimeout(() => setActionBanner(null), 3000);
+                  const v2Hint = res.needsV2Update ? ' (A extensão está na v1.0; sugira atualizar para a v2.0.)' : '';
+                  reply(`${res.ok ? res.message || 'Texto digitado.' : res.error || 'Campo não encontrado.'}${v2Hint}`);
+                  continue;
                 }
 
-                // 3. Rolar página, escanear tela ou voltar foco para a Orbiex
+                // 3. Copiar
+                if (fnName === 'copy_from_page') {
+                  const what = String(args.whatToCopy || '').trim();
+                  const spatialHint = String(args.spatialHint || '').trim();
+                  const userInstruction = String(args.userInstruction || '').trim();
+                  setActionBanner({ label: `Copiando ${what}...`, openedAuto: true });
+
+                  if (resolveSurface(args.surface) === 'orbiex') {
+                    setCompact(true);
+                    await new Promise((r) => window.setTimeout(r, 120));
+                    const res = await orbiexSmartAction({
+                      actionType: 'copy',
+                      target: what,
+                      spatialHint,
+                      userInstruction,
+                      currentViewLabel: currentViewRef.current,
+                    });
+                    window.setTimeout(() => setActionBanner(null), 3000);
+                    reply(
+                      res.ok
+                        ? `${res.message}${res.copiedText ? ` Trecho: "${res.copiedText.slice(0, 160)}"` : ''}`
+                        : `${res.error}${res.availableButtons?.length ? ` Na tela agora: ${res.availableButtons.join('; ')}` : ''}`
+                    );
+                    continue;
+                  }
+
+                  if (!(await hasExtension())) {
+                    const r = needExtension(fnName);
+                    functionResponses.push({ id: call.id, ...r });
+                    continue;
+                  }
+                  // No site externo: clica no botão de copiar correspondente
+                  const res = await copilotSmartAction({
+                    actionType: 'click',
+                    target: `botão copiar ${what}`,
+                    spatialHint,
+                    userInstruction: userInstruction || `Clicar no botão de copiar de ${what}`,
+                  });
+                  window.setTimeout(() => setActionBanner(null), 3000);
+                  reply(res.ok ? `Cliquei em copiar (${res.clickedLabel || what}) no site aberto.` : res.error || 'Não encontrei o botão de copiar.');
+                  continue;
+                }
+
+                // 4. Rolar / escanear / voltar para a Orbiex
                 if (fnName === 'scroll_or_control_page') {
                   const act = String(args.action || 'scroll').toLowerCase();
-                  if (!hasExt) {
-                    openCopilotInstallModal();
-                    return {
-                      id: call.id,
-                      name: fnName,
-                      response: { result: 'Atualize a página da Orbiex para conectar à extensão recém-instalada.' },
-                    };
-                  }
                   if (act === 'focus_orbiex') {
-                    await copilotFocusOrbiex();
-                    return { id: call.id, name: fnName, response: { result: 'De volta à aba da Orbiex.' } };
+                    if (await hasExtension()) await copilotFocusOrbiex();
+                    setCompact(true);
+                    reply(`De volta à aba da Orbiex${viewInfo()}.`);
+                    continue;
                   }
-                  const res = await copilotInteractPage({
-                    command: act === 'scan' ? 'scan' : 'scroll',
-                    direction: args.direction || 'down',
-                  });
-                  return {
-                    id: call.id,
-                    name: fnName,
-                    response: {
-                      result: res.ok
-                        ? res.availableButtons || res.message || 'Ação executada.'
-                        : res.error || 'Não foi possível executar.',
-                    },
-                  };
-                }
-
-                // 4. Abrir destino (aba interna da Orbiex ou site externo)
-                const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
-
-                if (dest.kind === 'internal') {
-                  onNavigateRef.current?.(dest.viewId);
-                  pendingInternalCloseRef.current = true;
-                  setActionBanner({ label: `Abrindo ${dest.label}...`, openedAuto: true });
-                  return {
-                    id: call.id,
-                    name: fnName,
-                    response: { result: `Aba interna "${dest.label}" aberta na tela do usuário.` },
-                  };
-                }
-
-                setActionBanner({ label: `Abrindo ${dest.label}...`, url: dest.url, openedAuto: true });
-
-                // Se a Extensão Orbiex Copilot estiver ativa, abre via chrome.tabs.create mantendo o Agente de Voz vivo em segundo plano!
-                if (hasExt) {
-                  const extOpen = await copilotOpenTab(dest.url);
-                  window.setTimeout(() => setActionBanner(null), 4000);
-                  if (extOpen.ok) {
-                    return {
-                      id: call.id,
-                      name: fnName,
-                      response: {
-                        result: `${dest.label} aberto em nova aba e pronto para comandos de clique na interface!`,
-                      },
-                    };
-                  }
-                }
-
-                // Fallback sem extensão: tenta nova aba e, se o navegador segurar, redireciona automaticamente!
-                let openedNewTab = false;
-                try {
-                  const win = window.open(dest.url, '_blank');
-                  openedNewTab = Boolean(win);
-                } catch {
-                  openedNewTab = false;
-                }
-
-                if (openedNewTab) {
-                  window.setTimeout(() => {
-                    setActionBanner((curr) => (curr?.url === dest.url ? null : curr));
-                  }, 4000);
-                } else {
-                  pendingExternalRedirectRef.current = dest.url;
-                  window.setTimeout(() => {
-                    if (pendingExternalRedirectRef.current === dest.url) {
-                      pendingExternalRedirectRef.current = null;
-                      window.location.assign(dest.url);
+                  if (resolveSurface(args.surface) === 'orbiex') {
+                    if (act === 'scan') {
+                      const items = describeOrbiexScreen();
+                      reply(items.length ? `Na tela da Orbiex${viewInfo()} agora: ${items.join('; ')}` : 'Tela da Orbiex sem elementos interativos visíveis.');
+                    } else {
+                      setCompact(true);
+                      reply(scrollOrbiex(String(args.direction || 'down')));
                     }
-                  }, 2200);
+                    continue;
+                  }
+                  if (!(await hasExtension())) {
+                    const r = needExtension(fnName);
+                    functionResponses.push({ id: call.id, ...r });
+                    continue;
+                  }
+                  const res = await copilotInteractPage({ command: act === 'scan' ? 'scan' : 'scroll', direction: args.direction || 'down' });
+                  reply(res.ok ? res.availableButtons || res.message || 'Ação executada.' : res.error || 'Não foi possível executar.');
+                  continue;
                 }
 
-                return {
-                  id: call.id,
-                  name: fnName,
-                  response: {
-                    result: `${dest.label} aberto automaticamente para o usuário. Confirme em uma frase curtíssima.`,
-                  },
-                };
-              })
-            );
+                // 5. Abrir destino (aba interna da Orbiex ou site externo)
+                if (fnName === 'open_destination') {
+                  const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
+
+                  if (dest.kind === 'internal') {
+                    // A voz NÃO fecha: vira mini-painel e segue ouvindo enquanto o usuário usa a aba
+                    if (document.visibilityState !== 'visible' && (await hasExtension())) await copilotFocusOrbiex();
+                    onNavigateRef.current?.(dest.viewId);
+                    currentViewRef.current = dest.label;
+                    setCompact(true);
+                    setActionBanner({ label: `Abrindo ${dest.label}...`, openedAuto: true });
+                    window.setTimeout(() => setActionBanner(null), 2500);
+                    await new Promise((r) => window.setTimeout(r, 450)); // aguarda a aba renderizar
+                    reply(
+                      `Aba "${dest.label}" aberta na Orbiex. A conversa por voz continua ativa (mini-painel no canto). Agora você pode clicar, digitar e copiar dentro dela com surface "orbiex".`
+                    );
+                    continue;
+                  }
+
+                  setActionBanner({ label: `Abrindo ${dest.label}...`, url: dest.url, openedAuto: true });
+                  if (await hasExtension()) {
+                    const extOpen = await copilotOpenTab(dest.url);
+                    window.setTimeout(() => setActionBanner(null), 3000);
+                    if (extOpen.ok) {
+                      reply(`${dest.label} aberto em nova aba e pronto para comandos de clique (surface "site_aberto").`);
+                      continue;
+                    }
+                  }
+
+                  let openedNewTab = false;
+                  try {
+                    openedNewTab = Boolean(window.open(dest.url, '_blank'));
+                  } catch {
+                    openedNewTab = false;
+                  }
+                  if (openedNewTab) {
+                    window.setTimeout(() => setActionBanner((curr) => (curr?.url === dest.url ? null : curr)), 3000);
+                  } else {
+                    pendingExternalRedirectRef.current = dest.url;
+                    window.setTimeout(() => {
+                      if (pendingExternalRedirectRef.current === dest.url) {
+                        pendingExternalRedirectRef.current = null;
+                        window.location.assign(dest.url);
+                      }
+                    }, 2200);
+                  }
+                  reply(`${dest.label} aberto automaticamente para o usuário. Confirme em uma frase curtíssima.`);
+                  continue;
+                }
+
+                reply('Função desconhecida.');
+              } catch (err) {
+                reply(`Falha ao executar: ${err instanceof Error ? err.message : String(err)}`);
+              }
+            }
 
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ toolResponse: { functionResponses } }));
@@ -988,13 +1118,6 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                 }
               }, Math.min(waitAudioMs, 1800));
             }
-            if (pendingInternalCloseRef.current) {
-              pendingInternalCloseRef.current = false;
-              const waitAudioMs = Math.max(400, (nextTimeRef.current - (outCtxRef.current?.currentTime || 0)) * 1000 + 350);
-              window.setTimeout(() => {
-                if (openRef.current) onCloseRef.current();
-              }, Math.min(waitAudioMs, 3200));
-            }
             if (sourcesRef.current.size === 0 && phaseRef.current !== 'paused') go('listening');
           }
         };
@@ -1024,7 +1147,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
       setErrorMsg('Não foi possível conectar ao núcleo de voz agora. Toque na esfera para tentar novamente.');
       go('error');
     }
-  }, [aiFx, commitTurn, enqueueAudio, flushPlayback, go, userName]);
+  }, [aiFx, commitTurn, enqueueAudio, flushPlayback, go, resolveSurface, userName]);
 
   /* ───── abrir / fechar ───── */
   useEffect(() => {
@@ -1055,10 +1178,13 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
   /* ESC fecha */
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || compact) return;
+      setCompact(true);
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, compact]);
 
   /* ───── animação da esfera + detecção de "processando" ───── */
   useEffect(() => {
@@ -1177,7 +1303,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [open]);
+  }, [open, compact]);
 
   /* ───── ações ───── */
   const onOrbClick = () => {
@@ -1214,7 +1340,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
 
   const hint =
     phase === 'listening'
-      ? 'Fale naturalmente. Você pode interromper a qualquer momento.'
+      ? 'Fale naturalmente. Você pode interromper a qualquer momento. Peça para abrir qualquer aba: a voz continua ativa.'
       : phase === 'speaking'
       ? 'Fale por cima ou toque na esfera para interromper.'
       : phase === 'thinking'
@@ -1225,8 +1351,76 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
       ? 'Conectando ao núcleo de voz Orbiex...'
       : '';
 
+  /* ───── Mini-painel: a voz segue ativa enquanto o usuário navega e usa a Orbiex ───── */
+  if (compact) {
+    const caption =
+      phase === 'error'
+        ? errorMsg
+        : actionBanner?.label ||
+          (agentCaption && (phase === 'speaking' || phase === 'listening')
+            ? agentCaption
+            : userCaption
+            ? `“${userCaption}”`
+            : PHASE_LABEL[phase]);
+    return (
+      <div
+        data-orbiex-voice-ui="1"
+        className="mvz-fade-up fixed bottom-4 right-4 z-[200] flex w-[min(360px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-[var(--mvz-gold)]/40 bg-[#0a0907]/95 p-2.5 pr-3 shadow-[0_18px_50px_rgba(0,0,0,0.75),0_0_24px_rgba(212,175,55,0.18)] backdrop-blur-xl"
+      >
+        <button
+          type="button"
+          onClick={onOrbClick}
+          aria-label="Esfera de voz Orbiex"
+          className="relative h-14 w-14 shrink-0 cursor-pointer rounded-full outline-none"
+        >
+          <canvas ref={canvasRef} style={{ width: 56, height: 56 }} />
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className={`h-1.5 w-1.5 rounded-full ${phase === 'error' || phase === 'paused' ? 'bg-white/30' : 'animate-pulse bg-[var(--mvz-gold)]'}`} />
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#f4d77a]">
+              Orbiex Voice · {PHASE_LABEL[phase]}
+            </span>
+          </div>
+          <p className={`mt-0.5 line-clamp-2 text-[12px] leading-snug ${phase === 'error' ? 'text-rose-300' : 'text-white/85'}`}>{caption}</p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-label={phase === 'paused' ? 'Ativar microfone' : 'Pausar microfone'}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border transition ${
+              phase === 'paused' ? 'border-white/20 bg-white text-black' : 'border-white/10 bg-white/[0.06] text-white hover:bg-white/[0.12]'
+            }`}
+          >
+            {phase === 'paused' ? <MicOff size={14} /> : <Mic size={14} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCompact(false)}
+            aria-label="Expandir Orbiex Voice"
+            title="Expandir"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/80 transition hover:bg-white/[0.12] hover:text-white"
+          >
+            <Maximize2 size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Encerrar conversa por voz"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500/90 text-white transition hover:bg-rose-500"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mvz-fade-up fixed inset-0 z-[200] flex flex-col items-center justify-between bg-[#050505]/[0.97] px-6 py-8 backdrop-blur-xl">
+    <div data-orbiex-voice-ui="1" className="mvz-fade-up fixed inset-0 z-[200] flex flex-col items-center justify-between bg-[#050505]/[0.97] px-6 py-8 backdrop-blur-xl">
       <div className="flex w-full max-w-xl items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className={`h-2 w-2 rounded-full ${phase === 'error' || phase === 'paused' ? 'bg-white/30' : 'animate-pulse bg-[var(--mvz-gold)]'}`} />
@@ -1261,6 +1455,15 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
           <span className="hidden sm:inline text-[11px] font-medium uppercase tracking-[0.18em] text-white/45">
             {PHASE_LABEL[phase]}
           </span>
+          <button
+            type="button"
+            onClick={() => setCompact(true)}
+            title="Minimizar e continuar usando a Orbiex (a voz segue ativa)"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.05] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/75 transition hover:bg-white/[0.12] hover:text-white"
+          >
+            <Minimize2 size={11} />
+            <span className="hidden sm:inline">Minimizar</span>
+          </button>
         </div>
       </div>
 

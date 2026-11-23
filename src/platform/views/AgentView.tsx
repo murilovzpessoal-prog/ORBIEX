@@ -719,10 +719,10 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
               onClick={openCopilotInstallModal}
               title={
                 copilotInfo.isLatest
-                  ? 'Copilot v2.2 (Retorno Inteligente + Visão IA) Conectado'
+                  ? 'Copilot v2.3 (Localizador Exato de Abas + Visão IA) Conectado'
                   : copilotInfo.installed
-                  ? 'Atualizar Extensão para Copilot v2.2'
-                  : 'Baixar e ativar Extensão Orbiex Copilot v2.2'
+                  ? 'Atualizar Extensão para Copilot v2.3'
+                  : 'Baixar e ativar Extensão Orbiex Copilot v2.3'
               }
               className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold transition ${
                 copilotInfo.isLatest
@@ -735,9 +735,9 @@ export function AgentView({ seed, onSeedUsed, startNew, onStarted }: Props) {
               <Puzzle size={13} />
               <span className="hidden md:inline">
                 {copilotInfo.isLatest
-                  ? 'Copilot v2.2 Ativo'
+                  ? 'Copilot v2.3 Ativo'
                   : copilotInfo.installed
-                  ? 'Atualizar Copilot v2.2'
+                  ? 'Atualizar Copilot v2.3'
                   : 'Extensão Copilot'}
               </span>
             </button>

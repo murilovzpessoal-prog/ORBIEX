@@ -6,8 +6,11 @@ import {
   copilotFocusPreviousTab,
   copilotInteractPage,
   copilotOpenTab,
+  copilotReturnToTab,
   copilotSmartAction,
+  getCopilotVersion,
   isCopilotInstalled,
+  LATEST_COPILOT_VERSION,
   pingCopilot,
 } from '../copilotBridge';
 import { describeOrbiexScreen, orbiexSmartAction, scrollOrbiex } from '../orbiexPageAgent';
@@ -52,9 +55,29 @@ const VOICE_TOOLS = [
   {
     functionDeclarations: [
       {
+        name: 'return_to_open_tab',
+        description:
+          'VOLTA e FOCA exatamente uma aba que JÁ ESTÁ ABERTA no computador do usuário (Google Flow, Kling, TikTok, TikTok Studio, CapCut, YouTube ou a última aba externa onde estávamos), SEM NUNCA abrir nova aba nem recarregar a página. Use ESTA função com prioridade máxima SEMPRE que o usuário falar "volta", "volte", "retorna", "retorne", "volta lá", "onde a gente parou", "na mesma aba", "no Flow que está aberto" ou "volta pro Google Flow"!',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            target: {
+              type: 'STRING',
+              description:
+                'Destino já aberto para focar: "flow" (Google Flow), "anterior" (última aba onde estava), "orbiex", "tiktok", "tiktok_studio", "kling", "capcut", "canva", "youtube" ou o nome do site citado.',
+            },
+            hint: {
+              type: 'STRING',
+              description: 'Palavra-chave opcional do título/aba (ex.: "Google Flow", "Labs", "projeto").',
+            },
+          },
+          required: ['target'],
+        },
+      },
+      {
         name: 'open_destination',
         description:
-          'Abre OU RETORNA para qualquer ferramenta externa (Google Flow, TikTok, TikTok Shop, Seller Center, TikTok Studio, Kling AI, Midjourney, Hailuo, CapCut, Canva, YouTube, etc.) ou aba interna da plataforma Orbiex. Se a ferramenta externa já estiver aberta no navegador, foca automaticamente a aba existente sem recarregar nem criar outra!',
+          'Abre uma aba interna da plataforma Orbiex OU abre pela primeira vez uma ferramenta externa (Google Flow, TikTok, TikTok Shop, Seller Center, TikTok Studio, Kling AI, Midjourney, Hailuo, CapCut, Canva, YouTube, etc.). Se o site externo já estiver aberto no navegador, ele também reutiliza a aba existente sem recarregar! (Quando o usuário pedir para VOLTAR/RETORNAR a uma aba já aberta, prefira return_to_open_tab.)',
         parameters: {
           type: 'OBJECT',
           properties: {
@@ -481,15 +504,15 @@ COMO CONVERSAR (MUITO IMPORTANTE):
 - Nunca leia símbolos, listas numeradas, markdown ou links. Nada de emojis.
 - Pode responder sobre qualquer assunto (perguntas gerais, contas, curiosidades), mas sua especialidade é TikTok Shop com IA.
 - COMANDOS DE AÇÃO, VISÃO ESPACIAL E INTERAÇÃO COM A INTERFACE (OBRIGATÓRIO):
-  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex e através da Extensão Orbiex Copilot v2.0 (com Visão Computacional da tela em tempo real) para você abrir sites, enxergar posições da tela (canto inferior direito, topo, centro, laterais) e clicar ou digitar dentro das interfaces (Google Flow, Kling AI, TikTok, Seller Center, etc.).
+  - O usuário JÁ CONCEDEU PERMISSÃO TOTAL nos Termos da Orbiex e através da Extensão Orbiex Copilot v2.3 (com Visão Computacional da tela em tempo real e Localizador Inteligente de Abas) para você abrir sites, voltar às abas já abertas, enxergar posições da tela (canto inferior direito, topo, centro, laterais) e clicar ou digitar dentro das interfaces (Google Flow, Kling AI, TikTok, Seller Center, etc.).
   - PROIBIDO dizer que você "não enxerga a tela", "não tem acesso ao computador" ou "não pode clicar em botões de outros sites". Você ENXERGA e EXECUTA usando suas funções!
-  - Quando pedirem para abrir um site ou aba ("abre o Flow", "abre o TikTok"), chame open_destination.
+  - RETORNAR A ABAS JÁ ABERTAS (REGRA NÚMERO 1 — PROIBIDO DUPLICAR ABA): Sempre que o usuário disser "volta para o Google Flow", "retorne no Google Flow", "volte onde estávamos", "onde a gente parou", "volta pro Flow", "retorna lá", ou já tiver o Google Flow aberto no computador, chame IMEDIATAMENTE return_to_open_tab(target="flow") (ou target="anterior" se não citar o nome; para a Orbiex, target="orbiex"). NUNCA abra outra aba quando ele pedir para voltar! A função return_to_open_tab localiza a aba já aberta no Chrome do usuário e foca direto nela sem recarregar e sem criar nova guia!
+  - Quando pedirem para abrir um site pela primeira vez ("abre o Flow", "abre o TikTok") ou trocar de ferramenta na Orbiex, chame open_destination (com forceNewTab=false por padrão — jamais force nova aba se o site já pode estar aberto).
   - Quando pedirem para clicar em qualquer botão, ícone ou região ("clica em Criar novo projeto", "clica no chat lá no canto inferior direito"), chame IMEDIATAMENTE click_element_on_page preenchendo buttonText, spatialHint (se mencionou posição) e userInstruction.
   - Quando pedirem para escrever/digitar/colar em um campo específico ou chat ("no canto inferior direito, onde tem o chat, escreve oi", "digita esse prompt na caixa central"), chame IMEDIATAMENTE type_text_on_page preenchendo text, fieldHint (ex: "chat"), spatialHint (ex: "canto inferior direito") e userInstruction!
   - Quando pedirem para rolar a tela, escanear o que está visível ou voltar para a Orbiex, chame scroll_or_control_page.
   - Quando pedirem para copiar algo da tela ou clicar num botão "Copiar Prompt" / "Copiar" ("clica em copiar prompt", "copia a segunda headline", "copia o script"), chame copy_from_page (ou click_element_on_page): o sistema clica e GUARDA automaticamente 100% do comando na memória interna!
   - Quando pedirem para COLAR o prompt/texto copiado ("vai no chat no canto inferior direito e cola o prompt", "cola lá no Flow"), chame IMEDIATAMENTE paste_copied_content passando fieldHint (ex.: "chat") e spatialHint (ex.: "canto inferior direito")! NUNCA invente ou resuma o prompt — o paste_copied_content cola o comando completo guardado!
-  - RETORNAR A ABAS JÁ ABERTAS (REGRA DE OURO ANTI-DUPLICAÇÃO): Sempre que o usuário disser "volta para o Google Flow", "retorne no Google Flow", "volte lá onde estávamos", "volta pro Flow", ou pedir para abrir novamente o Flow enquanto já está aberto, chame open_destination(target="flow", returnToExisting=true, forceNewTab=false) — ou scroll_or_control_page(action="focus_previous") se não citar o nome do site. NUNCA defina forceNewTab=true quando ele pedir para voltar! O sistema foca exatamente a aba/projeto já aberto sem criar uma nova aba e sem recarregar! Para voltar para a Orbiex, chame scroll_or_control_page(action="focus_orbiex") ou open_destination(target="orbiex").
   - COMANDOS COMPOSTOS DE PRODUÇÃO DE VÍDEO: Se o usuário falar tudo de uma vez (ex.: "Abre o Google Flow, clica em novo projeto, vai no chat no canto inferior direito e cola o prompt"), execute todas as funções na ordem exata (open_destination -> click_element_on_page -> paste_copied_content). Se pedir para baixar/abrir as duas imagens (produto + influenciadora), chame download_workflow_images!
   - IDIOMA DE FALA NOS PROMPTS DE VÍDEO (ANTI-INGLÊS NO GOOGLE FLOW): Se o usuário pedir para você criar ou digitar um prompt de fala do zero (usando type_text_on_page no Google Flow ou no Gerador de Prompts), inclua SEMPRE a especificação explícita de que a fala é 100% em Português do Brasil (pt-BR) nativo, proibido falar em inglês (NO English speech). Quando usar paste_copied_content, cole fielmente o prompt já guardado na memória!
 
@@ -1180,7 +1203,10 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   if (act === 'focus_previous' || act === 'return_external' || act === 'focus_external') {
                     if (await hasExtension()) {
                       const prevRes = lastOpenedExternalRef.current
-                        ? await copilotOpenTab(lastOpenedExternalRef.current.url, { returnOnly: true })
+                        ? await copilotReturnToTab(
+                            lastOpenedExternalRef.current.url,
+                            lastOpenedExternalRef.current.label
+                          )
                         : await copilotFocusPreviousTab();
                       if (prevRes.ok) {
                         lastSurfaceRef.current = 'external';
@@ -1228,7 +1254,75 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   continue;
                 }
 
-                // 6. Abrir OU Retornar ao Destino (aba interna da Orbiex ou site externo sem duplicar!)
+                // 6A. Retorno ESTRITO a uma aba já aberta (NUNCA abre nova aba nem recarrega!)
+                if (fnName === 'return_to_open_tab') {
+                  prevExternalClick = false;
+                  const dest = resolveVoiceDestination(args.target, undefined, undefined);
+
+                  if (dest.kind === 'focus_orbiex') {
+                    if (await hasExtension()) await copilotFocusOrbiex();
+                    lastSurfaceRef.current = 'orbiex';
+                    setCompact(true);
+                    reply(`De volta à aba da Orbiex${viewInfo()} exatamente onde estávamos.`);
+                    continue;
+                  }
+
+                  const targetUrl =
+                    dest.kind === 'external'
+                      ? dest.url
+                      : lastOpenedExternalRef.current?.url || '';
+                  const targetLabel =
+                    dest.kind === 'external'
+                      ? dest.label
+                      : lastOpenedExternalRef.current?.label || String(args.hint || args.target || 'site anterior');
+                  const hintText = String(args.hint || targetLabel || args.target || '').trim();
+
+                  setActionBanner({
+                    label: `Localizando aba aberta: ${targetLabel}...`,
+                    url: targetUrl || undefined,
+                    openedAuto: true,
+                  });
+
+                  if (!(await hasExtension())) {
+                    window.setTimeout(() => setActionBanner(null), 2000);
+                    openCopilotInstallModal();
+                    reply(
+                      `Não abri outra aba de ${targetLabel}. Para localizar e voltar na sua aba já aberta, ative a Extensão Orbiex Copilot ${LATEST_COPILOT_VERSION} (e recarregue a Orbiex).`
+                    );
+                    continue;
+                  }
+
+                  const retRes = targetUrl || hintText
+                    ? await copilotReturnToTab(targetUrl, hintText)
+                    : await copilotFocusPreviousTab();
+                  window.setTimeout(() => setActionBanner(null), 2500);
+
+                  if (retRes.ok) {
+                    lastSurfaceRef.current = 'external';
+                    if (retRes.url || targetUrl) {
+                      lastOpenedExternalRef.current = {
+                        url: retRes.url || targetUrl,
+                        label: targetLabel,
+                      };
+                    }
+                    reply(
+                      `Voltei exatamente para a aba aberta (${retRes.title || targetLabel}) onde você estava, sem abrir nova aba! Pronto para comandos com surface "site_aberto".`
+                    );
+                    continue;
+                  }
+
+                  const installedVer = getCopilotVersion();
+                  if ((retRes as { needsUpdateToReturn?: boolean }).needsUpdateToReturn) {
+                    openCopilotInstallModal();
+                  }
+                  reply(
+                    retRes.error ||
+                      `Não abri uma nova aba de ${targetLabel} (${installedVer ? `versão ativa: ${installedVer}` : 'extensão desconectada'}). Verifique se a aba está aberta neste Chrome e deixe apenas a Copilot v2.3 ativa.`
+                  );
+                  continue;
+                }
+
+                // 6B. Abrir OU Retornar ao Destino (aba interna da Orbiex ou site externo sem duplicar!)
                 if (fnName === 'open_destination') {
                   prevExternalClick = false;
                   const dest = resolveVoiceDestination(args.target, args.customUrl, args.searchQuery);
@@ -1244,7 +1338,10 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                   if (dest.kind === 'return_previous') {
                     if (await hasExtension()) {
                       const prevRes = lastOpenedExternalRef.current
-                        ? await copilotOpenTab(lastOpenedExternalRef.current.url, { returnOnly: true })
+                        ? await copilotReturnToTab(
+                            lastOpenedExternalRef.current.url,
+                            lastOpenedExternalRef.current.label
+                          )
                         : await copilotFocusPreviousTab();
                       if (prevRes.ok) {
                         lastSurfaceRef.current = 'external';
@@ -1283,11 +1380,14 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     .toLowerCase()
                     .normalize('NFD')
                     .replace(/[\u0300-\u036f]/g, '');
+                  const explicitNewTabWords = /\b(outra aba|nova aba|do zero|segunda aba|abre outro|nova guia)\b/i.test(
+                    heardNow
+                  );
                   const spokeReturnIntent =
-                    /\b(volt\w*|retorn\w*|parou|estav\w*|mesma aba|de volta|ja abert\w*|la no flow|pro flow)\b/i.test(
+                    /\b(volt\w*|retorn\w*|parou|estav\w*|mesma aba|de volta|ja abert\w*|la no flow|pro flow|no flow de novo|continua\w*)\b/i.test(
                       heardNow
                     );
-                  const forceNew = Boolean(args.forceNewTab) && !spokeReturnIntent;
+                  const forceNew = Boolean(args.forceNewTab) && explicitNewTabWords && !spokeReturnIntent;
                   const wantReturn = (Boolean(args.returnToExisting) || spokeReturnIntent) && !forceNew;
                   setActionBanner({
                     label: wantReturn ? `Retornando para ${dest.label}...` : `Acessando ${dest.label}...`,
@@ -1299,6 +1399,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     const extOpen = await copilotOpenTab(dest.url, {
                       forceNewTab: forceNew,
                       returnOnly: wantReturn,
+                      hint: dest.label,
                     });
                     window.setTimeout(() => setActionBanner(null), 3000);
                     if (extOpen.ok) {
@@ -1311,15 +1412,13 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                       );
                       continue;
                     }
-                    // Proteção crítica anti-duplicação: NUNCA cai para window.open('_blank')!
-                    if (extOpen.needsUpdateToReturn || wantReturn) {
-                      if (extOpen.needsUpdateToReturn) openCopilotInstallModal();
-                      reply(
-                        extOpen.error ||
-                          `Não abri uma nova aba de ${dest.label} para proteger seu projeto aberto. Clique para atualizar a extensão Copilot para v2.2 na janela que abri na tela.`
-                      );
-                      continue;
-                    }
+                    // Proteção crítica anti-duplicação: com extensão presente, JAMAIS cai para window.open('_blank')!
+                    if (extOpen.needsUpdateToReturn) openCopilotInstallModal();
+                    reply(
+                      extOpen.error ||
+                        `Não abri uma nova aba de ${dest.label} para proteger seu projeto aberto. Recarregue a aba da Orbiex ou atualize a extensão Copilot para v2.3.`
+                    );
+                    continue;
                   }
 
                   // Reaproveita referência de janela nomeada se sem extensão
@@ -1336,7 +1435,7 @@ export function VoiceMode({ open, onClose, history, onTurn, onNavigate, userName
                     window.setTimeout(() => setActionBanner(null), 2000);
                     openCopilotInstallModal();
                     reply(
-                      `Para eu alternar diretamente entre a aba da Orbiex e a aba já aberta do ${dest.label} sem criar outra nova, ative/atualize a Extensão Orbiex Copilot v2.2.`
+                      `Para eu localizar e voltar exatamente na aba aberta do ${dest.label} sem abrir outra nova, ative ou atualize a Extensão Orbiex Copilot v2.3.`
                     );
                     continue;
                   }

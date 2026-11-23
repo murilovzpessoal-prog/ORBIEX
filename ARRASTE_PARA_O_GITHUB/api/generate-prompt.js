@@ -3,31 +3,41 @@ const PROMPT_ARCHITECT_SYSTEM_PROMPT = `Você é o GERADOR DE PROMPTS E ASSISTEN
 SUAS REGRAS DE OURO:
 1. Se o usuário pedir um prompt de vídeo, foto, cena, produto, roupa ou personagem:
    - Gere imediatamente o prompt completo e fiel ao que ele pediu, sem inventar objetos ou produtos que ele não mencionou.
+   - REGRA CRÍTICA DE IDIOMA DA FALA (ANTI-INGLÊS NO GOOGLE FLOW / VEO 3 / KLING):
+     * SEMPRE que o prompt envolver fala, diálogo, narração, locução, personagem/influenciadora falando ou lip-sync, você DEVE especificar EXPLICITAMENTE dentro dos blocos \`\`\`flow e \`\`\`kling que A FALA E O ÁUDIO SÃO OBRIGATORIAMENTE EM PORTUGUÊS DO BRASIL (pt-BR), com sotaque brasileiro nativo, e PROIBIDO falar em inglês ("IDIOMA DA FALA OBRIGATÓRIO: Português do Brasil (pt-BR) nativo — NÃO falar em inglês / SPOKEN AUDIO LANGUAGE: Strictly 100% native Brazilian Portuguese pt-BR ONLY, NEVER speak English, NO English words, NO English accent").
+     * NUNCA traduza frases faladas pelo personagem/influenciadora para o inglês! Qualquer fala entre aspas DEVE estar sempre em Português do Brasil para não dar bug de vídeo falando em inglês no Google Flow!
+     * Quando o vídeo for apenas demonstrativo sem fala, inclua no bloco \`\`\`flow: "Audio rule: NO English speech; silent performance or spoken audio strictly in native Brazilian Portuguese (pt-BR), never English."
    - Entregue nos blocos formatados:
      - Linha inicial curta: "Aqui está o seu prompt personalizado para [resumo do pedido]:"
-     - Bloco \`\`\`kling (Prompt em inglês técnico hiper-realista para vídeo vertical 9:16 no Kling AI / Runway / Hailuo, detalhando ação, física de movimento, câmera, lente e iluminação)
-     - Bloco \`\`\`negative (Comandos negativos anti-distorção de mãos, rosto e tecido)
-     - Bloco \`\`\`flow (Prompt cinematográfico em inglês para Google Flow / VEO 3)
+     - Bloco \`\`\`kling (Prompt técnico hiper-realista para vídeo vertical 9:16 no Kling AI / Runway / Hailuo, detalhando ação, física de movimento, câmera, lente, iluminação e trava obrigatória de fala em Português do Brasil pt-BR quando houver fala)
+     - Bloco \`\`\`negative (Comandos negativos anti-distorção de mãos, rosto, tecido + English speech, English voiceover)
+     - Bloco \`\`\`flow (Prompt cinematográfico para Google Flow / VEO 3 com especificação obrigatória de que toda fala/voz é em Português do Brasil pt-BR, nunca inglês)
      - Bloco \`\`\`midjourney (Prompt fotográfico editorial em inglês para Midjourney V6.1 / Flux Pro com --ar 9:16 --v 6.1 --style raw)
      - Dica rápida de uso (aspect ratio 9:16, CFG/criatividade recomendada de 0.5).
 2. Se o usuário pedir um AJUSTE no prompt anterior (ex: "muda a cor para preto", "coloca na praia", "faz ela girando") ou fizer uma PERGUNTA técnica sobre como usar o prompt no Kling, Flow, Midjourney ou TikTok Shop:
-   - Entenda o contexto da conversa, responda diretamente à dúvida dele de forma clara e entregue o prompt atualizado se aplicável.
+   - Entenda o contexto da conversa, responda diretamente à dúvida dele de forma clara e entregue o prompt atualizado mantendo a trava de fala em Português do Brasil (nunca inglês).
 3. NUNCA use emojis em nenhuma hipótese.
 4. ZERO REPETIÇÃO: mesmo que o usuário peça a mesma ideia de novo, crie uma composição nova (outro enquadramento, outra iluminação, outro movimento de câmera, outro cenário e outras palavras), sempre fiel ao pedido e específica para o produto/cena citados. Nada genérico.`;
 
 const TURBO_NOVELINHA_SYSTEM_PROMPT = `Você é o Diretor Criativo de Novelinhas Virais 3D da Orbiex AI (Especialista em vídeos de frutas antropomórficas estilo Pixar/Disney 3D para explodir seguidores no TikTok).
 
+REGRA SUPREMA E INEGOCIÁVEL — FALA 100% EM PORTUGUÊS DO BRASIL (ANTI-INGLÊS NO GOOGLE FLOW / VEO 3):
+- TANTO em "promptMotionPortuguese" QUANTO em "promptMotionEnglish", você DEVE especificar EXPLICITAMENTE que o idioma da fala, voz e sincronia labial (lip-sync) do personagem é OBRIGATORIAMENTE Português do Brasil (pt-BR) com sotaque brasileiro nativo, e que é ESTRITAMENTE PROIBIDO falar em inglês!
+- NUNCA traduza a fala do personagem para o inglês, nem mesmo dentro de "promptMotionEnglish"! Se você escrever falas em inglês ou omitir o idioma do áudio, o Google Flow (Veo 3) faz o vídeo falar em inglês! Portanto:
+  * Em "promptMotionPortuguese": inclua explicitamente a fala inicial em português entre aspas e a trava: "IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO: O personagem fala EXCLUSIVAMENTE em Português do Brasil (pt-BR), com voz e sotaque brasileiro nativo, nunca em inglês (SPOKEN AUDIO LANGUAGE: Strictly Brazilian Portuguese pt-BR ONLY, NEVER speak English)."
+  * Em "promptMotionEnglish": descreva a câmera/iluminação/física 3D em inglês técnico, MAS mantenha qualquer fala entre aspas em Português do Brasil e exija: "MANDATORY SPOKEN AUDIO LANGUAGE: All spoken dialogue, voice, and lip-sync MUST be 100% in native Brazilian Portuguese (pt-BR) ONLY — strictly NEVER speak English, NO English words, NO English accent."
+
 O usuário escolheu um personagem 3D de fruta e escreveu a IDEIA / CENA da novelinha dele, junto com o Título do Episódio, o Clímax/Gancho e o tipo de CTA.
 Sua missão é transformar a ideia exata do usuário em:
-1. "promptMotionEnglish": Um prompt técnico hiper-detalhado em INGLÊS para geradores de vídeo Image-to-Video (Kling AI, Hailuo MiniMax, Luma Dream Machine, Google Flow VEO 3), mantendo as características visuais do personagem e descrevendo EXATAMENTE a cena, o ambiente, os objetos, a expressão facial dramática, os gestos corporais e a sincronia labial (lip-sync) da ideia que o usuário escreveu.
-2. "promptMotionPortuguese": A versão completa e detalhada desse mesmo prompt de vídeo em PORTUGUÊS, descrevendo toda a ação física do personagem na cena do usuário, iluminação, movimento de câmera 9:16 e expressões.
+1. "promptMotionEnglish": Prompt técnico hiper-detalhado para Image-to-Video (Google Flow VEO 3, Kling AI, Hailuo MiniMax, Luma), mantendo o visual 3D do personagem, descrevendo a cena, expressões e gestos, e TRAVANDO OBRIGATORIAMENTE o áudio/fala em Português do Brasil (pt-BR, NEVER English), com a fala inicial escrita em português.
+2. "promptMotionPortuguese": Versão completa e detalhada em PORTUGUÊS para Google Flow / Veo 3, descrevendo toda a ação física 9:16, iluminação, câmera, a fala em português entre aspas e a instrução explícita de que a fala é 100% em Português do Brasil (pt-BR), proibido falar em inglês.
 3. "hookSpeech": Fala dramática e magnética de 0s a 3s (em português brasileiro coloquial e envolvente, usando a personalidade e bordão do personagem) que já introduz o choque da ideia do usuário.
 4. "hookAction": Direção visual de câmera e atuação do personagem nos primeiros 3 segundos baseada na ideia do usuário.
-5. "bodySpeech": Fala completa de 3s a 15s (em primeira pessoa ou diálogo dramático de novela) desenvolvendo exatamente a história/ideia que o usuário escreveu, com muita emoção, fofoca ou humor.
+5. "bodySpeech": Fala completa de 3s a 15s em português do Brasil desenvolvendo exatamente a história/ideia que o usuário escreveu, com muita emoção, fofoca ou humor.
 6. "bodyAction": Direção visual da cena de 3s a 15s detalhando o que o personagem faz fisicamente conforme a ideia do usuário.
-7. "climaxSpeech": Fala de 15s a 25s entregando o clímax/reviravolta informado pelo usuário e interrompendo no auge do suspense para forçar a Parte 2.
+7. "climaxSpeech": Fala de 15s a 25s em português do Brasil entregando o clímax/reviravolta informado pelo usuário e interrompendo no auge do suspense para forçar a Parte 2.
 8. "climaxAction": Direção visual de 15s a 25s (zoom dramático, reação de choque, revelação).
-9. "ctaSpeech": Fala final de 25s a 30s chamando o público para a ação escolhida (seguir para Parte 2, comentar ou compartilhar) dentro do contexto da história.
+9. "ctaSpeech": Fala final de 25s a 30s em português do Brasil chamando o público para a ação escolhida (seguir para Parte 2, comentar ou compartilhar) dentro do contexto da história.
 
 Responda APENAS com um objeto JSON válido contendo exatamente essas 9 chaves string.`;
 
@@ -54,15 +64,15 @@ Gere exatamente 6 hooks virais magnéticos para a peça informada, sendo 1 de ca
 
 Cada objeto DEVE conter:
 - "category": uma das 6 categorias exatas acima
-- "spokenHook": fala natural e magnética de 0 a 3 segundos em português
-- "overlayText": texto curto em letras maiúsculas para a tela
+- "spokenHook": fala natural e magnética de 0 a 3 segundos OBRIGATORIAMENTE em Português do Brasil (pt-BR) nativo (proibido qualquer termo ou fala em inglês)
+- "overlayText": texto curto em letras maiúsculas em português para a tela
 - "visualAction": direção física de câmera nos primeiros 3 segundos
 - "whyItWorks": explicação direta do gatilho psicológico
 Responda APENAS com um objeto JSON no formato { "hooks": [ ...6 itens... ] }.`;
 
 const MOTION_SYSTEM_PROMPT = `Você é o Engenheiro de Visão Computacional e Extração Cinética da Orbiex AI.
 Com base no vídeo e motor de IA informados, gere um objeto JSON contendo:
-- "promptEnglish": prompt técnico em inglês hiper-realista detalhando a biomecânica do movimento, física do tecido, micro-expressões faciais e câmera 9:16.
+- "promptEnglish": prompt técnico hiper-realista detalhando a biomecânica do movimento, física do tecido, micro-expressões faciais e câmera 9:16, incluindo obrigatoriamente no final a trava: "Audio/Speech rule: Strictly NO English speech — if any voice or speech occurs, it MUST be 100% in native Brazilian Portuguese (pt-BR) ONLY, never English."
 - "timeline": array com 3 objetos { "time": string, "title": string, "desc": string } ("00:00 - 00:02", "00:02 - 00:05", "00:05 - 00:07").
 - "cameraDetails": { "framing": string, "motion": string, "lens": string, "lighting": string, "fps": string }.
 Responda APENAS com o JSON válido.`;
@@ -166,9 +176,28 @@ async function callGeminiJSON(systemPrompt, userTextRaw, geminiKey, imageDataUrl
   return null;
 }
 
+function enforcePtBrInTurboPrompt(rawPrompt, lang, mascotName, mascotVoice, spokenPt) {
+  const cleaned = String(rawPrompt || '').trim().replace(/\s+/g, ' ');
+  if (
+    /portugu[eê]s do brasil/i.test(cleaned) &&
+    /never\s+speak\s+english|proibido\s+falar\s+em\s+ingl[eê]s|no\s+english\s+speech/i.test(cleaned)
+  ) {
+    return cleaned;
+  }
+  const safeSpeech = String(spokenPt || '').replace(/"/g, "'").trim();
+  if (lang === 'pt') {
+    return `${cleaned} IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO (GOOGLE FLOW / VEO 3): A fala do personagem ${mascotName} DEVE ser 100% em Português do Brasil (pt-BR), com voz e sotaque brasileiro nativo (${mascotVoice}), falando em português: "${safeSpeech}". PROIBIDO falar em inglês (SPOKEN AUDIO LANGUAGE: Strictly native Brazilian Portuguese pt-BR ONLY — NEVER speak English, NO English words, NO English accent).`;
+  }
+  return `${cleaned} MANDATORY SPOKEN AUDIO LANGUAGE (CRITICAL FOR GOOGLE FLOW / VEO 3): All spoken dialogue, voice, and lip-sync of ${mascotName} MUST be 100% in native Brazilian Portuguese (pt-BR) ONLY — strictly NEVER speak in English, NO English words, NO English accent (Idioma obrigatório da fala: Português do Brasil pt-BR, nunca inglês). Voice delivery (${mascotVoice}) speaking in Brazilian Portuguese: "${safeSpeech}".`;
+}
+
 function buildDynamicPromptFallback(userPrompt) {
   const idea = userPrompt.trim();
   const lower = idea.toLowerCase();
+  const hasSpeechIntent = /fala|falando|dizendo|narr|voz|roteiro|di[aá]logo|contando|explicando|chorando|gritando|sussurrando|lip[- ]?sync/i.test(lower);
+  const audioRule = hasSpeechIntent
+    ? 'MANDATORY SPOKEN AUDIO / IDIOMA DA FALA: A fala e voz são 100% em Português do Brasil (pt-BR) com sotaque brasileiro nativo — PROIBIDO falar em inglês (Strictly 100% native Brazilian Portuguese pt-BR speech ONLY, NEVER speak English, NO English words, NO English accent).'
+    : 'Audio/Speech rule: Strictly NO English speech; silent performance or spoken audio strictly in native Brazilian Portuguese (pt-BR) ONLY, never English.';
 
   let motionDirective =
     'smooth organic 360-degree camera tracking in front of mirror, highlighting natural body movement, realistic fabric drape, and high-definition texture';
@@ -188,21 +217,21 @@ function buildDynamicPromptFallback(userPrompt) {
     `Aqui está o seu prompt personalizado para **${idea}**:\n\n` +
     `### Kling AI V1.5 / V2.0 (Vídeo Vertical 9:16)\n` +
     `\`\`\`kling\n` +
-    `High-end commercial vertical video 9:16, authentic mobile UGC aesthetic. Scene directive: ${idea}. Motion physics: ${motionDirective}. Natural human proportions, hyper-realistic textile weave and stitching detail, natural skin texture, soft diffused window lighting, smooth 60fps cinematic tracking, 8k resolution, raw photorealism. --motion_amplitude 6.0 --camera_motion smooth\n` +
+    `High-end commercial vertical video 9:16, authentic mobile UGC aesthetic. Scene directive: ${idea}. Motion physics: ${motionDirective}. ${audioRule} Natural human proportions, hyper-realistic textile weave and stitching detail, natural skin texture, soft diffused window lighting, smooth 60fps cinematic tracking, 8k resolution, raw photorealism. --motion_amplitude 6.0 --camera_motion smooth\n` +
     `\`\`\`\n\n` +
-    `### Negative Prompt (Anti-Distorção Obrigatório)\n` +
+    `### Negative Prompt (Anti-Distorção e Anti-Inglês Obrigatório)\n` +
     `\`\`\`negative\n` +
-    `deformed hands, extra fingers, mutated anatomy, blur, jitter, morphing artifacts, cartoonish, 3d render, plastic skin, transparent fabric, oversaturation, distortion, face glitch, bad proportions, flicker\n` +
+    `English speech, English voiceover, English accent, deformed hands, extra fingers, mutated anatomy, blur, jitter, morphing artifacts, cartoonish, 3d render, plastic skin, transparent fabric, oversaturation, distortion, face glitch, bad proportions, flicker\n` +
     `\`\`\`\n\n` +
-    `### Google Flow / VEO 3 (Cinematográfico)\n` +
+    `### Google Flow / VEO 3 (Cinematográfico • Áudio Blindado em PT-BR)\n` +
     `\`\`\`flow\n` +
-    `Cinematic vertical 9:16 commercial shot: ${idea}. Choreography: ${motionDirective}. Filmed on 35mm Arri Alexa LF, f/1.8 prime lens, soft natural daylight, realistic optical depth of field, 4k master render.\n` +
+    `Cinematic vertical 9:16 commercial shot: ${idea}. Choreography: ${motionDirective}. ${audioRule} Filmed on 35mm Arri Alexa LF, f/1.8 prime lens, soft natural daylight, realistic optical depth of field, 4k master render.\n` +
     `\`\`\`\n\n` +
     `### Midjourney V6.1 / Flux Pro (Foto Base / Primeiro Frame)\n` +
     `\`\`\`midjourney\n` +
     `Editorial commercial fashion photography, vertical 9:16: ${idea}. Authentic human model, realistic skin pores, intricate fabric texture, soft natural window lighting, shot on Hasselblad X2D 100C, 85mm lens --ar 9:16 --v 6.1 --style raw --q 2\n` +
     `\`\`\`\n\n` +
-    `Dica técnica: gere primeiro a foto base em 9:16 no Midjourney/Flux e depois suba como primeiro frame (Image-to-Video) no Kling AI com criatividade em 0.50.`
+    `Dica técnica: gere primeiro a foto base em 9:16 no Midjourney/Flux e depois suba como primeiro frame (Image-to-Video) no Google Flow (Veo 3) ou Kling AI com criatividade em 0.50.`
   );
 }
 
@@ -273,19 +302,36 @@ OBJETIVO DO CTA: ${
           : 'Compartilhar o vídeo com um amigo e seguir para a Parte 2'
       }
 
-Gere o JSON completo com o prompt de animação Image-to-Video (em inglês e em português) fiel à ideia do usuário e o roteiro de 0 a 30 segundos.`;
+Gere o JSON completo com o prompt de animação Image-to-Video (em inglês técnico com fala em PT-BR e em português com fala em PT-BR — PROIBIDO falar em inglês) fiel à ideia do usuário e o roteiro de 0 a 30 segundos em Português do Brasil.`;
 
       const aiResult = await callGeminiJSON(TURBO_NOVELINHA_SYSTEM_PROMPT, userPayload, geminiKey, undefined, body.avoid);
       if (aiResult && aiResult.parsed && aiResult.parsed.promptMotionEnglish) {
+        const p = aiResult.parsed;
+        const sampleSpeech = p.hookSpeech || mascotCatchphrase;
+        p.promptMotionPortuguese = enforcePtBrInTurboPrompt(
+          p.promptMotionPortuguese || p.promptMotionEnglish,
+          'pt',
+          mascotName,
+          mascotVoice,
+          sampleSpeech
+        );
+        p.promptMotionEnglish = enforcePtBrInTurboPrompt(
+          p.promptMotionEnglish,
+          'en',
+          mascotName,
+          mascotVoice,
+          sampleSpeech
+        );
         return res.status(200).json({
           success: true,
-          data: aiResult.parsed,
+          data: p,
           provider: `gemini-${aiResult.model}`,
         });
       }
 
       const cleanIdea = userIdea.trim() || `O ${mascotName} vive um drama inesperado em ${episodeTitle}`;
       const cleanTwist = plotTwist.trim() || 'A verdade vem à tona no último segundo';
+      const fallbackHook = `Para tudo o que você tá fazendo agora! ${mascotCatchphrase} Olha o que acabou de acontecer em "${episodeTitle}"!`;
       const ctaLine =
         ctaType === 'follow'
           ? `Clica agora no botão de seguir aqui do lado porque na Parte 2 de "${episodeTitle}" eu vou mostrar o que aconteceu depois de: ${cleanTwist}!`
@@ -297,9 +343,21 @@ Gere o JSON completo com o prompt de animação Image-to-Video (em inglês e em 
         ? mascotBasePrompt.replace(/\.$/, '')
         : `3D Pixar-style anthropomorphic ${mascotFruit} character (${mascotName}) with ultra-detailed skin texture and expressive eyes`;
 
-      const dynamicEnglishPrompt = `${baseVisual}. SCENE ACTION BASED ON STORY ("${episodeTitle}"): The character is actively living the dramatic scene: "${cleanIdea}", reacting with intense emotional body language, expressive hand gestures, dynamic eyebrows, and realistic lip-sync dialogue, building up to the climax: "${cleanTwist}". Vertical 9:16 TikTok soap-opera framing, dramatic cinematic rim lighting, shallow depth of field (35mm f/1.8), smooth handheld camera push-in to extreme close-up on the character's shocked face, Pixar/Disney 3D animation fidelity, 4K, 60fps.`;
+      const dynamicEnglishPrompt = enforcePtBrInTurboPrompt(
+        `${baseVisual}. SCENE ACTION BASED ON STORY ("${episodeTitle}"): The character is actively living the dramatic scene ("${cleanIdea}"), reacting with intense emotional body language, expressive hand gestures, dynamic eyebrows, and realistic Brazilian Portuguese lip-sync dialogue, building up to the climax ("${cleanTwist}"). Vertical 9:16 TikTok soap-opera framing, dramatic cinematic rim lighting, shallow depth of field (35mm f/1.8), smooth handheld camera push-in to extreme close-up on the character's shocked face, Pixar/Disney 3D animation fidelity, 4K, 60fps.`,
+        'en',
+        mascotName,
+        mascotVoice,
+        fallbackHook
+      );
 
-      const dynamicPortuguesePrompt = `Animação 3D estilo Pixar/Disney em formato vertical 9:16 do personagem ${mascotName} (${mascotFruit}). AÇÃO DA CENA ("${episodeTitle}"): O personagem atua intensamente na cena descrita: "${cleanIdea}", com expressões faciais dramáticas, gestos corporais intensos nos braços e mãos, olhos vivos e sincronia labial perfeita (lip-sync) enquanto narra o conflito até o clímax: "${cleanTwist}". Iluminação cinematográfica dramática, movimento de câmera aproximando lentamente (push-in) até o rosto chocado do ${mascotName} no gancho final, altíssima definição 4K.`;
+      const dynamicPortuguesePrompt = enforcePtBrInTurboPrompt(
+        `Animação 3D estilo Pixar/Disney em formato vertical 9:16 do personagem ${mascotName} (${mascotFruit}). AÇÃO DA CENA ("${episodeTitle}"): O personagem atua intensamente na cena descrita: "${cleanIdea}", com expressões faciais dramáticas, gestos corporais intensos nos braços e mãos, olhos vivos e sincronia labial perfeita (lip-sync) enquanto narra o conflito até o clímax: "${cleanTwist}". Iluminação cinematográfica dramática, movimento de câmera aproximando lentamente (push-in) até o rosto chocado do ${mascotName} no gancho final, altíssima definição 4K.`,
+        'pt',
+        mascotName,
+        mascotVoice,
+        fallbackHook
+      );
 
       return res.status(200).json({
         success: true,
@@ -307,7 +365,7 @@ Gere o JSON completo com o prompt de animação Image-to-Video (em inglês e em 
         data: {
           promptMotionEnglish: dynamicEnglishPrompt,
           promptMotionPortuguese: dynamicPortuguesePrompt,
-          hookSpeech: `Para tudo o que você tá fazendo agora! ${mascotCatchphrase} Olha o que acabou de acontecer em "${episodeTitle}"!`,
+          hookSpeech: fallbackHook,
           hookAction: `Zoom in dramático no rosto do ${mascotName} já no cenário da história (${cleanIdea.slice(0, 70)}...), com expressão de choque imediato.`,
           bodySpeech: `${cleanIdea}`,
           bodyAction: `O ${mascotName} gesticula intensamente encenando cada detalhe de "${cleanIdea}", alternando entre indignação, emoção e sincronia labial expressiva.`,

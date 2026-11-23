@@ -704,9 +704,10 @@ export function reply(
     const cam = (opts: string[]) => (isDark ? pickOne(opts.map((o) => o.replace(/rosto|influenciadora|modelo/gi, 'mãos'))) : pickOne(opts));
 
     const script =
+      `IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO (GOOGLE FLOW / VEO 3): Fala 100% em Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês (SPOKEN AUDIO LANGUAGE: Strictly Brazilian Portuguese pt-BR ONLY, NEVER speak English).\n\n` +
       `${t(0, b1)} GANCHO\n` +
       `Câmera: ${cam(['Close rápido no produto com movimento de entrada.', 'Plano detalhe já em ação, sem introdução.', 'Mãos entrando no quadro segurando o produto.'])}\n` +
-      `Áudio: "${hook}"\n` +
+      `Áudio (Fala em Português do Brasil): "${hook}"\n` +
       `Texto na Tela: "${pickOne([`${objection}? Olha isso.`, 'Assiste até o final.', `${prodName}: teste real`, 'Eu não acreditei.'])}"\n\n` +
       `${t(b1, b2)} PROBLEMA / IDENTIFICAÇÃO\n` +
       `Câmera: ${cam(['Corte para a situação comum que dá errado.', 'Comparação lado a lado com a versão comum.', 'Expressão de frustração da modelo antes do produto.'])}\n` +

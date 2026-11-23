@@ -42,7 +42,8 @@ REGRAS ABSOLUTAS:
 2. ZERO REPETIÇÃO: cada chamada é uma NOVA geração. Use o ângulo criativo e o número de variação informados para produzir ideias, frases, estruturas e números diferentes. Se houver uma lista "NÃO REPITA", nenhuma frase, gancho, título ou ideia daquela lista pode ser reaproveitada nem parafraseada de perto.
 3. Análises e números (scores, métricas, estimativas) devem ser coerentes com os dados informados e justificados; varie a forma de explicar e os insights apresentados.
 4. Português do Brasil natural, linguagem de criador de conteúdo, sem emojis.
-5. Responda APENAS com JSON válido exatamente no formato pedido, sem texto extra.`;
+5. Sempre que gerar qualquer prompt de vídeo ou fala (para Google Flow / Veo 3 ou Kling AI), especifique explicitamente que a fala e o áudio são 100% em Português do Brasil (pt-BR) nativo, proibido falar em inglês (NO English speech).
+6. Responda APENAS com JSON válido exatamente no formato pedido, sem texto extra.`;
 
 function pick(arr, n) {
   const copy = [...arr];

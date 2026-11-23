@@ -57,7 +57,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Flagrante na Academia',
     defaultClimax: 'Ele encontra uma mensagem misteriosa e a tela escurece com som de batimento cardíaco.',
     promptMotionEnglish:
-      '3D muscular anthropomorphic avocado man with crying emotional eyes, flexing biceps in dark luxury studio, dramatic rim lighting, fast dynamic zoom-in, cinematic vertical 9:16, natural lip sync speaking directly to camera, 60fps, photorealistic render',
+      '3D muscular anthropomorphic avocado man with crying emotional eyes, flexing biceps in dark luxury studio, dramatic rim lighting, fast dynamic zoom-in, cinematic vertical 9:16, natural lip sync speaking exclusively in native Brazilian Portuguese (pt-BR, never English) directly to camera, 60fps, photorealistic render',
   },
   {
     id: 'moranguete',
@@ -78,7 +78,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Veneno da Moranguete',
     defaultClimax: 'Ela joga a taça na mesa e encara a câmera com um sorriso vingativo.',
     promptMotionEnglish:
-      '3D anthropomorphic strawberry woman doing a supermodel runway spin in sparkling black dress, looking sarcastically at the camera, showing a dress tag, elegant studio spotlight, slow-motion vertical 9:16, realistic textures',
+      '3D anthropomorphic strawberry woman doing a supermodel runway spin in sparkling black dress, looking and speaking sarcastically in native Brazilian Portuguese (pt-BR, never English) to the camera, elegant studio spotlight, vertical 9:16, realistic textures',
   },
   {
     id: 'bananildo',
@@ -91,7 +91,7 @@ const MASCOTS: Mascot[] = [
     viralScore: 99.2,
     retentionScore: 97.8,
     catchphrase: 'Qual foi, parceiro? Ficou moscando, perdeu o maior bafafá da sua vida!',
-    voiceStyle: 'Ritmo acelerado, gírias urbanas, energia alta e entonação hipnótica.',
+    voiceStyle: 'Ritmo acelerado, gírias urbanas brasileiras, energia alta e entonação hipnótica.',
     personality: 'O malandro da quebrada das frutas. Corre mais rápido que todo mundo e sabe de todos os podres.',
     bio: 'Com mais de 100 milhões de visualizações somadas, Bananildo protagoniza as perseguições mais eletrizantes do feed.',
     bestFor: 'Fugas alucinadas, esquetes caóticas, brigas de rua cômicas e revelações bombásticas.',
@@ -99,7 +99,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - A Fuga Alucinada',
     defaultClimax: 'O alarme toca ao fundo e ele pula a cerca gritando pra todo mundo seguir pra ver o final.',
     promptMotionEnglish:
-      '3D banana boy character in grey hoodie jumping into the camera frame with extreme excitement, talking with animated hand gestures, pointing at bottom screen, ultra smooth 4k 60fps vertical',
+      '3D banana boy character in grey hoodie jumping into the camera frame with extreme excitement, talking in native Brazilian Portuguese (pt-BR, never English) with animated hand gestures, pointing at bottom screen, ultra smooth 4k 60fps vertical',
   },
   {
     id: 'uvinha',
@@ -120,7 +120,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Barraco da Patricinha',
     defaultClimax: 'Ela sobe no palco, pega o microfone e ameaça soltar o áudio proibido.',
     promptMotionEnglish:
-      '3D purple grape girl doing a viral cute celebration dance, purple sparkles floating in air, smiling adorably and holding up product with both hands, hyper-detailed 3D animation',
+      '3D purple grape girl with expressive theatrical gestures, purple sparkles floating in air, speaking dramatically in native Brazilian Portuguese (pt-BR, never English) directly to camera, hyper-detailed 3D animation',
   },
   {
     id: 'cerejinha',
@@ -141,7 +141,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - A Fofoca Proibida',
     defaultClimax: 'A porta range, os passos se aproximam e ela desliga a câmera apavorada.',
     promptMotionEnglish:
-      '3D cherry maid peering from behind dark luxury door, whispering secretly to camera, looking left and right nervously before holding up a secret product, cinematic 3D realism',
+      '3D cherry maid peering from behind dark luxury door, whispering secretly in native Brazilian Portuguese (pt-BR, never English) to camera, looking left and right nervously, cinematic 3D realism',
   },
   {
     id: 'alface',
@@ -162,7 +162,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Dossiê Secreto',
     defaultClimax: 'Ela abre a pasta na mesa do juiz e a audiência inteira fica de pé em choque.',
     promptMotionEnglish:
-      '3D leafy businesswoman adjusting emerald blazer collar, putting on stylish reading glasses, presenting tablet with graphs, speaking with authority, 4k 60fps vertical',
+      '3D leafy businesswoman adjusting emerald blazer collar, putting on stylish reading glasses, presenting folder with documents, speaking with authority in native Brazilian Portuguese (pt-BR, never English), 4k 60fps vertical',
   },
   {
     id: 'bananita',
@@ -183,7 +183,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Troco da Musa',
     defaultClimax: 'O ex tenta dar um passo na direção dela e o segurança entra na frente com música tensa.',
     promptMotionEnglish:
-      '3D banana-haired fitness girl doing a quick 360 spin to show off high-waist jeans from all angles, smiling brightly with thumbs up, studio golden lens flare, 9:16',
+      '3D banana-haired fitness girl in luxury gym speaking confidently and provocatively in native Brazilian Portuguese (pt-BR, never English) to camera with expressive gestures, studio golden lens flare, 9:16',
   },
   {
     id: 'brocolino',
@@ -204,7 +204,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Hack das Frutas',
     defaultClimax: 'A tela fica vermelha com aviso de invasor detectado e corta o sinal.',
     promptMotionEnglish:
-      '3D broccoli schoolboy nervously checking a futuristic calculator, looking up with wide shocked eyes, pointing finger at screen in disbelief, ultra expressive animation',
+      '3D broccoli schoolboy nervously checking a futuristic tablet, looking up with wide shocked eyes, speaking nervously in native Brazilian Portuguese (pt-BR, never English) while pointing finger at screen, ultra expressive animation',
   },
   {
     id: 'mirtilinho',
@@ -217,7 +217,7 @@ const MASCOTS: Mascot[] = [
     viralScore: 96.4,
     retentionScore: 95.8,
     catchphrase: 'O beat dropou, a máscara caiu e agora não tem mais volta!',
-    voiceStyle: 'Grave com autotune sutil, estilo trap americano, misterioso e seguro.',
+    voiceStyle: 'Grave com autotune sutil, estilo trap brasileiro, misterioso e seguro.',
     personality: 'Produtor musical das frutas que cria as trilhas sonoras mais tensas e os confrontos rimados.',
     bio: 'Lançou as trends sonoras mais virais do TikTok. Seus episódios usam batidas de suspense que prendem os jovens.',
     bestFor: 'Duelos de rimas, mistérios no estúdio, desabafos na madrugada e confrontos urbanos.',
@@ -225,7 +225,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Drop da Verdade',
     defaultClimax: 'A luz do estúdio pisca, um vulto aparece na porta e a batida é interrompida.',
     promptMotionEnglish:
-      '3D blueberry music producer nodding along to heavy 808 beat with animated hand gestures, subtle neon lighting glow, ultra smooth 60fps vertical',
+      '3D blueberry music producer in neon dark studio speaking and rhyming in native Brazilian Portuguese (pt-BR, never English) with animated hand gestures, subtle neon lighting glow, ultra smooth 60fps vertical',
   },
   {
     id: 'laranjito',
@@ -238,7 +238,7 @@ const MASCOTS: Mascot[] = [
     viralScore: 98.1,
     retentionScore: 97.2,
     catchphrase: 'Chora não, coração! O barraco é grande, mas a risada tá garantida!',
-    voiceStyle: 'Voz aberta, gargalhada contagiante, ritmo de apresentador de festa e pagode.',
+    voiceStyle: 'Voz aberta, gargalhada contagiante, ritmo brasileiro de apresentador de festa e pagode.',
     personality: 'O fofoqueiro bem-humorado que transforma confusão em espetáculo popular.',
     bio: 'Não existe comentário triste no feed do Laranjito. Ele transforma qualquer treta de bairro numa esquete cômica inesquecível.',
     bestFor: 'Comédias do cotidiano, confusões no pagode, flagras em festas de família e fofocas bem-humoradas.',
@@ -246,7 +246,7 @@ const MASCOTS: Mascot[] = [
     defaultEpisode: 'Episódio 01 - O Flagra no Pagode',
     defaultClimax: 'A pessoa flagrada levanta da mesa com a garrafa na mão e todos começam a gritar.',
     promptMotionEnglish:
-      '3D orange character holding miniature megaphone, laughing contagiously and dancing with high energy, confetti falling, bright vivid studio lighting',
+      '3D orange character holding miniature microphone, speaking and laughing contagiously in native Brazilian Portuguese (pt-BR, never English) with high energy, confetti falling, bright vivid studio lighting',
   },
 ];
 
@@ -260,6 +260,33 @@ interface GeneratedTurboPack {
   climaxSpeech: string;
   climaxAction: string;
   ctaSpeech: string;
+}
+
+/**
+ * Garante 100% de certeza que qualquer prompt gerado (local ou pela IA) traga
+ * a especificação explícita de que a fala e o áudio são em Português do Brasil (pt-BR),
+ * proibindo completamente fala ou sotaque em inglês ao colar no Google Flow (Veo 3) ou Kling.
+ */
+function ensurePortugueseSpeechRule(
+  rawPrompt: string,
+  lang: 'pt' | 'en',
+  mascotName: string,
+  voiceStyle: string,
+  spokenLinePt: string
+): string {
+  const cleaned = rawPrompt.trim().replace(/\s+/g, ' ');
+  const hasExplicitLock =
+    /portugu[eê]s do brasil/i.test(cleaned) &&
+    /never\s+speak\s+english|proibido\s+falar\s+em\s+ingl[eê]s|no\s+english\s+speech/i.test(cleaned);
+
+  if (hasExplicitLock) return cleaned;
+
+  const cleanLine = spokenLinePt.replace(/"/g, "'").trim();
+  if (lang === 'pt') {
+    return `${cleaned} IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO (GOOGLE FLOW / VEO 3): A fala do personagem ${mascotName} DEVE ser 100% em Português do Brasil (pt-BR), com voz e sotaque brasileiro nativo (${voiceStyle}), falando em português: "${cleanLine}". PROIBIDO falar em inglês (SPOKEN AUDIO LANGUAGE: Strictly native Brazilian Portuguese pt-BR ONLY — NEVER speak English, NO English words, NO English accent).`;
+  }
+
+  return `${cleaned} MANDATORY SPOKEN AUDIO LANGUAGE (CRITICAL FOR GOOGLE FLOW / VEO 3): All spoken dialogue, voice, and lip-sync of ${mascotName} MUST be 100% in native Brazilian Portuguese (pt-BR) ONLY — strictly NEVER speak in English, NO English words, NO English accent (Idioma obrigatório da fala: Português do Brasil pt-BR, nunca inglês). Voice delivery (${voiceStyle}) speaking in Brazilian Portuguese: "${cleanLine}".`;
 }
 
 function buildDynamicTurboPack(
@@ -277,7 +304,7 @@ function buildDynamicTurboPack(
 
   const baseVisual = mascot.promptMotionEnglish.replace(/\.$/, '');
 
-  // Pares EN/PT alinhados para que os dois prompts descrevam a mesma cena
+  // Pares EN/PT alinhados para que os dois prompts descrevam a mesma cena (sempre com fala em PT-BR!)
   const cameras: [string, string][] = [
     ["smooth handheld camera push-in to an extreme close-up on the character's shocked face", 'câmera aproximando lentamente (push-in) até fechar no rosto chocado'],
     ['slow dolly-in from medium shot to tight close-up, then a sudden snap zoom on the eyes', 'travelling lento até o close e um zoom seco nos olhos no gancho final'],
@@ -295,24 +322,15 @@ function buildDynamicTurboPack(
     ['pulsing red emergency light accents for tension', 'Flashes vermelhos de alerta aumentando a tensão'],
   ];
   const acting: [string, string][] = [
-    ['reacting with intense 3D Pixar emotional facial expressions, dramatic hand gestures and synchronized lip-sync speech', 'expressões faciais dramáticas, gesticulação expressiva e sincronia labial perfeita'],
-    ['switching between disbelief, anger and tears with exaggerated cartoon body language and precise lip-sync', 'alternando entre descrença, raiva e lágrimas com linguagem corporal exagerada e lip-sync preciso'],
-    ['whispering then exploding in emotion, eyebrows and hands fully animated, perfect mouth sync', 'sussurros que viram explosão de emoção, sobrancelhas e mãos vivas e boca sincronizada'],
-    ['pacing around the set, pointing at the camera and gesturing wildly while speaking in perfect lip-sync', 'andando pelo cenário, apontando para a câmera e gesticulando muito com lip-sync perfeito'],
+    ['reacting with intense 3D Pixar emotional facial expressions, dramatic hand gestures and synchronized lip-sync speech in Brazilian Portuguese (pt-BR, never English)', 'expressões faciais dramáticas, gesticulação expressiva e sincronia labial perfeita falando em português do Brasil'],
+    ['switching between disbelief, anger and tears with exaggerated cartoon body language and precise Brazilian Portuguese lip-sync', 'alternando entre descrença, raiva e lágrimas com linguagem corporal exagerada e lip-sync preciso em português brasileiro'],
+    ['whispering then exploding in emotion in Brazilian Portuguese, eyebrows and hands fully animated, perfect mouth sync', 'sussurros em português que viram explosão de emoção, sobrancelhas e mãos vivas e boca sincronizada'],
+    ['pacing around the set, pointing at the camera and gesturing wildly while speaking in native Brazilian Portuguese (pt-BR, never English)', 'andando pelo cenário, apontando para a câmera e gesticulando muito falando em português do Brasil'],
   ];
   const [camEn, camPt] = pickOne(cameras);
   const [lightEn, lightPt] = pickOne(lights);
   const [actEn, actPt] = pickOne(acting);
   const lens = pickOne(['35mm f/1.8', '50mm f/1.4', '24mm wide f/2.0', '85mm f/1.2', '28mm anamorphic']);
-
-  const promptMotionEnglish = `${baseVisual}. CUSTOM STORY SCENE ("${cleanEpisode}"): The character is acting out the exact user story: "${cleanIdea}", ${actEn}, building tension toward the climax: "${twist}". Vertical 9:16 TikTok soap-opera framing, ${lightEn}, shallow depth of field (${lens}), ${camEn}, ultra-detailed 4K ${pickOne(['60fps', '50fps', '60fps with slow-motion accents'])} animation.`;
-
-  const promptMotionPortuguese = `Animação 3D hiper-realista estilo Pixar/Disney em formato vertical 9:16 do personagem ${mascot.name} (${mascot.fruit}). CENA BASEADA NA SUA IDEIA ("${cleanEpisode}"): O ${mascot.name} ${pickOne([
-    'atua intensamente vivendo a cena',
-    'encena com exagero cômico',
-    'vive com drama total',
-    'interpreta cheio de emoção',
-  ])}: "${cleanIdea}", com ${actPt}, até o clímax: "${twist}". ${lightPt}, ${camPt} do ${mascot.name}, lente ${lens}, altíssima definição 4K.`;
 
   const ctaPools: Record<'follow' | 'comment' | 'share', string[]> = {
     follow: [
@@ -335,21 +353,48 @@ function buildDynamicTurboPack(
     ],
   };
 
+  const hookSpeech = `${pickOne([
+    'Para tudo o que você tá fazendo agora!',
+    'Ninguém tá preparado pro que eu vou contar!',
+    'Gente, eu preciso desabafar AGORA!',
+    'Não pula esse vídeo, por favor!',
+    'Eu juro que não ia contar isso aqui...',
+    'Vocês não vão acreditar no que aconteceu!',
+  ])} ${mascot.catchphrase} ${pickOne([
+    `Olha o que acabou de acontecer comigo em "${cleanEpisode}"!`,
+    `Isso aqui é sobre "${cleanEpisode}" e vai te deixar chocado!`,
+    `Senta que lá vem "${cleanEpisode}"!`,
+  ])}`;
+
+  const rawPt = `Animação 3D hiper-realista estilo Pixar/Disney em formato vertical 9:16 do personagem ${mascot.name} (${mascot.fruit}). CENA BASEADA NA SUA IDEIA ("${cleanEpisode}"): O ${mascot.name} ${pickOne([
+    'atua intensamente vivendo a cena',
+    'encena com exagero cômico',
+    'vive com drama total',
+    'interpreta cheio de emoção',
+  ])}: "${cleanIdea}", com ${actPt}, até o clímax: "${twist}". ${lightPt}, ${camPt} do ${mascot.name}, lente ${lens}, altíssima definição 4K.`;
+
+  const rawEn = `${baseVisual}. CUSTOM STORY SCENE ("${cleanEpisode}"): The character is acting out the dramatic scene ("${cleanIdea}"), ${actEn}, building tension toward the climax ("${twist}"). Vertical 9:16 TikTok soap-opera framing, ${lightEn}, shallow depth of field (${lens}), ${camEn}, ultra-detailed 4K ${pickOne(['60fps', '50fps', '60fps with slow-motion accents'])} animation.`;
+
+  const promptMotionPortuguese = ensurePortugueseSpeechRule(
+    rawPt,
+    'pt',
+    mascot.name,
+    mascot.voiceStyle,
+    hookSpeech
+  );
+
+  const promptMotionEnglish = ensurePortugueseSpeechRule(
+    rawEn,
+    'en',
+    mascot.name,
+    mascot.voiceStyle,
+    hookSpeech
+  );
+
   return {
     promptMotionEnglish,
     promptMotionPortuguese,
-    hookSpeech: `${pickOne([
-      'Para tudo o que você tá fazendo agora!',
-      'Ninguém tá preparado pro que eu vou contar!',
-      'Gente, eu preciso desabafar AGORA!',
-      'Não pula esse vídeo, por favor!',
-      'Eu juro que não ia contar isso aqui...',
-      'Vocês não vão acreditar no que aconteceu!',
-    ])} ${mascot.catchphrase} ${pickOne([
-      `Olha o que acabou de acontecer comigo em "${cleanEpisode}"!`,
-      `Isso aqui é sobre "${cleanEpisode}" e vai te deixar chocado!`,
-      `Senta que lá vem "${cleanEpisode}"!`,
-    ])}`,
+    hookSpeech,
     hookAction: `${pickOne([
       'Zoom in rápido no rosto',
       'Entrada brusca em close',
@@ -599,12 +644,28 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
     clearTimeout(t3);
 
     const str = (v: unknown, fb: string) => (typeof v === 'string' && v.trim() ? v.trim() : fb);
+    const resolvedHookSpeech =
+      aiData && typeof aiData.hookSpeech === 'string' && aiData.hookSpeech.trim()
+        ? aiData.hookSpeech.trim()
+        : localPack.hookSpeech;
     const finalPack: GeneratedTurboPack =
       aiData && typeof aiData.promptMotionEnglish === 'string' && aiData.promptMotionEnglish.trim()
         ? {
-            promptMotionEnglish: str(aiData.promptMotionEnglish, localPack.promptMotionEnglish),
-            promptMotionPortuguese: str(aiData.promptMotionPortuguese, localPack.promptMotionPortuguese),
-            hookSpeech: str(aiData.hookSpeech, localPack.hookSpeech),
+            promptMotionEnglish: ensurePortugueseSpeechRule(
+              str(aiData.promptMotionEnglish, localPack.promptMotionEnglish),
+              'en',
+              currentMascot.name,
+              currentMascot.voiceStyle,
+              resolvedHookSpeech
+            ),
+            promptMotionPortuguese: ensurePortugueseSpeechRule(
+              str(aiData.promptMotionPortuguese, localPack.promptMotionPortuguese),
+              'pt',
+              currentMascot.name,
+              currentMascot.voiceStyle,
+              resolvedHookSpeech
+            ),
+            hookSpeech: resolvedHookSpeech,
             hookAction: str(aiData.hookAction, localPack.hookAction),
             bodySpeech: str(aiData.bodySpeech, localPack.bodySpeech),
             bodyAction: str(aiData.bodyAction, localPack.bodyAction),
@@ -1121,18 +1182,19 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                 onClick={() => {
                   const fullScript =
                     `ROTEIRO VIRAL DE NOVELINHA - TURBO SEGUIDORES\n` +
+                    `IDIOMA OBRIGATÓRIO DA FALA / ÁUDIO: Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês (NO English speech).\n` +
                     `Personagem: ${currentMascot.name} (${currentMascot.fruit})\n` +
                     `Episódio: ${episodeTitle}\n` +
                     `Clímax / Gancho: ${plotTwist}\n\n` +
-                    `[0s - 3s HOOK DE CHOQUE]: "${activePack.hookSpeech}"\n` +
+                    `[0s - 3s HOOK DE CHOQUE | Fala em Português do Brasil (pt-BR, nunca inglês)]: "${activePack.hookSpeech}"\n` +
                     `Ação: ${activePack.hookAction}\n\n` +
-                    `[3s - 15s ENREDO & DRAMA]: "${activePack.bodySpeech}"\n` +
+                    `[3s - 15s ENREDO & DRAMA | Fala em Português do Brasil (pt-BR, nunca inglês)]: "${activePack.bodySpeech}"\n` +
                     `Ação: ${activePack.bodyAction}\n\n` +
-                    `[15s - 25s CLÍMAX & REVIRAVOLTA]: "${activePack.climaxSpeech}"\n` +
+                    `[15s - 25s CLÍMAX & REVIRAVOLTA | Fala em Português do Brasil (pt-BR, nunca inglês)]: "${activePack.climaxSpeech}"\n` +
                     `Ação: ${activePack.climaxAction}\n\n` +
-                    `[25s - 30s CTA TURBO DE SEGUIDORES]: "${activePack.ctaSpeech}"\n\n` +
-                    `PROMPT DE ANIMAÇÃO DE VÍDEO (PORTUGUÊS):\n${activePack.promptMotionPortuguese}\n\n` +
-                    `PROMPT DE ANIMAÇÃO DE VÍDEO (INGLÊS - KLING / HAILUO / LUMA):\n${activePack.promptMotionEnglish}`;
+                    `[25s - 30s CTA TURBO DE SEGUIDORES | Fala em Português do Brasil (pt-BR, nunca inglês)]: "${activePack.ctaSpeech}"\n\n` +
+                    `PROMPT DE ANIMAÇÃO DE VÍDEO (PORTUGUÊS - GOOGLE FLOW / VEO 3 | FALA EM PT-BR):\n${activePack.promptMotionPortuguese}\n\n` +
+                    `PROMPT DE ANIMAÇÃO DE VÍDEO (TÉCNICO EM INGLÊS COM FALA BLOQUEADA EM PORTUGUÊS PT-BR):\n${activePack.promptMotionEnglish}`;
 
                   copyToClipboard(fullScript, 'full-production-pack');
                 }}
@@ -1207,8 +1269,8 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                   <div>
                     <h3 className="text-[16px] font-black text-white">2. Prompt Mestre de Animação (Gerado para Sua Ideia)</h3>
                     <p className="text-[11.5px] text-white/60">
-                      Criado sob medida a partir do seu roteiro com movimentos de câmera, expressão e sincronia labial para{' '}
-                      <strong>Kling AI, Hailuo MiniMax, Luma Dream Machine, Veo 3 e Sora</strong>.
+                      Criado sob medida com fala travada em <strong>Português do Brasil (pt-BR)</strong>, câmera, expressão e sincronia labial para{' '}
+                      <strong>Google Flow (Veo 3), Kling AI, Hailuo MiniMax, Luma e Sora</strong>.
                     </p>
                   </div>
 
@@ -1223,7 +1285,7 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                             : 'text-white/60 hover:text-white'
                         }`}
                       >
-                        PT-BR
+                        PT-BR (Flow / Veo 3)
                       </button>
                       <button
                         type="button"
@@ -1234,11 +1296,16 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                             : 'text-white/60 hover:text-white'
                         }`}
                       >
-                        EN (Kling/Hailuo)
+                        EN Técnico (Fala PT-BR)
                       </button>
                     </div>
 
                     <button
+                      data-copy-text={
+                        promptLang === 'pt'
+                          ? activePack.promptMotionPortuguese
+                          : activePack.promptMotionEnglish
+                      }
                       onClick={() =>
                         copyToClipboard(
                           promptLang === 'pt'
@@ -1263,7 +1330,7 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
                 <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-white/70">
                   <span className="flex items-center gap-1 text-[#22c55e] font-semibold">
-                    <Check size={13} /> Prompt Personalizado com a Sua Ideia
+                    <Check size={13} /> Fala 100% em Português do Brasil (Anti-Inglês no Flow)
                   </span>
                   <span>•</span>
                   <span>Modo: Image to Video (Start Frame)</span>
@@ -1280,7 +1347,7 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[15px] font-black uppercase tracking-wider text-white">
-                Roteiro de Áudio & Ação de Cena (Cronometrado)
+                Roteiro de Áudio & Ação de Cena (Cronometrado • Fala em PT-BR)
               </h3>
               <span className="text-[11px] font-semibold text-[var(--mvz-gold)]">
                 Tom de Voz: {currentMascot.voiceStyle}
@@ -1304,7 +1371,10 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
                 <button
                   onClick={() =>
-                    copyToClipboard(`"${activePack.hookSpeech}"`, 'script-hook')
+                    copyToClipboard(
+                      `[IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO: Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês / NO English speech, spoken audio strictly in Brazilian Portuguese] Animação 3D vertical 9:16 do personagem ${currentMascot.name} (${currentMascot.voiceStyle}). Ação de cena: ${activePack.hookAction} Fala em Português do Brasil: "${activePack.hookSpeech}"`,
+                      'script-hook'
+                    )
                   }
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >
@@ -1329,7 +1399,12 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
                 </div>
 
                 <button
-                  onClick={() => copyToClipboard(`"${activePack.bodySpeech}"`, 'script-body')}
+                  onClick={() =>
+                    copyToClipboard(
+                      `[IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO: Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês / NO English speech, spoken audio strictly in Brazilian Portuguese] Animação 3D vertical 9:16 do personagem ${currentMascot.name} (${currentMascot.voiceStyle}). Ação de cena: ${activePack.bodyAction} Fala em Português do Brasil: "${activePack.bodySpeech}"`,
+                      'script-body'
+                    )
+                  }
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >
                   {copiedId === 'script-body' ? 'Copiado!' : 'Copiar'}
@@ -1354,7 +1429,10 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
                 <button
                   onClick={() =>
-                    copyToClipboard(`"${activePack.climaxSpeech}"`, 'script-offer')
+                    copyToClipboard(
+                      `[IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO: Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês / NO English speech, spoken audio strictly in Brazilian Portuguese] Animação 3D vertical 9:16 do personagem ${currentMascot.name} (${currentMascot.voiceStyle}). Ação de cena: ${activePack.climaxAction} Fala em Português do Brasil: "${activePack.climaxSpeech}"`,
+                      'script-offer'
+                    )
                   }
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >
@@ -1377,7 +1455,10 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
 
                 <button
                   onClick={() =>
-                    copyToClipboard(`"${activePack.ctaSpeech}"`, 'script-cta')
+                    copyToClipboard(
+                      `[IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO: Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês / NO English speech, spoken audio strictly in Brazilian Portuguese] Animação 3D vertical 9:16 do personagem ${currentMascot.name} (${currentMascot.voiceStyle}) apontando com emoção para o botão de seguir e falando em Português do Brasil: "${activePack.ctaSpeech}"`,
+                      'script-cta'
+                    )
                   }
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:text-white transition"
                 >
@@ -1405,7 +1486,7 @@ export function TurboView({ onUse }: { onUse?: (prompt: string) => void }) {
               onClick={() => {
                 if (onUse) {
                   onUse(
-                    `Quero criar a continuação (Parte 2 e Parte 3) da novelinha do ${currentMascot.name} para o episódio "${episodeTitle}". O enredo base foi: "${userIdea}" com clímax: "${plotTwist}". Me entregue o roteiro completo de novelinha viral para bombar de seguidores.`
+                    `Quero criar a continuação (Parte 2 e Parte 3) da novelinha do ${currentMascot.name} para o episódio "${episodeTitle}". O enredo base foi: "${userIdea}" com clímax: "${plotTwist}". Me entregue o roteiro completo de novelinha viral e os prompts prontos para o Google Flow especificando obrigatoriamente que a fala é em Português do Brasil (pt-BR), não em inglês.`
                   );
                 }
               }}

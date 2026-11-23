@@ -173,7 +173,7 @@ async function generatePromptAssistantReply(userIdea: string, history: PromptMes
           {
             role: 'system',
             content:
-              'Você é o GERADOR DE PROMPTS E ASSISTENTE DE VÍDEOS IA DA ORBIEX. Se o usuário pedir um prompt de vídeo, foto, cena, produto, roupa ou personagem, gere o prompt exato e fiel ao pedido dele nos blocos ```kling (vídeo 9:16 em inglês hiper-realista), ```negative (anti-distorção), ```flow (Google Flow VEO 3 em inglês) e ```midjourney (foto 9:16 em inglês com --ar 9:16 --v 6.1 --style raw). Se o usuário fizer uma pergunta técnica sobre Kling, Flow, Midjourney ou pedir um ajuste no prompt anterior, responda diretamente à dúvida dele e entregue o prompt ajustado. Nunca use emojis.',
+              'Você é o GERADOR DE PROMPTS E ASSISTENTE DE VÍDEOS IA DA ORBIEX. Se o usuário pedir um prompt de vídeo, foto, cena, produto, roupa ou personagem, gere o prompt exato e fiel ao pedido dele nos blocos ```kling (vídeo 9:16 hiper-realista), ```negative (anti-distorção + English speech, English voiceover), ```flow (Google Flow VEO 3) e ```midjourney (foto 9:16 em inglês com --ar 9:16 --v 6.1 --style raw). REGRA CRÍTICA DE IDIOMA DA FALA (ANTI-INGLÊS NO GOOGLE FLOW): sempre que houver fala, locução, diálogo ou personagem falando, especifique EXPLICITAMENTE dentro dos blocos ```flow e ```kling que A FALA É OBRIGATORIAMENTE EM PORTUGUÊS DO BRASIL (pt-BR) nativo, PROIBIDO falar em inglês (SPOKEN AUDIO LANGUAGE: Strictly 100% native Brazilian Portuguese pt-BR ONLY, NEVER speak English), mantendo qualquer frase falada sempre escrita em português! Quando for vídeo sem fala, inclua no ```flow: "Audio rule: NO English speech; silent performance or spoken audio strictly in native Brazilian Portuguese (pt-BR), never English." Nunca use emojis.',
           },
           ...cleanHistory.map((m) => ({
             role: m.role,
@@ -220,15 +220,15 @@ function generateLocalPromptReply(userIdea: string, history: PromptMessage[]): s
   if (isAdjustment && previousAssistantMsg) {
     return (
       `Perfeito! Analisei a sua observação e atualizei a composição do prompt incorporando: **"${idea}"**.\n\n` +
-      `Aqui está a versão revisada e calibrada para o **Kling AI (Vídeo Vertical 9:16)**:\n\n` +
-      `\`\`\`kling\n` +
-      `High-end commercial vertical video 9:16, authentic mobile UGC aesthetic. Updated scene directive: ${idea}. Authentic model proportions, rich fabric texture, natural skin tones, smooth 60fps cinematic camera tracking flow, ultra sharp focus, 8k resolution, raw photorealism. --motion_amplitude 6.5 --camera_motion smooth\n` +
+      `Aqui está a versão revisada e calibrada para o **Google Flow (Veo 3) / Kling AI (Vídeo Vertical 9:16)**:\n\n` +
+      `\`\`\`flow\n` +
+      `High-end commercial vertical video 9:16, authentic mobile UGC aesthetic. Updated scene directive: ${idea}. MANDATORY SPOKEN AUDIO / IDIOMA DA FALA: Se houver fala, voz ou narração, DEVE ser 100% em Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês (Strictly native Brazilian Portuguese pt-BR speech ONLY, NEVER speak English, NO English accent). Authentic model proportions, rich fabric texture, natural skin tones, smooth 60fps cinematic camera tracking flow, ultra sharp focus, 8k resolution, raw photorealism.\n` +
       `\`\`\`\n\n` +
       `### Ajustes Aplicados na Cena:\n` +
-      `- **Foco do Ajuste:** Modificação solicitada integrada na física de movimento sem distorcer membros ou textura têxtil.\n` +
-      `- **Negative Prompt (Anti-Distorção):**\n` +
+      `- **Foco do Ajuste:** Modificação solicitada integrada na física de movimento com trava de idioma em Português do Brasil (anti-inglês no Flow).\n` +
+      `- **Negative Prompt (Anti-Distorção e Anti-Inglês):**\n` +
       `\`\`\`negative\n` +
-      `deformed anatomy, extra fingers, mutated hands, blur, jitter, artifacts, cartoonish, 3d render, plastic textures, oversaturation, distortion, low resolution\n` +
+      `English speech, English voiceover, English accent, deformed anatomy, extra fingers, mutated hands, blur, jitter, artifacts, cartoonish, 3d render, plastic textures, oversaturation, distortion, low resolution\n` +
       `\`\`\`\n\n` +
       `Se precisar de mais algum ajuste fino no ângulo, iluminação ou tempo de cena, só me avisar.`
     );
@@ -340,33 +340,38 @@ function generateLocalPromptReply(userIdea: string, history: PromptMessage[]): s
   }
 
   // 3. Resposta conversacional estruturada como ChatGPT / Agente
+  const hasSpeechIntent = /fala|falando|dizendo|narr|voz|roteiro|di[aá]logo|contando|explicando|chorando|gritando|sussurrando|lip[- ]?sync/i.test(lower);
+  const audioRule = hasSpeechIntent
+    ? 'MANDATORY SPOKEN AUDIO / IDIOMA DA FALA: A fala e voz são OBRIGATORIAMENTE 100% em Português do Brasil (pt-BR) com sotaque brasileiro nativo — PROIBIDO falar em inglês (Strictly 100% native Brazilian Portuguese pt-BR speech ONLY, NEVER speak English, NO English words, NO English accent).'
+    : 'Audio/Speech rule: Strictly NO English speech; silent performance or spoken audio strictly in native Brazilian Portuguese (pt-BR) ONLY, never English.';
+
   return (
-    `Analisando a sua ideia para **${productLabel}**, estruturei as diretivas cinematográficas exatas para transformar seu conceito em um resultado profissional, sem distorção e com física realista.\n\n` +
+    `Analisando a sua ideia para **${productLabel}**, estruturei as diretivas cinematográficas exatas para transformar seu conceito em um resultado profissional, sem distorção, com física realista e trava de áudio em Português do Brasil.\n\n` +
     `### Kling AI V1.5 / V2.0 (Vídeo Vertical 9:16)\n` +
     `\`\`\`kling\n` +
-    `High-end commercial video, vertical format 9:16. ${idea}. Motion directive: ${motionEn}. Authentic mobile UGC aesthetic, natural body proportions, rich textile fabric texture, authentic skin tones. Smooth natural motion blur, seamless cinematic flow, soft natural ambient lighting. Ultra sharp focus, 8k resolution, raw quality, 30fps. --motion_amplitude 6.5 --camera_motion smooth\n` +
+    `High-end commercial video, vertical format 9:16. ${idea}. Motion directive: ${motionEn}. ${audioRule} Authentic mobile UGC aesthetic, natural body proportions, rich textile fabric texture, authentic skin tones. Smooth natural motion blur, seamless cinematic flow, soft natural ambient lighting. Ultra sharp focus, 8k resolution, raw quality, 30fps. --motion_amplitude 6.5 --camera_motion smooth\n` +
     `\`\`\`\n\n` +
     `### Especificações Técnicas & Câmera:\n` +
     `- **Movimento de Câmera:** ${motionPt}\n` +
     `- **Enquadramento:** Vertical 9:16 otimizado para retenção no feed do TikTok e Reels.\n` +
-    `- **Iluminação:** Luz natural difusa de janela com contraste suave nas texturas.\n\n` +
-    `### Negative Prompt (Anti-Distorção Obrigatório):\n` +
+    `- **Idioma de Fala/Áudio:** Português do Brasil (pt-BR) nativo — blindado contra fala em inglês.\n\n` +
+    `### Negative Prompt (Anti-Distorção e Anti-Inglês Obrigatório):\n` +
     `\`\`\`negative\n` +
-    `deformed hands, extra fingers, mutated anatomy, blur, jitter, artifacts, cartoonish, 3d render, plastic skin, transparent fabric, waistband rolling, oversaturation, distortion, face glitch, bad proportions, flicker\n` +
+    `English speech, English voiceover, English accent, deformed hands, extra fingers, mutated anatomy, blur, jitter, artifacts, cartoonish, 3d render, plastic skin, transparent fabric, waistband rolling, oversaturation, distortion, face glitch, bad proportions, flicker\n` +
     `\`\`\`\n\n` +
-    `### Google Flow / VEO 3 (Cinematográfico):\n` +
+    `### Google Flow / VEO 3 (Cinematográfico • Fala Blindada em PT-BR):\n` +
     `\`\`\`flow\n` +
-    `Cinematic commercial fashion shot, aspect ratio 9:16. ${idea}. Choreography: ${motionEn}. Filmed on 35mm Arri Alexa LF with master prime lens f/1.8. Soft diffused window lighting, subtle volumetric shadows, natural color grade, accurate micro-textures. Photorealistic depth of field, 4k master render, realistic optical bokeh.\n` +
+    `Cinematic commercial fashion shot, aspect ratio 9:16. ${idea}. Choreography: ${motionEn}. ${audioRule} Filmed on 35mm Arri Alexa LF with master prime lens f/1.8. Soft diffused window lighting, subtle volumetric shadows, natural color grade, accurate micro-textures. Photorealistic depth of field, 4k master render, realistic optical bokeh.\n` +
     `\`\`\`\n\n` +
     `### Midjourney V6.1 / Flux Pro (Foto Editorial / Catálogo):\n` +
     `\`\`\`midjourney\n` +
     `High-fashion editorial photograph, dynamic pose captured mid-motion: ${motionEn}. ${idea}. Modern luxury aesthetic, authentic human model with realistic skin pores, intricate weave detail. Soft studio rim lighting, clean minimalist composition. Shot with Hasselblad X2D 100C, 85mm portrait lens, shallow depth of field --ar 9:16 --v 6.1 --style raw --q 2\n` +
     `\`\`\`\n\n` +
-    `### Roteiro Orgânico TikTok Shop (0 a 15s):\n` +
-    `- **0 a 3s (Gancho POV):** "POV: você finalmente achou ${productLabel} que veste perfeito e tem zero transparência no corpo."\n` +
+    `### Roteiro Orgânico TikTok Shop (0 a 15s • Fala em Português do Brasil):\n` +
+    `- **0 a 3s (Gancho POV em PT-BR):** "POV: você finalmente achou ${productLabel} que veste perfeito e tem zero transparência no corpo."\n` +
     `- **3 a 7s (Ação no Vídeo):** Modelo faz a demonstração prática no espelho (${motionPt.toLowerCase()})\n` +
-    `- **7 a 11s (Quebra de Objeção):** "O tecido tem compressão firme que modela a cintura sem sufocar, o cós não enrola e você agacha sem medo."\n` +
-    `- **11 a 15s (Chamada Orgânica):** "Veste bem demais. Deixei o link fixado aqui embaixo na sacolinha para quem quiser conferir."\n\n` +
+    `- **7 a 11s (Quebra de Objeção em PT-BR):** "O tecido tem compressão firme que modela a cintura sem sufocar, o cós não enrola e você agacha sem medo."\n` +
+    `- **11 a 15s (Chamada Orgânica em PT-BR):** "Veste bem demais. Deixei o link fixado aqui embaixo na sacolinha para quem quiser conferir."\n\n` +
     `Se você quiser mudar algum detalhe do cenário, alterar a cor ou ajustar o movimento, é só me falar que eu adapto aqui.`
   );
 }

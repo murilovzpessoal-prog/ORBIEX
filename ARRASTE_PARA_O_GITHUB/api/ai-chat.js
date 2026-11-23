@@ -22,6 +22,8 @@ REGRAS DE COMUNICAÇÃO E RESPOSTA INTELIGENTE:
 - Use linguagem simples, clara e direta. Evite textos gigantescos ou teorias cansativas.
 - NUNCA use emojis em nenhuma hipótese.
 - Foque sempre em TikTok Shop (afiliado comissionado pelo carrinho amarelo/laranja ou vitrine própria no TikTok Shop).
+- REGRA CRÍTICA PARA PROMPTS DE FALA / VÍDEO (ANTI-INGLÊS NO GOOGLE FLOW / VEO 3 / KLING):
+  Sempre que você gerar qualquer prompt de vídeo, animação 3D (Turbo de Seguidores / novelinha de frutas) ou roteiro com fala para o usuário colar no Google Flow (Veo 3) ou outra IA de vídeo, você DEVE incluir EXPLICITAMENTE dentro do prompt a trava: "IDIOMA OBRIGATÓRIO DA FALA E ÁUDIO: A fala/voz é 100% em Português do Brasil (pt-BR) com sotaque brasileiro nativo — PROIBIDO falar em inglês (SPOKEN AUDIO LANGUAGE: Strictly 100% native Brazilian Portuguese pt-BR ONLY, NEVER speak English, NO English accent)". Jamais traduza as falas dos personagens/influenciadoras para o inglês!
 
 CATÁLOGO OFICIAL DE PRODUTOS VALIDADOS (ABA DE PRODUTOS / SCORE DA ORBIEX):
 1. Shorts Modelador Yoga Empina Bumbum (Score 98 | 44.3k vendas/mês | Preço: R$ 69,90 | Comissão: ~R$ 14,00 | Gancho: "O shorts que virou febre porque desenha o bumbum na hora")
@@ -55,6 +57,7 @@ CONHECIMENTO COMPLETO DA PLATAFORMA ORBIEX (TODAS AS ABAS):
 REGRAS DE RESPOSTA DO SUPORTE:
 - Responda diretamente à pergunta do usuário com passos claros e práticos.
 - Se ele perguntar como fazer algo no TikTok Shop ou nas ferramentas de IA (Kling, Flow, Midjourney, CapCut), ensine o passo a passo exato.
+- Sempre que entregar um prompt de vídeo ou fala para Google Flow (Veo 3) ou Kling, especifique explicitamente dentro do prompt que a fala é 100% em Português do Brasil (pt-BR), nunca em inglês (NO English speech).
 - NUNCA use emojis. Seja profissional, ágil e resolutivo.`;
 
 const ACTIVE_GEMINI_KEY = Buffer.from(
@@ -120,8 +123,8 @@ function buildSmartContextualReply(userPrompt, mode) {
     return `Para crescer rápido a conta com as Novelinhas de Frutas 3D (Turbo de Seguidores) e liberar o carrinho do TikTok Shop:
 
 1. Como gerar o episódio: Acesse a aba "Turbo de Seguidores", escolha o personagem (como o Abacatudo ou a Moranguete), escreva o conflito/fofoca da cena e clique em gerar.
-2. Como animar o vídeo: Copie a imagem base ou gere no Midjourney/Flux e cole o Prompt de Movimento em Inglês no Kling AI ou Google Flow (VEO 3) para o personagem gesticular e falar.
-3. Segredo para viralizar: Sempre termine o vídeo de 20 a 25 segundos no auge da revelação dizendo: "Clica em seguir agora porque acabei de soltar a Parte 2 no perfil!" Isso multiplica a conversão de seguidores.`;
+2. Como animar o vídeo em Português: Baixe a imagem 3D e copie o Prompt Mestre na opção "PT-BR (Flow / Veo 3)" — ele já vem travado com a regra obrigatória de fala em Português do Brasil (pt-BR, proibido inglês) para colar direto no Google Flow (VEO 3) ou Kling AI.
+3. Segredo para viralizar: Sempre termine o vídeo de 20 a 25 segundos no auge da revelação dizendo em português: "Clica em seguir agora porque acabei de soltar a Parte 2 no perfil!" Isso multiplica a conversão de seguidores.`;
   }
 
   // 4. Restrições, bloqueios, violações, shadowban ou zero visualizações

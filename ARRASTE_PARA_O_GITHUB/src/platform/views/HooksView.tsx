@@ -700,7 +700,7 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
 
   // Copiar hook completo
   const copyHookContent = (hook: ViralHook) => {
-    const textToCopy = `HOOK VIRAL (${hook.category.toUpperCase()})\n\nFala (0 a 3s):\n"${hook.spokenHook}"\n\nTexto na Tela (Overlay):\n${hook.overlayText}\n\nAção de Câmera:\n${hook.visualAction}\n\nGatilho Psicológico:\n${hook.whyItWorks}`;
+    const textToCopy = `HOOK VIRAL (${hook.category.toUpperCase()})\nIdioma Obrigatório da Fala / Áudio (Google Flow / Veo 3): Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês (Strictly 100% Brazilian Portuguese pt-BR speech ONLY, NEVER speak English).\n\nFala em Português do Brasil (0 a 3s):\n"${hook.spokenHook}"\n\nTexto na Tela (Overlay):\n${hook.overlayText}\n\nAção de Câmera:\n${hook.visualAction}\n\nGatilho Psicológico:\n${hook.whyItWorks}`;
 
     copyToClipboard(textToCopy);
     setCopiedId(hook.id);
@@ -711,12 +711,14 @@ export function HooksView({ onUse: _onUse }: { onUse?: (text: string) => void })
 
   // Copiar todos os hooks
   const copyAllHooks = () => {
-    const fullText = filteredHooks
-      .map(
-        (h, i) =>
-          `HOOK #${i + 1} [${h.category.toUpperCase()}]\nFala: "${h.spokenHook}"\nTexto na Tela: ${h.overlayText}\nAção de Câmera: ${h.visualAction}\nGatilho: ${h.whyItWorks}\n`
-      )
-      .join('\n──────────────────────────────────────\n\n');
+    const fullText =
+      `IDIOMA OBRIGATÓRIO DA FALA / ÁUDIO (GOOGLE FLOW / VEO 3): Português do Brasil (pt-BR) nativo — PROIBIDO falar em inglês (NO English speech).\n\n` +
+      filteredHooks
+        .map(
+          (h, i) =>
+            `HOOK #${i + 1} [${h.category.toUpperCase()}]\nFala em Português do Brasil (pt-BR, nunca inglês): "${h.spokenHook}"\nTexto na Tela: ${h.overlayText}\nAção de Câmera: ${h.visualAction}\nGatilho: ${h.whyItWorks}\n`
+        )
+        .join('\n──────────────────────────────────────\n\n');
 
     copyToClipboard(fullText);
     setCopiedAll(true);

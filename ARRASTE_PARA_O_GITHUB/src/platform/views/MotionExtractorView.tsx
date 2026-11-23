@@ -155,14 +155,14 @@ const ENGINES: EngineDef[] = [
     name: 'Google Flow (VEO 3)',
     badge: 'Recomendado',
     formatPrompt: (base, cam) =>
-      `[Google Flow VEO 3 Frame-to-Video Engine]\nMode: High Physical Simulation | 24fps Vertical 9:16\nPrompt: ${base}\nCamera Motion: ${cam.motion}, ${cam.framing}, ${cam.lens}\nLighting: ${cam.lighting}\nCloth Dynamics: Photorealistic fabric simulation, zero texture drift.\nNegative: low quality, blurry, deformed hands, jitter, abrupt cuts.`,
+      `[Google Flow VEO 3 Frame-to-Video Engine]\nMode: High Physical Simulation | 24fps Vertical 9:16\nPrompt: ${base}\nCamera Motion: ${cam.motion}, ${cam.framing}, ${cam.lens}\nLighting: ${cam.lighting}\nCloth Dynamics: Photorealistic fabric simulation, zero texture drift.\nAudio / Speech Rule (Mandatory): Strictly NO English speech — if any voice or speech occurs, it MUST be 100% in native Brazilian Portuguese (pt-BR) ONLY, never English (Idioma de fala obrigatório: Português do Brasil pt-BR, nunca inglês).\nNegative: English speech, English voiceover, low quality, blurry, deformed hands, jitter, abrupt cuts.`,
   },
   {
     id: 'kling',
     name: 'Kling AI (v1.5 / v2.0)',
     badge: 'Ultra Realista',
     formatPrompt: (base, cam) =>
-      `${base}\n--camera ${cam.motion.toLowerCase()} --cfg_scale 0.55 --motion 6 --aspect 9:16\nNegative prompt: morphing, extra limbs, bad anatomy, deformed fingers, jerky motion, low resolution, artifacts.`,
+      `${base} (Audio/Speech rule: strictly NO English speech; any spoken voice must be 100% native Brazilian Portuguese pt-BR).\n--camera ${cam.motion.toLowerCase()} --cfg_scale 0.55 --motion 6 --aspect 9:16\nNegative prompt: English speech, morphing, extra limbs, bad anatomy, deformed fingers, jerky motion, low resolution, artifacts.`,
   },
   {
     id: 'hailuo',

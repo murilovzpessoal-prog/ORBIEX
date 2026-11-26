@@ -41,7 +41,8 @@ export type ViewId =
   | 'credits'
   | 'community'
   | 'support'
-  | 'help';
+  | 'help'
+  | 'adm';
 
 export type Tone = 'cyan' | 'pink' | 'violet' | 'green' | 'amber';
 
@@ -82,6 +83,13 @@ export const NAV_FOOTER: NavItem[] = [
   { id: 'help', label: 'Ajuda', icon: CircleHelp },
 ];
 
+export const ADMIN_NAV_ITEM: NavItem = {
+  id: 'adm',
+  label: 'ADM',
+  icon: ShieldAlert,
+  badge: { text: 'ADM', tone: 'amber' },
+};
+
 export const ALL_NAV: NavItem[] = [...NAV_GROUPS.flat(), ...NAV_FOOTER];
 
 export const VIEW_TITLES: Record<ViewId, string> = {
@@ -105,6 +113,7 @@ export const VIEW_TITLES: Record<ViewId, string> = {
   community: 'Comunidade',
   support: 'Suporte',
   help: 'Ajuda',
+  adm: 'Painel ADM',
 };
 
 /* ─────────────── Ecosystem tools (home + tools hub) ─────────────── */

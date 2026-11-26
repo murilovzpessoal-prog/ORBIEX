@@ -1,6 +1,6 @@
 import { CornerDownLeft, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ALL_NAV, PROMPTS, type ViewId } from './data';
+import { ADMIN_NAV_ITEM, ALL_NAV, PROMPTS, type ViewId } from './data';
 
 interface Cmd {
   key: string;
@@ -15,11 +15,13 @@ export function CommandPalette({
   onClose,
   onNavigate,
   onPrompt,
+  isAdmin = false,
 }: {
   open: boolean;
   onClose: () => void;
   onNavigate: (v: ViewId) => void;
   onPrompt: (text: string) => void;
+  isAdmin?: boolean;
 }) {
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
@@ -34,7 +36,8 @@ export function CommandPalette({
   }, [open]);
 
   const cmds = useMemo<Cmd[]>(() => {
-    const pages: Cmd[] = ALL_NAV.map((n) => ({
+    const navList = isAdmin ? [ADMIN_NAV_ITEM, ...ALL_NAV] : ALL_NAV;
+    const pages: Cmd[] = navList.map((n) => ({
       key: `nav-${n.id}`,
       label: n.label,
       hint: 'Ir para',
@@ -49,7 +52,7 @@ export function CommandPalette({
       run: () => onPrompt(p.text),
     }));
     return [...pages, ...prompts];
-  }, [onNavigate, onPrompt]);
+  }, [isAdmin, onNavigate, onPrompt]);
 
   const results = useMemo(() => {
     const s = q.toLowerCase().trim();

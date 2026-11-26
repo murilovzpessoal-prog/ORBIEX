@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { switchAccountData } from '../accountStorage';
+import { ADMIN_DEFAULT_NAME, isAdminEmail } from '../adminConfig';
 
 interface LoginViewProps {
   onLogin: (email: string, name?: string) => void;
@@ -50,9 +51,17 @@ export function LoginView({ onLogin }: LoginViewProps) {
     try {
       const authPassToTry = password.trim();
 
+      if (isAdminEmail(cleanEmail) && authPassToTry !== 'Orbiex2026k') {
+        setLoading(false);
+        setError('Senha incorreta para a conta de administrador.');
+        return;
+      }
+
       let resolvedName =
         cleanName && cleanName.length >= 2
           ? cleanName
+          : isAdminEmail(cleanEmail)
+          ? ADMIN_DEFAULT_NAME
           : VERIFIED_CAKTO_BUYERS[cleanEmail] ||
             cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
 

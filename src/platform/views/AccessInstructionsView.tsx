@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { ArrowRight, CheckCircle2, ShieldCheck, Key, Mail, Sparkles, Copy, Check, ExternalLink } from 'lucide-react';
 import { copyText as copyToClipboard } from '../clipboard';
 
+const OFFICIAL_ORBIEX_URL = 'https://www.orbiex.io/';
+
 interface AccessInstructionsViewProps {
-  onGoToLogin: () => void;
+  onGoToLogin?: () => void;
 }
 
 export function AccessInstructionsView({ onGoToLogin }: AccessInstructionsViewProps) {
@@ -150,14 +152,20 @@ export function AccessInstructionsView({ onGoToLogin }: AccessInstructionsViewPr
 
           {/* Big Action Button */}
           <div className="mt-8">
-            <button
-              type="button"
-              onClick={onGoToLogin}
-              className="group flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#fffdf0] via-[#d4af37] to-[#a37418] text-[13.5px] font-black uppercase tracking-widest text-black shadow-[0_6px_30px_rgba(212,175,55,0.35)] transition-all hover:brightness-110 active:scale-[0.99]"
+            <a
+              href={OFFICIAL_ORBIEX_URL}
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                  e.preventDefault();
+                  onGoToLogin?.();
+                  window.location.href = OFFICIAL_ORBIEX_URL;
+                }
+              }}
+              className="group flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#fffdf0] via-[#d4af37] to-[#a37418] text-[13.5px] font-black uppercase tracking-widest text-black shadow-[0_6px_30px_rgba(212,175,55,0.35)] transition-all hover:brightness-110 active:scale-[0.99] cursor-pointer"
             >
               <span>Acessar a Plataforma Agora</span>
               <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
-            </button>
+            </a>
           </div>
         </main>
 

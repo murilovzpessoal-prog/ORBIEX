@@ -22,6 +22,8 @@ const EXCLUDED_KEYS = new Set([
   LAST_ACCOUNT_KEY,
   'orbiex_custom_lesson_videos',
   'orbiex_ai_config',
+  'orbiex_global_products_cache_v1',
+  'orbiex_global_hidden_base_v1',
 ]);
 
 const EXCLUDED_PREFIXES = [

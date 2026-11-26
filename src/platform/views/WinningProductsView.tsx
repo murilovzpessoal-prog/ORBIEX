@@ -7,9 +7,11 @@ import {
   BASE_WINNING_PRODUCTS,
   useProducts,
   computeAffiliateCommission,
+  normalizeProductLink,
   type WinningProduct,
   type ProductCategory,
 } from '../productsStore';
+import { isCurrentUserAdmin } from '../adminConfig';
 import { copyText as copyToClipboard } from '../clipboard';
 import { aiGenerateJSON, getGenMemory, addGenMemory, shuffle } from '../aiGenerate';
 
@@ -77,7 +79,9 @@ export function WinningProductsView({
   onUseInAgent: (prompt: string) => void;
   onNavigate: (view: ViewId) => void;
 }) {
-  const { products, addProduct, deleteProduct } = useProducts();
+  const { products, addProduct, deleteProduct, removeGlobalProduct } = useProducts();
+  const isAdmin = isCurrentUserAdmin();
+  const [adminDeleteToast, setAdminDeleteToast] = useState<string | null>(null);
   const [selectedCat, setSelectedCat] = useState<(typeof CATEGORIES)[number]>('Todos');
   const [activeModal, setActiveModal] = useState<WinningProduct | null>(null);
   const [copiedHook, setCopiedHook] = useState(false);
@@ -218,6 +222,19 @@ export function WinningProductsView({
       </div>
 
       {/* ── Filter Bar ── */}
+      {adminDeleteToast && (
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-300">
+          <span>{adminDeleteToast}</span>
+          <button
+            type="button"
+            onClick={() => setAdminDeleteToast(null)}
+            className="text-emerald-200/70 hover:text-white"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="mvz-scroll mb-7 flex items-center gap-2 overflow-x-auto pb-2">
         {CATEGORIES.map((cat) => (
           <button
@@ -251,28 +268,45 @@ export function WinningProductsView({
                 src={prod.image}
                 alt={prod.name}
                 loading="lazy"
+                referrerPolicy="no-referrer"
                 className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
               />
 
               {/* Dark subtle overlay on hover/base */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-95" />
 
-              {/* Custom badge & delete */}
-              {prod.isCustom && (
-                <div className="absolute left-3.5 top-3.5 z-10 flex items-center gap-1.5">
-                  <span className="rounded-full border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/20 px-2 py-0.5 text-[9.5px] font-extrabold uppercase text-[var(--mvz-gold-light)] backdrop-blur-md">
-                    Externo
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteProduct(prod.id);
-                    }}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/40 hover:text-white transition cursor-pointer"
-                    title="Excluir produto externo"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+              {/* Custom / Global Admin badge & delete */}
+              {(prod.isCustom || prod.isGlobalAdmin || isAdmin) && (
+                <div className="absolute left-3.5 top-3.5 right-3.5 z-10 flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    {(prod.isCustom || prod.isGlobalAdmin) && (
+                      <span className="rounded-full border border-[var(--mvz-gold)]/45 bg-[var(--mvz-gold)]/20 px-2.5 py-0.5 text-[9.5px] font-extrabold uppercase text-[var(--mvz-gold-light)] backdrop-blur-md">
+                        {prod.isGlobalAdmin ? 'Novo' : 'Externo'}
+                      </span>
+                    )}
+                  </div>
+                  {(isAdmin || (prod.isCustom && !prod.isGlobalAdmin)) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isAdmin && !prod.isCustom) {
+                          void removeGlobalProduct(prod.id).then((res) => {
+                            if (res.ok) {
+                              setAdminDeleteToast(`"${prod.name}" foi excluído para todos os usuários.`);
+                              window.setTimeout(() => setAdminDeleteToast(null), 3500);
+                            }
+                          });
+                        } else {
+                          deleteProduct(prod.id);
+                        }
+                      }}
+                      className="flex items-center gap-1 rounded-full border border-red-500/40 bg-red-600/80 px-2.5 py-1 text-[10px] font-bold text-white shadow-md backdrop-blur-md transition hover:bg-red-500 cursor-pointer"
+                      title={isAdmin && !prod.isCustom ? 'Excluir produto para todos os usuários (ADM)' : 'Excluir produto externo'}
+                    >
+                      <Trash2 size={11} />
+                      {isAdmin && <span>Excluir</span>}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -284,9 +318,9 @@ export function WinningProductsView({
               </div>
             </div>
 
-            {/* Acessar Produto Button below card (fiel ao Print 1, redireciona diretamente para o link TikTok) */}
+            {/* Acessar Produto Button below card (redireciona para o link do produto) */}
             <a
-              href={prod.link}
+              href={normalizeProductLink(prod.link)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--mvz-line)] bg-white/[0.03] text-[11.5px] font-bold uppercase tracking-wider text-white/80 transition-all duration-200 hover:border-[var(--mvz-gold)] hover:bg-[rgba(212,175,55,0.08)] hover:text-white"
@@ -324,6 +358,7 @@ export function WinningProductsView({
                 <img
                   src={activeModal.image}
                   alt={activeModal.name}
+                  referrerPolicy="no-referrer"
                   className="h-24 w-20 shrink-0 rounded-xl object-cover border border-[var(--mvz-line)]"
                 />
                 <div className="min-w-0 flex-1">
@@ -453,7 +488,7 @@ export function WinningProductsView({
                 </button>
 
                 <a
-                  href={activeModal.link}
+                  href={normalizeProductLink(activeModal.link)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--mvz-line-strong)] px-5 text-[12.5px] font-semibold text-white/80 transition hover:border-[var(--mvz-gold)] hover:bg-[rgba(212,175,55,0.08)] hover:text-white"

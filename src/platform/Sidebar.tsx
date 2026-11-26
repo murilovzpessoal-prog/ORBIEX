@@ -1,6 +1,6 @@
-import { LogOut, Settings, X } from 'lucide-react';
+import { LogOut, Settings, ShieldCheck, X } from 'lucide-react';
 import { Fragment } from 'react';
-import { NAV_FOOTER, NAV_GROUPS, type NavItem, type ViewId } from './data';
+import { ADMIN_NAV_ITEM, NAV_FOOTER, NAV_GROUPS, type NavItem, type ViewId } from './data';
 import { Logo } from './ui';
 import type { UserProfile } from './ProfileSettingsModal';
 import { getInitials } from './ProfileSettingsModal';
@@ -34,6 +34,12 @@ function Item({ item, active, onClick }: { item: NavItem; active: boolean; onCli
 
       {/* Label */}
       <span className="flex-1 truncate text-left tracking-wide">{item.label}</span>
+
+      {item.badge && (
+        <span className="rounded-full border border-[var(--mvz-gold)]/40 bg-[var(--mvz-gold)]/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[var(--mvz-gold-light)]">
+          {item.badge.text}
+        </span>
+      )}
     </button>
   );
 }
@@ -46,6 +52,7 @@ export function Sidebar({
   profile,
   onOpenSettings,
   onLogout,
+  isAdmin = false,
 }: {
   view: ViewId;
   onNavigate: (v: ViewId) => void;
@@ -54,6 +61,7 @@ export function Sidebar({
   profile?: UserProfile;
   onOpenSettings?: () => void;
   onLogout?: () => void;
+  isAdmin?: boolean;
 }) {
   const go = (v: ViewId) => {
     onNavigate(v);
@@ -105,6 +113,16 @@ export function Sidebar({
         {/* ── Nav Links Container: espaçamento e centralização balanceados ── */}
         <nav className="mvz-scroll flex-1 overflow-y-auto px-3.5 py-5 flex flex-col justify-between">
           <div className="space-y-4">
+            {isAdmin && (
+              <div className="space-y-1">
+                <Item
+                  item={{ ...ADMIN_NAV_ITEM, icon: ShieldCheck }}
+                  active={view === 'adm'}
+                  onClick={() => go('adm')}
+                />
+                <div className="mx-2.5 my-3 h-px bg-[var(--mvz-line)]" />
+              </div>
+            )}
             {NAV_GROUPS.map((group, i) => (
               <Fragment key={i}>
                 {i > 0 && <div className="mx-2.5 my-3 h-px bg-[var(--mvz-line)]" />}

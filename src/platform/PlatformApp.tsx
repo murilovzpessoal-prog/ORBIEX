@@ -28,9 +28,11 @@ import { CommunityView, CreditsView, HelpView } from './views/MiscViews';
 import { SupportChatView } from './views/SupportChatView';
 import { AccessInstructionsView } from './views/AccessInstructionsView';
 import { MembersView } from './views/MembersView';
+import { AdmView } from './views/AdmView';
 import { PermissionsOnboardingModal } from './PermissionsOnboardingModal';
 import { LoginView } from './views/LoginView';
 import { VoiceMode } from './views/VoiceMode';
+import { getLoggedUserEmail, isAdminEmail } from './adminConfig';
 import { emitVoiceTurn, getVoiceHistory, onVoiceOpenRequest, type VoiceTurn } from './voiceBus';
 
 const VIEW_LABEL: Partial<Record<ViewId, string>> = {
@@ -50,6 +52,7 @@ const VIEW_LABEL: Partial<Record<ViewId, string>> = {
   'prompt-gen': 'Gerador de Prompts',
   antirestriction: 'Scanner Antirrestrição',
   support: 'Suporte',
+  adm: 'Painel ADM',
 };
 
 const VALID: ViewId[] = [
@@ -73,14 +76,18 @@ const VALID: ViewId[] = [
   'community',
   'support',
   'help',
+  'adm',
 ];
 
 const fromHash = (): ViewId => {
   const h = window.location.hash.replace('#/', '') as ViewId;
+  if (h === 'adm' && !isAdminEmail(getLoggedUserEmail())) return 'members';
   return VALID.includes(h) ? h : 'members';
 };
 
 export default function PlatformApp() {
+  const [userEmail, setUserEmail] = useState<string>(() => getLoggedUserEmail());
+  const isAdmin = isAdminEmail(userEmail);
   const [view, setView] = useState<ViewId>(fromHash);
   const [menu, setMenu] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -136,6 +143,7 @@ export default function PlatformApp() {
   const { profile, saveProfile: handleSaveProfile } = useUserProfile();
 
   const navigate = useCallback((v: ViewId) => {
+    if (v === 'adm' && !isAdminEmail(getLoggedUserEmail())) return;
     setView(v);
     window.location.hash = `#/${v}`;
     document.getElementById('mvz-main')?.scrollTo({ top: 0 });
@@ -149,35 +157,39 @@ export default function PlatformApp() {
       localStorage.setItem('orbiex_logged_out', 'true');
     } catch {}
     setSettingsOpen(false);
+    setUserEmail('');
     setIsAuthenticated(false);
+    setView('members');
     window.location.hash = '#/login';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleLogin = useCallback(
     (email: string, name?: string) => {
+      const normalized = email.trim().toLowerCase();
       try {
         localStorage.setItem('orbiex_auth', 'true');
         localStorage.setItem('orbix_auth', 'true');
-        if (email) {
-          localStorage.setItem('orbiex_user_email', email);
-          localStorage.setItem('orbix_user_email', email);
+        if (normalized) {
+          localStorage.setItem('orbiex_user_email', normalized);
+          localStorage.setItem('orbix_user_email', normalized);
         }
         localStorage.removeItem('orbiex_logged_out');
       } catch {}
+      setUserEmail(normalized);
       setIsAuthenticated(true);
       if (name) {
         // Recupera a foto já salva para este e-mail (não apaga a foto no login)
         let savedAvatar: string | null = null;
         try {
           savedAvatar =
-            (email && localStorage.getItem(`orbiex_avatar_${email.trim().toLowerCase()}`)) ||
+            (normalized && localStorage.getItem(`orbiex_avatar_${normalized}`)) ||
             getStoredProfile().avatarUrl ||
             null;
         } catch {}
         handleSaveProfile({ name, avatarUrl: savedAvatar });
       }
-      navigate('members');
+      navigate(isAdminEmail(normalized) ? 'adm' : 'members');
     },
     [handleSaveProfile, navigate]
   );
@@ -187,6 +199,7 @@ export default function PlatformApp() {
       const p = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       if (hash.includes('login') || hash.includes('entrar')) {
+        setShowingInstructions(false);
         setIsAuthenticated(false);
         return;
       }
@@ -234,7 +247,6 @@ export default function PlatformApp() {
         onGoToLogin={() => {
           setShowingInstructions(false);
           setIsAuthenticated(false);
-          window.location.hash = '#/login';
         }}
       />
     );
@@ -255,6 +267,7 @@ export default function PlatformApp() {
         profile={profile}
         onOpenSettings={() => setSettingsOpen(true)}
         onLogout={handleLogout}
+        isAdmin={isAdmin}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -289,11 +302,12 @@ export default function PlatformApp() {
             {view === 'community' && <CommunityView />}
             {view === 'support' && <SupportChatView onNavigate={navigate} onUseInAgent={useInAgent} />}
             {view === 'help' && <HelpView mode="help" />}
+            {view === 'adm' && isAdmin && <AdmView onNavigate={navigate} />}
           </div>
         </main>
       </div>
 
-      <CommandPalette open={palette} onClose={() => setPalette(false)} onNavigate={navigate} onPrompt={useInAgent} />
+      <CommandPalette open={palette} onClose={() => setPalette(false)} onNavigate={navigate} onPrompt={useInAgent} isAdmin={isAdmin} />
 
       <PermissionsOnboardingModal />
 

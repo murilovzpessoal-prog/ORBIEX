@@ -30,13 +30,37 @@ function parseManualUserRow(row) {
 }
 
 module.exports = async function handler(req, res) {
-  setCorsHeaders(res, 'GET,OPTIONS,POST');
+  setCorsHeaders(res, 'GET,OPTIONS,POST,DELETE');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
     const auth = await verifyAdminRequest(req);
     if (!auth.ok) {
       return res.status(403).json({ success: false, error: auth.error });
+    }
+
+    if (req.method === 'DELETE' || req.body?.action === 'revoke_user') {
+      const targetEmail = normalizeEmail(req.query?.email || req.body?.email);
+      if (!targetEmail || !targetEmail.includes('@')) {
+        return res.status(400).json({ success: false, error: 'Informe um e-mail válido.' });
+      }
+      const nowIso = new Date().toISOString();
+      await supabase.from('authorized_buyers').delete().ilike('email', targetEmail);
+      await supabase.from('profiles').delete().eq('user_email', `${MANUAL_USER_PREFIX}${targetEmail}`);
+      await supabase.from('profiles').delete().eq('user_email', `orbiex_claimed::${targetEmail}`);
+      // Garante caso DELETE seja restrito por RLS: rebaixa status para revoked
+      const { data: leftover } = await supabase
+        .from('authorized_buyers')
+        .select('email')
+        .ilike('email', targetEmail)
+        .limit(1);
+      if (leftover && leftover.length > 0) {
+        await supabase
+          .from('authorized_buyers')
+          .update({ status: 'revoked', updated_at: nowIso })
+          .ilike('email', targetEmail);
+      }
+      return res.status(200).json({ success: true, email: targetEmail });
     }
 
     if (req.method === 'GET') {
@@ -109,6 +133,35 @@ module.exports = async function handler(req, res) {
           : cleanEmail.split('@')[0].replace(/[._-]+/g, ' ').trim();
       const nowIso = new Date().toISOString();
 
+      try {
+        await supabase.from('authorized_buyers').upsert(
+          {
+            email: cleanEmail,
+            name: displayName,
+            status: 'approved',
+            platform: 'admin_manual',
+            updated_at: nowIso,
+          },
+          { onConflict: 'email' }
+        );
+      } catch (buyerErr) {
+        console.warn('authorized_buyers upsert warning:', buyerErr);
+      }
+
+      try {
+        await supabase.from('profiles').upsert(
+          {
+            user_email: `orbiex_claimed::${cleanEmail}`,
+            name: 'claimed',
+            avatar_url: JSON.stringify({ claimed: true, at: Date.now() }),
+            updated_at: nowIso,
+          },
+          { onConflict: 'user_email' }
+        );
+      } catch {
+        /* ignore */
+      }
+
       let authSynced = false;
       try {
         const { data: rpcData, error: rpcErr } = await supabase.rpc('orbiex_sync_user_account', {
@@ -147,21 +200,6 @@ module.exports = async function handler(req, res) {
         } catch (authErr) {
           console.warn('ADM fallback auth create warning:', authErr);
         }
-      }
-
-      try {
-        await supabase.from('authorized_buyers').upsert(
-          {
-            email: cleanEmail,
-            name: displayName,
-            status: 'approved',
-            platform: 'admin_manual',
-            updated_at: nowIso,
-          },
-          { onConflict: 'email' }
-        );
-      } catch (buyerErr) {
-        console.warn('authorized_buyers upsert warning:', buyerErr);
       }
 
       try {

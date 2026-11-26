@@ -317,9 +317,14 @@ async function deleteOrTombstoneProfileRow(rowKey, id) {
   return { ok: true };
 }
 
+function isValidAdminPassword(raw) {
+  return String(raw || '').trim() === ADMIN_SECRET;
+}
+
 module.exports = {
   supabase,
   ADMIN_EMAIL,
+  isValidAdminPassword,
   setCorsHeaders,
   normalizeEmail,
   verifyAdminRequest,

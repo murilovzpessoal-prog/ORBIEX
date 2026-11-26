@@ -117,6 +117,17 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ success: false, error: error.message });
     }
 
+    if (status !== 'approved') {
+      try {
+        await supabase
+          .from('authorized_buyers')
+          .update({ status, updated_at: new Date().toISOString() })
+          .ilike('email', email);
+      } catch {
+        /* ignore */
+      }
+    }
+
     // Cria automaticamente o usuario no Supabase Authentication (Authentication -> Users), authorized_buyers e profiles via RPC atomica
     let authUserCreated = false;
     if (status === 'approved') {

@@ -164,6 +164,40 @@ export default function PlatformApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // Revalida em segundo plano se a sessão logada pertence realmente a um comprador aprovado da Cakto ou ADM
+  useEffect(() => {
+    if (!isAuthenticated || showingInstructions) return;
+    const activeEmail = getLoggedUserEmail();
+    if (!activeEmail) {
+      handleLogout();
+      return;
+    }
+    if (isAdminEmail(activeEmail)) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/check-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: activeEmail, mode: 'session' }),
+        });
+        if (!cancelled && res.ok) {
+          const json = await res.json().catch(() => null);
+          if (json && json.authorized === false) {
+            handleLogout();
+          }
+        }
+      } catch {
+        /* não derruba sessão em falha temporária de rede */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, showingInstructions, userEmail, handleLogout]);
+
   const handleLogin = useCallback(
     (email: string, name?: string) => {
       const normalized = email.trim().toLowerCase();

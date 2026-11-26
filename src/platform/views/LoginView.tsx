@@ -9,18 +9,17 @@ interface LoginViewProps {
   topLeftImage?: string | null;
 }
 
-const VERIFIED_CAKTO_BUYERS: Record<string, string> = {
+const LEGACY_CAKTO_BUYERS: Record<string, string> = {
   'brunoaraujo1915@gmail.com': 'Bruno Fontes Araujo',
-  'karolinefialho5@gmail.com': 'Anna Karoline Silva Fialho',
   'sol.liandra@gmail.com': 'Maria do Socorro Leandro da Rocha Cardoso',
   'valquiriaferres2014@gmail.com': 'Valquíria Inês Ferres',
   'nilceliasantos.souza04@gmail.com': 'Nilcelia dos Santos Souza',
   'mauriciocardoso0709@gmail.com': 'Maurício Cardoso da Silva',
-  'marcosgarcias13@hotmail.com': 'Marcos A C Garcias',
-  'direnepeixoto@gmail.com': 'Valdirene Santos Peixoto',
   'diegorayn@gmail.com': 'Diego Ferreira da Silva',
   'jannesfc@hotmail.com': 'Janne da Silva Freitas Coelho',
 };
+
+const DEFAULT_BUYER_PASSWORD = 'orbiex2026k';
 
 export function LoginView({ onLogin }: LoginViewProps) {
   const [name, setName] = useState('');
@@ -36,86 +35,230 @@ export function LoginView({ onLogin }: LoginViewProps) {
 
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
+    const authPassToTry = password.trim();
 
     if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setError('Informe um e-mail de compra válido.');
+      setError('Informe o e-mail de compra válido.');
       return;
     }
-    if (password.trim().length < 3) {
-      setError('Crie uma senha de pelo menos 3 caracteres ou use a senha padrão (orbiex2026k).');
+    if (authPassToTry.length < 3) {
+      setError('Informe sua senha de acesso (mínimo 3 caracteres).');
       return;
     }
 
     setLoading(true);
 
     try {
-      const authPassToTry = password.trim();
-
       if (isAdminEmail(cleanEmail) && authPassToTry !== 'Orbiex2026k') {
         setLoading(false);
         setError('Senha incorreta para a conta de administrador.');
         return;
       }
 
+      let verifiedAuthorized = false;
       let resolvedName =
         cleanName && cleanName.length >= 2
           ? cleanName
           : isAdminEmail(cleanEmail)
           ? ADMIN_DEFAULT_NAME
-          : VERIFIED_CAKTO_BUYERS[cleanEmail] ||
+          : LEGACY_CAKTO_BUYERS[cleanEmail] ||
             cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
 
-      // 1. Executa a função RPC no Supabase que cria/atualiza o usuário instantaneamente em:
-      //    - Authentication -> Users (auth.users + auth.identities, já confirmado)
-      //    - public.authorized_buyers (status = 'approved')
-      //    - public.profiles
+      // 1. Verificação estrita no servidor (/api/check-access):
+      //    Bloqueia imediatamente qualquer e-mail sem compra aprovada na Cakto (ou não cadastrado pelo ADM).
+      let apiChecked = false;
       try {
-        const { data: syncData, error: syncErr } = await supabase.rpc(
-          'orbiex_sync_user_account',
-          {
-            p_email: cleanEmail,
-            p_password: authPassToTry,
-            p_name: cleanName.length >= 2 ? cleanName : null,
-          }
-        );
+        const res = await fetch('/api/check-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: cleanEmail,
+            password: authPassToTry,
+            name: cleanName,
+            mode: 'login',
+          }),
+        });
 
-        if (!syncErr && syncData) {
-          if (syncData.refunded) {
+        const json = await res.json().catch(() => null);
+        if (res.status < 500 && json && typeof json.authorized === 'boolean') {
+          apiChecked = true;
+          if (!json.authorized) {
             setLoading(false);
             setError(
-              'Acesso bloqueado: consta um reembolso/estorno para este e-mail.'
+              json.message ||
+                'Acesso negado: e-mail não encontrado na base de compras aprovadas da Cakto.'
             );
             return;
           }
-          if (syncData.name) {
-            resolvedName = syncData.name;
+          verifiedAuthorized = true;
+          if (json.name && cleanName.length < 2) {
+            resolvedName = json.name;
           }
         }
-      } catch (rpcErr) {
-        console.warn('Aviso ao sincronizar via RPC:', rpcErr);
+      } catch {
+        /* fallback controlado abaixo apenas quando /api não estiver disponível (ex: Vite local) */
       }
 
-      // 2. Autentica a sessão no Supabase Auth (ou cria via signUp caso necessário)
-      try {
-        const { data: signInData, error: signInErr } =
-          await supabase.auth.signInWithPassword({
+      // 2. Fallback estrito caso /api/check-access esteja indisponível (fail-closed: nunca cria usuário sem compra aprovada)
+      if (!apiChecked) {
+        if (isAdminEmail(cleanEmail)) {
+          verifiedAuthorized = true;
+          resolvedName = ADMIN_DEFAULT_NAME;
+        } else {
+          const [{ data: rows, error: dbErr }, { data: manualRow }] = await Promise.all([
+            supabase
+              .from('authorized_buyers')
+              .select('email, name, status, platform, transaction_id, updated_at')
+              .ilike('email', cleanEmail)
+              .order('updated_at', { ascending: false })
+              .limit(10),
+            supabase
+              .from('profiles')
+              .select('name, avatar_url')
+              .eq('user_email', `orbiex_manual_user::${cleanEmail}`)
+              .maybeSingle(),
+          ]);
+
+          if (dbErr) {
+            setLoading(false);
+            setError('Não foi possível validar sua compra agora. Tente novamente em instantes.');
+            return;
+          }
+
+          let buyerPlatform = 'cakto';
+          let approvedBuyerName: string | null = null;
+          let isApproved = false;
+
+          const list = Array.isArray(rows) ? rows : [];
+          if (list.length > 0) {
+            const latest = list[0];
+            const hasBlocked =
+              latest.status !== 'approved' ||
+              (list.some((r) => ['refunded', 'canceled', 'revoked'].includes(r.status)) &&
+                !(latest.status === 'approved' && latest.transaction_id));
+            if (hasBlocked) {
+              setLoading(false);
+              setError('Acesso bloqueado: compra cancelada, estornada ou acesso revogado.');
+              return;
+            }
+            isApproved = true;
+            buyerPlatform = latest.platform || 'cakto';
+            approvedBuyerName = latest.name || null;
+          } else if (manualRow?.avatar_url) {
+            try {
+              const parsed = JSON.parse(manualRow.avatar_url);
+              if (parsed?.status === 'revoked' || parsed?.status === 'refunded') {
+                setLoading(false);
+                setError('Acesso revogado pelo administrador.');
+                return;
+              }
+              if (parsed?.email) {
+                isApproved = true;
+                buyerPlatform = 'admin_manual';
+                approvedBuyerName = parsed.name || manualRow.name || null;
+              }
+            } catch {
+              /* ignore */
+            }
+          } else if (LEGACY_CAKTO_BUYERS[cleanEmail]) {
+            isApproved = true;
+            buyerPlatform = 'cakto';
+            approvedBuyerName = LEGACY_CAKTO_BUYERS[cleanEmail];
+          }
+
+          if (!isApproved) {
+            setLoading(false);
+            setError(
+              'Acesso exclusivo para compradores! O e-mail informado não possui compra aprovada na Cakto.'
+            );
+            return;
+          }
+
+          if (approvedBuyerName && cleanName.length < 2) {
+            resolvedName = approvedBuyerName;
+          }
+
+          // Valida senha do comprador aprovado
+          const { data: signData, error: signErr } = await supabase.auth.signInWithPassword({
             email: cleanEmail,
             password: authPassToTry,
           });
 
-        if (signInErr) {
-          await supabase.auth.signUp({
-            email: cleanEmail,
-            password: authPassToTry,
-            options: {
-              data: {
-                full_name: resolvedName,
-                display_name: resolvedName,
-                name: resolvedName,
-              },
-            },
-          });
-        } else if (signInData?.user) {
+          if (signErr || !signData?.user) {
+            const { data: claimedRow } = await supabase
+              .from('profiles')
+              .select('user_email')
+              .eq('user_email', `orbiex_claimed::${cleanEmail}`)
+              .maybeSingle();
+
+            const isManualAccount = buyerPlatform === 'admin_manual';
+            const isClaimed = Boolean(claimedRow) || isManualAccount;
+            const isContingency = !isManualAccount && authPassToTry === DEFAULT_BUYER_PASSWORD;
+
+            if (isClaimed && !isContingency) {
+              setLoading(false);
+              setError(
+                isManualAccount
+                  ? 'Senha incorreta para esta conta. Confira a senha liberada pelo administrador.'
+                  : 'Senha incorreta. Tente novamente ou use a senha padrão (orbiex2026k).'
+              );
+              return;
+            }
+
+            if (!isClaimed && !isContingency) {
+              const { error: defErr } = await supabase.auth.signInWithPassword({
+                email: cleanEmail,
+                password: DEFAULT_BUYER_PASSWORD,
+              });
+              if (defErr && /invalid/i.test(defErr.message || '')) {
+                const { data: existingProf } = await supabase
+                  .from('profiles')
+                  .select('user_email')
+                  .eq('user_email', cleanEmail)
+                  .maybeSingle();
+                if (existingProf) {
+                  setLoading(false);
+                  setError('Senha incorreta para esta conta. Tente novamente ou use a senha padrão (orbiex2026k).');
+                  return;
+                }
+              }
+            }
+
+            await supabase.rpc('orbiex_sync_user_account', {
+              p_email: cleanEmail,
+              p_password: authPassToTry,
+              p_name: cleanName.length >= 2 ? cleanName : resolvedName,
+            });
+            if (authPassToTry !== DEFAULT_BUYER_PASSWORD) {
+              await supabase.from('profiles').upsert(
+                {
+                  user_email: `orbiex_claimed::${cleanEmail}`,
+                  name: 'claimed',
+                  avatar_url: JSON.stringify({ claimed: true, at: Date.now() }),
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: 'user_email' }
+              );
+            }
+          }
+
+          verifiedAuthorized = true;
+        }
+      }
+
+      if (!verifiedAuthorized) {
+        setLoading(false);
+        setError('Acesso não autorizado.');
+        return;
+      }
+
+      // 3. Autentica sessão do navegador no Supabase Auth (sem nunca chamar signUp para não autorizados)
+      try {
+        const { data: signInData } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: authPassToTry,
+        });
+        if (signInData?.user) {
           const metaName =
             signInData.user.user_metadata?.full_name ||
             signInData.user.user_metadata?.display_name ||
@@ -124,9 +267,11 @@ export function LoginView({ onLogin }: LoginViewProps) {
             resolvedName = metaName;
           }
         }
-      } catch {}
+      } catch {
+        /* sessão local segue após verificação positiva */
+      }
 
-      // 3. Garante que o perfil esteja salvo na tabela profiles
+      // 4. Garante nome atualizado na tabela profiles (apenas após aprovação)
       try {
         await supabase.from('profiles').upsert(
           {
@@ -138,16 +283,14 @@ export function LoginView({ onLogin }: LoginViewProps) {
         );
       } catch {}
 
-      // 3. Salva sessão local e senha criada para carregamento instantâneo
+      // 5. Salva sessão local e senha criada para carregamento instantâneo
       try {
-        // Cada conta tem seus próprios dados: conta nova começa 100% zerada
         switchAccountData(cleanEmail);
-        localStorage.setItem(`orbiex_user_pwd_${cleanEmail}`, password.trim());
+        localStorage.setItem(`orbiex_user_pwd_${cleanEmail}`, authPassToTry);
         localStorage.setItem('orbiex_auth', 'true');
         localStorage.setItem('orbix_auth', 'true');
         localStorage.setItem('orbiex_user_email', cleanEmail);
         localStorage.setItem('orbix_user_email', cleanEmail);
-        // Preserva a foto de perfil já salva para este e-mail
         const savedAvatar = localStorage.getItem(`orbiex_avatar_${cleanEmail}`) || null;
         const loginProfile = JSON.stringify({ name: resolvedName, avatarUrl: savedAvatar });
         localStorage.setItem('orbiex_user_profile', loginProfile);
@@ -426,7 +569,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
             {/* Campo Senha */}
             <div>
               <label className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/70">
-                Senha de acesso <span className="text-[9.5px] font-normal text-white/40">(crie sua senha ou use a padrão)</span>
+                Senha de acesso
               </label>
               <div className="relative flex items-center rounded-xl border border-white/15 bg-black/60 transition-all focus-within:border-[var(--mvz-gold)] focus-within:shadow-[0_0_20px_rgba(212,175,55,0.15)]">
                 <Lock size={16} className="ml-3.5 shrink-0 text-white/40" />
@@ -434,7 +577,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Crie sua própria senha ou use a senha padrão"
+                  placeholder="Sua senha (ou senha padrão da Cakto)"
                   autoComplete="current-password"
                   className="w-full bg-transparent py-3 pl-3 pr-11 text-[13.5px] text-white placeholder-white/30 outline-none"
                 />

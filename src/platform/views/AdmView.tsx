@@ -168,6 +168,7 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userSearch, setUserSearch] = useState('');
+  const [revokingEmail, setRevokingEmail] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
     if (!isAdmin) return;
@@ -462,6 +463,27 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
             : cleanEmail.split('@')[0].replace(/[._-]/g, ' ').trim();
         const nowIso = new Date().toISOString();
 
+        await supabase.from('authorized_buyers').upsert(
+          {
+            email: cleanEmail,
+            name: displayName,
+            status: 'approved',
+            platform: 'admin_manual',
+            updated_at: nowIso,
+          },
+          { onConflict: 'email' }
+        );
+
+        await supabase.from('profiles').upsert(
+          {
+            user_email: `orbiex_claimed::${cleanEmail}`,
+            name: 'claimed',
+            avatar_url: JSON.stringify({ claimed: true, at: Date.now() }),
+            updated_at: nowIso,
+          },
+          { onConflict: 'user_email' }
+        );
+
         const { data: rpcData, error: rpcErr } = await supabase.rpc('orbiex_sync_user_account', {
           p_email: cleanEmail,
           p_password: cleanPass,
@@ -477,17 +499,6 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
           setUserNotice({ ok: false, text: 'Este e-mail possui estorno bloqueado no sistema.' });
           return;
         }
-
-        await supabase.from('authorized_buyers').upsert(
-          {
-            email: cleanEmail,
-            name: displayName,
-            status: 'approved',
-            platform: 'admin_manual',
-            updated_at: nowIso,
-          },
-          { onConflict: 'email' }
-        );
 
         await supabase.from('profiles').upsert(
           {
@@ -536,6 +547,40 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
       });
     } finally {
       setUserBusy(false);
+    }
+  };
+
+  const handleRevokeUser = async (targetEmail: string) => {
+    const clean = targetEmail.trim().toLowerCase();
+    if (!clean || clean === ADMIN_EMAIL) return;
+    setRevokingEmail(clean);
+    try {
+      const headers = await buildAdminHeaders();
+      let done = false;
+      try {
+        const res = await fetch(`/api/admin?email=${encodeURIComponent(clean)}`, {
+          method: 'DELETE',
+          headers,
+        });
+        if (res.ok) done = true;
+      } catch {
+        /* fallback Supabase direto */
+      }
+      if (!done) {
+        const { error: delErr } = await supabase.from('authorized_buyers').delete().ilike('email', clean);
+        if (delErr) {
+          await supabase
+            .from('authorized_buyers')
+            .update({ status: 'revoked', updated_at: new Date().toISOString() })
+            .ilike('email', clean);
+        }
+        await supabase.from('profiles').delete().eq('user_email', `orbiex_manual_user::${clean}`);
+        await supabase.from('profiles').delete().eq('user_email', `orbiex_claimed::${clean}`);
+      }
+      setUsersList((prev) => prev.filter((u) => u.email.toLowerCase() !== clean));
+      setUserNotice({ ok: true, text: `Acesso de ${clean} revogado/removido.` });
+    } finally {
+      setRevokingEmail(null);
     }
   };
 
@@ -1401,9 +1446,30 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
                       >
                         {u.platform === 'admin_manual' ? 'ADM' : u.platform || 'Cakto'}
                       </span>
-                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-[9.5px] font-bold uppercase text-emerald-300">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[9.5px] font-bold uppercase ${
+                          u.status === 'approved'
+                            ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300'
+                            : 'border-red-500/30 bg-red-500/15 text-red-300'
+                        }`}
+                      >
                         {u.status === 'approved' ? 'Ativo' : u.status}
                       </span>
+                      {u.email.toLowerCase() !== ADMIN_EMAIL && (
+                        <button
+                          type="button"
+                          disabled={revokingEmail === u.email.toLowerCase()}
+                          onClick={() => void handleRevokeUser(u.email)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 transition hover:bg-red-500/25 hover:text-white disabled:opacity-50"
+                          title="Remover / bloquear acesso deste e-mail"
+                        >
+                          {revokingEmail === u.email.toLowerCase() ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={11} />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

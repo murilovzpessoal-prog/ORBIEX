@@ -1,14 +1,17 @@
 /**
  * Orbiex Backend — Biblioteca Global de Prompts do ADM (visível para todos os usuários)
- * GET    /api/prompts                -> lista todos os prompts globais publicados + IDs base ocultos
- * POST   /api/prompts                -> publica novo prompt global com vídeo (apenas ADM)
- * DELETE /api/prompts?id=...         -> remove prompt global ou oculta prompt base (apenas ADM)
+ * GET    /api/prompts?action=resolve_video&url=... -> resolve link do Imgur / hospedagem para .mp4 direto
+ * GET    /api/prompts                              -> lista todos os prompts globais publicados + IDs base ocultos
+ * POST   /api/prompts                              -> publica novo prompt global com vídeo (apenas ADM)
+ * DELETE /api/prompts?id=...                       -> remove prompt global ou oculta prompt base (apenas ADM)
  */
 const {
   supabase,
   setCorsHeaders,
   verifyAdminRequest,
   normalizeExternalUrl,
+  isImgurAlbumOrPageUrl,
+  resolveVideoMediaUrl,
   getJsonSettingArray,
   setJsonSettingArray,
   deleteOrTombstoneProfileRow,
@@ -32,6 +35,50 @@ function parsePromptRow(row) {
   }
 }
 
+async function healPromptIfNeeded(promptCard) {
+  if (!promptCard || promptCard.mediaType !== 'video') return promptCard;
+  const current = String(promptCard.mediaUrl || '').trim();
+  const normalized = normalizeExternalUrl(current);
+
+  const needsRemoteResolve =
+    isImgurAlbumOrPageUrl(normalized) ||
+    /(?:^|\/\/)imgur\.com\//i.test(current) ||
+    /\.gifv(\?|$)/i.test(current);
+
+  let nextUrl = normalized;
+  if (needsRemoteResolve) {
+    try {
+      const resolved = await resolveVideoMediaUrl(current);
+      if (resolved?.ok && resolved.mediaUrl) {
+        nextUrl = resolved.mediaUrl;
+      }
+    } catch {
+      /* mantém normalized como fallback */
+    }
+  }
+
+  if (nextUrl && nextUrl !== current) {
+    const healed = { ...promptCard, mediaUrl: nextUrl };
+    // Persiste correção em segundo plano para acelerar carregamentos futuros
+    supabase
+      .from('profiles')
+      .upsert(
+        {
+          user_email: `${PROMPT_ROW_PREFIX}${healed.id}`,
+          name: healed.filterCategory || 'Animações',
+          avatar_url: JSON.stringify(healed),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_email' }
+      )
+      .then(() => {})
+      .catch(() => {});
+    return healed;
+  }
+
+  return promptCard;
+}
+
 async function removeGlobalPrompt(id) {
   const cleanId = String(id || '').trim();
   if (!cleanId) return { ok: false, status: 400, error: 'ID do prompt não informado.' };
@@ -53,6 +100,26 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    if (req.method === 'GET' && req.query?.action === 'resolve_video') {
+      const rawUrl = String(req.query?.url || '').trim();
+      if (!rawUrl) {
+        return res.status(400).json({ success: false, error: 'URL não informada.' });
+      }
+      const resolved = await resolveVideoMediaUrl(rawUrl);
+      if (!resolved.ok) {
+        return res.status(200).json({
+          success: false,
+          mediaUrl: resolved.mediaUrl,
+          error: resolved.error,
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        mediaUrl: resolved.mediaUrl,
+        resolved: Boolean(resolved.resolved),
+      });
+    }
+
     if (req.method === 'GET') {
       const [{ data, error }, hiddenBaseIds] = await Promise.all([
         supabase
@@ -68,10 +135,12 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ success: false, error: error.message });
       }
 
-      const prompts = (data || [])
+      const rawPrompts = (data || [])
         .map(parsePromptRow)
         .filter(Boolean)
         .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      const prompts = await Promise.all(rawPrompts.map(healPromptIfNeeded));
 
       return res.status(200).json({ success: true, prompts, hiddenBaseIds });
     }
@@ -101,14 +170,23 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       const body = req.body || {};
       const title = String(body.title || body.name || '').trim();
-      const mediaUrl = normalizeExternalUrl(body.mediaUrl || body.videoUrl || '');
+      const rawMediaUrl = String(body.mediaUrl || body.videoUrl || '').trim();
       const promptText = String(body.prompt || '').trim();
       const filterCategory = String(body.filterCategory || body.category || 'Animações').trim() || 'Animações';
       const mediaType = body.mediaType === 'image' ? 'image' : 'video';
 
-      if (!mediaUrl) return res.status(400).json({ success: false, error: 'Cole a URL do vídeo hospedado.' });
+      if (!rawMediaUrl) return res.status(400).json({ success: false, error: 'Cole a URL do vídeo hospedado.' });
       if (!title) return res.status(400).json({ success: false, error: 'Informe o nome do prompt.' });
       if (!promptText) return res.status(400).json({ success: false, error: 'Cole o texto do prompt.' });
+
+      let mediaUrl = normalizeExternalUrl(rawMediaUrl);
+      if (mediaType === 'video') {
+        const resolved = await resolveVideoMediaUrl(rawMediaUrl);
+        if (!resolved.ok) {
+          return res.status(400).json({ success: false, error: resolved.error });
+        }
+        mediaUrl = resolved.mediaUrl;
+      }
 
       const now = Date.now();
       const id = String(body.id || `global-prompt-${now}`);

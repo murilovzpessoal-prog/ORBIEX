@@ -37,10 +37,13 @@ import {
   useProducts,
 } from '../productsStore';
 import {
+  isImgurPageUrl,
   normalizePromptMediaUrl,
   PROMPT_CATEGORIES,
+  resolveRemoteVideoUrl,
   usePrompts,
 } from '../promptsStore';
+import { PromptVideo } from '../PromptVideo';
 import { supabase } from '../../lib/supabaseClient';
 import { copyText } from '../clipboard';
 
@@ -139,11 +142,12 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
 
   // ── Aba Prompt Global (com Vídeo) ──────────────────────────────────
   const [promptVideoUrl, setPromptVideoUrl] = useState('');
+  const [resolvedPreviewUrl, setResolvedPreviewUrl] = useState('');
+  const [promptVideoStatus, setPromptVideoStatus] = useState<'idle' | 'resolving' | 'ready' | 'error'>('idle');
   const [promptTitle, setPromptTitle] = useState('');
   const [promptText, setPromptText] = useState('');
   const [promptCategory, setPromptCategory] = useState<string>('Animações');
   const [promptDescription, setPromptDescription] = useState('');
-  const [promptVideoError, setPromptVideoError] = useState(false);
   const [promptBusy, setPromptBusy] = useState(false);
   const [promptNotice, setPromptNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
@@ -313,6 +317,42 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
     }
   };
 
+  useEffect(() => {
+    const raw = promptVideoUrl.trim();
+    if (!raw) {
+      setResolvedPreviewUrl('');
+      setPromptVideoStatus('idle');
+      return;
+    }
+
+    let cancelled = false;
+    const quick = normalizePromptMediaUrl(raw);
+    if (!isImgurPageUrl(raw) && !isImgurPageUrl(quick) && !/\.gifv(\?|$)/i.test(raw)) {
+      setResolvedPreviewUrl(quick);
+      setPromptVideoStatus('idle');
+      return;
+    }
+
+    setPromptVideoStatus('resolving');
+    const timer = setTimeout(() => {
+      void resolveRemoteVideoUrl(raw).then((res) => {
+        if (cancelled) return;
+        if (res.ok && res.mediaUrl && !isImgurPageUrl(res.mediaUrl)) {
+          setResolvedPreviewUrl(res.mediaUrl);
+          setPromptVideoStatus('idle');
+        } else {
+          setResolvedPreviewUrl('');
+          setPromptVideoStatus('error');
+        }
+      });
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [promptVideoUrl]);
+
   const handlePublishPrompt = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromptNotice(null);
@@ -329,7 +369,7 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
     try {
       const res = await publishGlobalPrompt({
         title: promptTitle,
-        mediaUrl: promptVideoUrl,
+        mediaUrl: resolvedPreviewUrl || promptVideoUrl,
         prompt: promptText,
         filterCategory: promptCategory,
         description: promptDescription,
@@ -344,10 +384,11 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
         text: `Prompt "${res.promptCard?.title}" publicado! O card com vídeo já aparece para todos na Biblioteca de Prompts.`,
       });
       setPromptVideoUrl('');
+      setResolvedPreviewUrl('');
       setPromptTitle('');
       setPromptText('');
       setPromptDescription('');
-      setPromptVideoError(false);
+      setPromptVideoStatus('idle');
     } finally {
       setPromptBusy(false);
     }
@@ -947,44 +988,63 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
                   value={promptVideoUrl}
                   onChange={(e) => {
                     setPromptVideoUrl(e.target.value);
-                    setPromptVideoError(false);
                   }}
-                  placeholder="https://i.imgur.com/seuvideo.mp4 (link direto do vídeo)"
+                  placeholder="https://imgur.com/... ou https://i.imgur.com/seuvideo.mp4"
                   className="mvz-input h-11 w-full pl-10 pr-3.5 text-sm text-white"
                 />
               </div>
               <p className="mt-1 text-[11px] text-[var(--mvz-dim)]">
-                Hospede o vídeo (Imgur, Catbox, Cloudinary, Dropbox etc.) e cole o link direto (.mp4 / .webm).
+                Pode colar link direto (.mp4/.webm) ou link de vídeo do Imgur, Dropbox ou Google Drive — convertemos para .mp4 automaticamente.
               </p>
 
               {promptVideoUrl.trim() && (
                 <div className="mt-2.5 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/50 p-3">
                   <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-black">
-                    {!promptVideoError ? (
-                      <video
-                        key={normalizePromptMediaUrl(promptVideoUrl)}
-                        src={normalizePromptMediaUrl(promptVideoUrl)}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
-                        onError={() => setPromptVideoError(true)}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
+                    {promptVideoStatus === 'resolving' ? (
+                      <div className="flex h-full w-full items-center justify-center text-[var(--mvz-gold)]">
+                        <Loader2 size={18} className="animate-spin" />
+                      </div>
+                    ) : promptVideoStatus === 'error' ? (
                       <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] text-amber-300/80">
                         Sem prévia
                       </div>
+                    ) : (
+                      <PromptVideo
+                        src={resolvedPreviewUrl || promptVideoUrl}
+                        onReady={(finalSrc) => {
+                          setPromptVideoStatus('ready');
+                          if (finalSrc && finalSrc !== resolvedPreviewUrl) {
+                            setResolvedPreviewUrl(finalSrc);
+                          }
+                        }}
+                        onFail={() => setPromptVideoStatus('error')}
+                        className="h-full w-full object-cover"
+                      />
                     )}
                   </div>
                   <div className="min-w-0 flex-1 text-[11.5px]">
-                    <div className="font-bold text-white">
-                      {promptVideoError ? 'Não foi possível reproduzir na prévia' : 'Prévia do vídeo rodando no card'}
+                    <div
+                      className={`font-bold ${
+                        promptVideoStatus === 'ready'
+                          ? 'text-emerald-300'
+                          : promptVideoStatus === 'error'
+                          ? 'text-amber-300'
+                          : 'text-white'
+                      }`}
+                    >
+                      {promptVideoStatus === 'resolving'
+                        ? 'Convertendo link do Imgur para .mp4 direto...'
+                        : promptVideoStatus === 'ready'
+                        ? 'Vídeo carregado e rodando em loop!'
+                        : promptVideoStatus === 'error'
+                        ? 'Não foi possível reproduzir este link'
+                        : 'Carregando prévia do vídeo...'}
                     </div>
                     <div className="mt-0.5 text-[var(--mvz-muted)]">
-                      {promptVideoError
-                        ? 'Confirme se o link termina em .mp4/.webm ou permite reprodução direta no navegador.'
+                      {promptVideoStatus === 'error'
+                        ? 'No Imgur, passe o mouse no vídeo > botão direito > "Copiar endereço do vídeo" (precisa ser o arquivo .mp4, ou álbum público).'
+                        : resolvedPreviewUrl && resolvedPreviewUrl !== promptVideoUrl.trim()
+                        ? `Link direto detectado: ${resolvedPreviewUrl}`
                         : 'É exatamente assim que o vídeo ficará rodando dentro do card para todos os usuários.'}
                     </div>
                   </div>
@@ -1113,13 +1173,8 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
                     className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/45 p-2.5"
                   >
                     <div className="h-14 w-11 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black">
-                      <video
-                        src={normalizePromptMediaUrl(item.mediaUrl)}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
+                      <PromptVideo
+                        src={item.mediaUrl}
                         className="h-full w-full object-cover"
                       />
                     </div>

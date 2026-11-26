@@ -38,14 +38,178 @@ let inflightGlobalFetch: Promise<AdminPromptCard[]> | null = null;
 let lastGlobalFetchAt = 0;
 
 export function normalizePromptMediaUrl(raw?: string): string {
-  const s = String(raw || '').trim();
+  const s = String(raw || '').trim().replace(/^<|>$/g, '');
   if (!s) return '';
   if (s.startsWith('/') || s.startsWith('./') || s.startsWith('data:')) return s;
   const withScheme = /^https?:\/\//i.test(s) ? s : `https://${s.replace(/^\/+/, '')}`;
-  if (withScheme.includes('dropbox.com') && withScheme.includes('dl=0')) {
-    return withScheme.replace('dl=0', 'raw=1');
+
+  try {
+    const u = new URL(withScheme);
+    const host = u.hostname.toLowerCase();
+
+    if (host.includes('dropbox.com')) {
+      u.searchParams.delete('dl');
+      u.searchParams.set('raw', '1');
+      return u.toString();
+    }
+
+    if (host.includes('drive.google.com')) {
+      const m = u.pathname.match(/\/file\/d\/([^/]+)/i);
+      if (m?.[1]) {
+        return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+      }
+    }
+
+    if (host === 'i.imgur.com') {
+      const cleanPath = u.pathname.replace(/\/+$/, '');
+      const gifv = cleanPath.match(/^\/([A-Za-z0-9]{4,14})\.gifv$/i);
+      if (gifv) return `https://i.imgur.com/${gifv[1]}.mp4`;
+      const noExt = cleanPath.match(/^\/([A-Za-z0-9]{4,14})$/i);
+      if (noExt) return `https://i.imgur.com/${noExt[1]}.mp4`;
+      if (/^\/([A-Za-z0-9]{4,14})\.mp4$/i.test(cleanPath)) {
+        return `https://i.imgur.com${cleanPath}`;
+      }
+    }
+
+    if (host === 'imgur.com' || host === 'www.imgur.com' || host === 'm.imgur.com') {
+      const parts = u.pathname.split('/').filter(Boolean);
+      if (
+        parts.length === 1 &&
+        /^[A-Za-z0-9]{5,12}$/.test(parts[0]) &&
+        !['upload', 'signin', 'register', 'search', 'hot', 'new', 'top', 'user', 'jobs'].includes(parts[0].toLowerCase())
+      ) {
+        return `https://i.imgur.com/${parts[0]}.mp4`;
+      }
+      if (parts.length >= 3 && (parts[0] === 't' || parts[0] === 'r') && /^[A-Za-z0-9]{5,12}$/.test(parts[2])) {
+        return `https://i.imgur.com/${parts[2]}.mp4`;
+      }
+    }
+  } catch {
+    /* ignore malformed URL fallback */
   }
+
   return withScheme;
+}
+
+export function isImgurPageUrl(raw?: string): boolean {
+  try {
+    const s = String(raw || '').trim();
+    if (!s || s.startsWith('/') || s.startsWith('data:')) return false;
+    const u = new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`);
+    const host = u.hostname.toLowerCase();
+    return host === 'imgur.com' || host === 'www.imgur.com' || host === 'm.imgur.com';
+  } catch {
+    return false;
+  }
+}
+
+export function needsRemoteVideoResolve(raw?: string): boolean {
+  const s = String(raw || '').trim();
+  if (!s) return false;
+  const normalized = normalizePromptMediaUrl(s);
+  return isImgurPageUrl(normalized) || /\.gifv(\?|$)/i.test(normalized);
+}
+
+const resolvedVideoMemoryCache = new Map<string, string>();
+
+function extractImgurAlbumOrPostId(rawUrl: string): string {
+  try {
+    const u = new URL(/^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`);
+    const parts = u.pathname.split('/').filter(Boolean);
+    if ((parts[0] === 'a' || parts[0] === 'gallery') && parts[1]) {
+      const dash = parts[1].split('-').pop() || parts[1];
+      return /^[A-Za-z0-9]{5,12}$/.test(dash) ? dash : parts[1];
+    }
+    const last = parts[parts.length - 1] || '';
+    const dash = last.split('-').pop() || last;
+    return /^[A-Za-z0-9]{5,12}$/.test(dash) ? dash : '';
+  } catch {
+    return '';
+  }
+}
+
+export async function resolveRemoteVideoUrl(rawUrl: string): Promise<{
+  ok: boolean;
+  mediaUrl: string;
+  resolved?: boolean;
+  error?: string;
+}> {
+  const original = String(rawUrl || '').trim();
+  const normalized = normalizePromptMediaUrl(original);
+  if (!normalized) return { ok: false, mediaUrl: '', error: 'URL do vídeo vazia.' };
+
+  if (resolvedVideoMemoryCache.has(original)) {
+    return { ok: true, mediaUrl: resolvedVideoMemoryCache.get(original)!, resolved: true };
+  }
+
+  const shouldQueryRemote =
+    isImgurPageUrl(original) || isImgurPageUrl(normalized) || /\.gifv(\?|$)/i.test(original);
+
+  if (!shouldQueryRemote) {
+    return { ok: true, mediaUrl: normalized, resolved: normalized !== original };
+  }
+
+  // 1. Tenta o endpoint do servidor Vercel (/api/prompts?action=resolve_video)
+  try {
+    const res = await fetch(`/api/prompts?action=resolve_video&url=${encodeURIComponent(original)}`, {
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const json = await res.json().catch(() => null);
+      if (json?.success && json.mediaUrl && !isImgurPageUrl(json.mediaUrl)) {
+        resolvedVideoMemoryCache.set(original, json.mediaUrl);
+        return { ok: true, mediaUrl: json.mediaUrl, resolved: true };
+      }
+    }
+  } catch {
+    /* fallback client-side Imgur public post API */
+  }
+
+  // 2. Fallback direto no endpoint público do Imgur via IP do usuário (suporta CORS)
+  const postId = extractImgurAlbumOrPostId(original) || extractImgurAlbumOrPostId(normalized);
+  if (postId) {
+    const endpoints = [
+      `https://api.imgur.com/post/v1/albums/${postId}?client_id=546c25a59c58ad7&include=media`,
+      `https://api.imgur.com/post/v1/posts/${postId}?client_id=546c25a59c58ad7&include=media`,
+    ];
+    for (const ep of endpoints) {
+      try {
+        const resp = await fetch(ep, { referrerPolicy: 'no-referrer' });
+        if (!resp.ok) continue;
+        const json = await resp.json().catch(() => null);
+        const mediaList = Array.isArray(json?.media) ? json.media : [];
+        const videoMedia =
+          mediaList.find(
+            (m: { type?: string; mime_type?: string }) =>
+              String(m?.type || '').toLowerCase() === 'video' || String(m?.mime_type || '').startsWith('video/')
+          ) || mediaList[0];
+
+        if (videoMedia?.url && /\.mp4/i.test(videoMedia.url)) {
+          const clean = String(videoMedia.url).split('?')[0];
+          resolvedVideoMemoryCache.set(original, clean);
+          return { ok: true, mediaUrl: clean, resolved: true };
+        }
+        if (videoMedia?.id) {
+          const clean = `https://i.imgur.com/${videoMedia.id}.mp4`;
+          resolvedVideoMemoryCache.set(original, clean);
+          return { ok: true, mediaUrl: clean, resolved: true };
+        }
+      } catch {
+        /* tenta próximo endpoint */
+      }
+    }
+  }
+
+  if (!isImgurPageUrl(normalized)) {
+    return { ok: true, mediaUrl: normalized, resolved: normalized !== original };
+  }
+
+  return {
+    ok: false,
+    mediaUrl: normalized,
+    error:
+      'Esse link do Imgur é uma página/álbum e não o vídeo .mp4 direto. No Imgur, clique com o botão direito em cima do vídeo > "Copiar endereço do vídeo" (link i.imgur.com/...mp4).',
+  };
 }
 
 function getGlobalCache(): AdminPromptCard[] {
@@ -126,7 +290,7 @@ function parseSupabasePromptRows(rows: Array<{ avatar_url?: string | null }>): A
     try {
       const p = JSON.parse(r.avatar_url);
       if (!p || p.deleted || !p.title || !p.mediaUrl || !p.prompt) continue;
-      items.push({ ...p, isGlobalAdmin: true });
+      items.push({ ...p, mediaUrl: normalizePromptMediaUrl(p.mediaUrl), isGlobalAdmin: true });
     } catch {
       /* ignore malformed row */
     }
@@ -217,13 +381,22 @@ export async function publishGlobalPrompt(input: {
   }
 
   const cleanTitle = input.title.trim();
-  const cleanMediaUrl = normalizePromptMediaUrl(input.mediaUrl);
+  const rawMedia = input.mediaUrl.trim();
   const cleanPromptText = input.prompt.trim();
   const filterCategory = input.filterCategory?.trim() || 'Animações';
   const mediaType: 'video' | 'image' = input.mediaType === 'image' ? 'image' : 'video';
 
-  if (!cleanMediaUrl || !cleanTitle || !cleanPromptText) {
+  if (!rawMedia || !cleanTitle || !cleanPromptText) {
     return { ok: false, error: 'Preencha a URL do vídeo, o nome do prompt e o texto do prompt.' };
+  }
+
+  let cleanMediaUrl = normalizePromptMediaUrl(rawMedia);
+  if (mediaType === 'video') {
+    const resolved = await resolveRemoteVideoUrl(rawMedia);
+    if (!resolved.ok) {
+      return { ok: false, error: resolved.error || 'Link de vídeo inválido ou não reproduzível.' };
+    }
+    cleanMediaUrl = resolved.mediaUrl;
   }
 
   const now = Date.now();
@@ -259,7 +432,7 @@ export async function publishGlobalPrompt(input: {
       saveGlobalCache([json.prompt, ...getGlobalCache().filter((p) => p.id !== json.prompt.id)]);
       return { ok: true, promptCard: json.prompt };
     }
-    if (res.status === 403 && json?.error) {
+    if ((res.status === 400 || res.status === 403) && json?.error) {
       return { ok: false, error: json.error };
     }
   } catch {

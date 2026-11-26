@@ -21,6 +21,7 @@ import {
 import { Pill } from '../ui';
 import { type PromptCard } from '../promptCards';
 import { usePrompts, type AdminPromptCard } from '../promptsStore';
+import { PromptVideo } from '../PromptVideo';
 import { isCurrentUserAdmin } from '../adminConfig';
 import { copyText as copyToClipboard } from '../clipboard';
 
@@ -526,13 +527,9 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
               >
                 {/* Background media: Video or Image */}
                 {isVideo ? (
-                  <video
+                  <PromptVideo
                     src={resolveMediaUrl(item.mediaUrl)}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
+                    showUnavailableFallback
                     className="absolute inset-0 h-full w-full object-cover object-center"
                   />
                 ) : (
@@ -724,13 +721,9 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
               <div className="flex items-start gap-4">
                 <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-2xl border border-[var(--mvz-line)] bg-black">
                   {activeModalPrompt.mediaType === 'video' ? (
-                    <video
+                    <PromptVideo
                       src={resolveMediaUrl(activeModalPrompt.mediaUrl)}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
+                      showUnavailableFallback
                       className="h-full w-full object-cover"
                     />
                   ) : (

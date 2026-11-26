@@ -62,10 +62,78 @@ async function verifyAdminRequest(req) {
   return { ok: false, error: 'Acesso restrito ao administrador.' };
 }
 
+function normalizeExternalUrl(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  const withScheme = /^https?:\/\//i.test(s) ? s : `https://${s.replace(/^\/+/, '')}`;
+  if (withScheme.includes('dropbox.com') && withScheme.includes('dl=0')) {
+    return withScheme.replace('dl=0', 'raw=1');
+  }
+  return withScheme;
+}
+
+async function getJsonSettingArray(rowKey) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('user_email', rowKey)
+      .maybeSingle();
+    if (error || !data?.avatar_url) return [];
+    const parsed = JSON.parse(data.avatar_url);
+    return Array.isArray(parsed?.ids) ? parsed.ids.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function setJsonSettingArray(rowKey, settingName, ids) {
+  const uniqueIds = Array.from(new Set((ids || []).map(String).filter(Boolean)));
+  const { error } = await supabase.from('profiles').upsert(
+    {
+      user_email: rowKey,
+      name: settingName,
+      avatar_url: JSON.stringify({ ids: uniqueIds, updatedAt: Date.now() }),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_email' }
+  );
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, ids: uniqueIds };
+}
+
+async function deleteOrTombstoneProfileRow(rowKey, id) {
+  let deleted = false;
+  try {
+    const { error } = await supabase.from('profiles').delete().eq('user_email', rowKey);
+    if (!error) deleted = true;
+  } catch {
+    deleted = false;
+  }
+
+  if (!deleted) {
+    const { error: updErr } = await supabase.from('profiles').upsert(
+      {
+        user_email: rowKey,
+        name: 'deleted',
+        avatar_url: JSON.stringify({ id, deleted: true }),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_email' }
+    );
+    if (updErr) return { ok: false, error: updErr.message };
+  }
+  return { ok: true };
+}
+
 module.exports = {
   supabase,
   ADMIN_EMAIL,
   setCorsHeaders,
   normalizeEmail,
   verifyAdminRequest,
+  normalizeExternalUrl,
+  getJsonSettingArray,
+  setJsonSettingArray,
+  deleteOrTombstoneProfileRow,
 };

@@ -24,6 +24,8 @@ const EXCLUDED_KEYS = new Set([
   'orbiex_ai_config',
   'orbiex_global_products_cache_v1',
   'orbiex_global_hidden_base_v1',
+  'orbiex_global_prompts_cache_v1',
+  'orbiex_global_hidden_prompts_v1',
 ]);
 
 const EXCLUDED_PREFIXES = [

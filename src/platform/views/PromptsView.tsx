@@ -15,9 +15,13 @@ import {
   Image as ImageIcon,
   ChevronDown,
   Download,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { Pill } from '../ui';
-import { PROMPT_CARDS, type PromptCard } from '../promptCards';
+import { type PromptCard } from '../promptCards';
+import { usePrompts, type AdminPromptCard } from '../promptsStore';
+import { isCurrentUserAdmin } from '../adminConfig';
 import { copyText as copyToClipboard } from '../clipboard';
 
 export type PromptCategoryFilter =
@@ -82,6 +86,8 @@ function isDownloadableReference(item: PromptCard): boolean {
 }
 
 export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
+  const { prompts, removeGlobalPrompt } = usePrompts();
+  const isAdmin = isCurrentUserAdmin();
   const [activeFilter, setActiveFilter] = useState<PromptCategoryFilter>('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(24);
@@ -95,8 +101,28 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
   });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [downloadedId, setDownloadedId] = useState<string | null>(null);
-  const [activeModalPrompt, setActiveModalPrompt] = useState<PromptCard | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteToast, setDeleteToast] = useState<string | null>(null);
+  const [activeModalPrompt, setActiveModalPrompt] = useState<AdminPromptCard | null>(null);
   const [modalCopied, setModalCopied] = useState(false);
+
+  const handleDeletePrompt = async (id: string, title: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!isAdmin) return;
+    setDeletingId(id);
+    try {
+      const res = await removeGlobalPrompt(id);
+      if (res.ok) {
+        if (activeModalPrompt?.id === id) setActiveModalPrompt(null);
+        setDeleteToast(`"${title}" excluído para todos os usuários.`);
+      } else {
+        setDeleteToast(res.error || 'Não foi possível excluir o prompt.');
+      }
+      setTimeout(() => setDeleteToast(null), 3200);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -132,7 +158,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
     e?: React.MouseEvent
   ) => {
     if (e) e.stopPropagation();
-    const textToCopy = promptText && promptText.length > 5 ? promptText : fallbackText;
+    const textToCopy = promptText && promptText.trim().length > 0 ? promptText : fallbackText;
     copyToClipboard(textToCopy);
     setCopiedId(id);
     setTimeout(() => setCopiedId((curr) => (curr === id ? null : curr)), 2000);
@@ -174,14 +200,14 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
 
   const resolveMediaUrl = (url: string) => {
     if (!url) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
     if (url.startsWith('./')) return '/' + url.slice(2);
     if (!url.startsWith('/')) return '/' + url;
     return url;
   };
 
   const filteredPrompts = useMemo(() => {
-    return PROMPT_CARDS.filter((item) => {
+    return prompts.filter((item) => {
       // Category match: estritamente pela seção da biblioteca
       let matchesCategory = true;
       if (activeFilter === 'Todos') {
@@ -202,7 +228,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
 
       return matchesCategory && matchesSearch;
     });
-  }, [activeFilter, searchQuery, favorites]);
+  }, [prompts, activeFilter, searchQuery, favorites]);
 
   const displayedPrompts = useMemo(() => {
     return filteredPrompts.slice(0, visibleCount);
@@ -210,17 +236,17 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
 
   // Compute category card counts de forma exata por seção
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { Todos: PROMPT_CARDS.length };
+    const counts: Record<string, number> = { Todos: prompts.length };
     [...ROW_1_FILTERS, ...ROW_2_FILTERS].forEach((cat) => {
       if (cat === 'Todos') return;
       if (cat === 'Favoritos') {
         counts[cat] = favorites.length;
       } else {
-        counts[cat] = PROMPT_CARDS.filter((c) => c.filterCategory === cat).length;
+        counts[cat] = prompts.filter((c) => c.filterCategory === cat).length;
       }
     });
     return counts;
-  }, [favorites]);
+  }, [prompts, favorites]);
 
   return (
     <div className="mvz-fade-up pb-16">
@@ -307,7 +333,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                 className="flex h-11 items-center gap-2 rounded-xl border border-[var(--mvz-line-strong)] bg-white/[0.03] px-5 text-[12.5px] font-semibold text-white/80 transition hover:border-[var(--mvz-gold)] hover:bg-[rgba(212,175,55,0.08)] hover:text-white"
               >
                 <SlidersHorizontal size={13} className="text-[var(--mvz-gold)]" />
-                Explorar Categorias ({PROMPT_CARDS.length})
+                Explorar Categorias ({prompts.length})
               </button>
             </div>
           </div>
@@ -353,7 +379,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                 </div>
                 <div className="text-center border-l border-white/10">
                   <div className="text-[17px] font-black text-[var(--mvz-gold)]">
-                    {PROMPT_CARDS.length}
+                    {prompts.length}
                   </div>
                   <div className="text-[9.5px] font-semibold uppercase text-[var(--mvz-dim)]">
                     Cards Prontos
@@ -488,7 +514,8 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
             const isFav = favorites.includes(item.id);
             const isCopied = copiedId === item.id;
             const isVideo = item.mediaType === 'video';
-            const fullPromptText = item.prompt && item.prompt.length > 5 ? item.prompt : item.description || item.mediaUrl;
+            const fullPromptText =
+              item.prompt && item.prompt.trim().length > 0 ? item.prompt : item.description || item.mediaUrl;
 
             return (
               <div
@@ -505,6 +532,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     loop
                     muted
                     playsInline
+                    {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
                     className="absolute inset-0 h-full w-full object-cover object-center"
                   />
                 ) : (
@@ -512,6 +540,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     src={resolveMediaUrl(item.mediaUrl)}
                     alt={item.title}
                     loading="lazy"
+                    referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
@@ -524,54 +553,82 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent opacity-95 transition-opacity duration-300 group-hover:opacity-100" />
 
                 {/* Top card action bar */}
-                <div className="relative z-10 flex items-center justify-end p-4">
-                  {/* Top action button: Download direto para referências OU Coração Favorito */}
-                  {isDownloadableReference(item) ? (
-                    <button
-                      onClick={(e) =>
-                        downloadInfluencer(
-                          item.id,
-                          resolveMediaUrl(item.mediaUrl),
-                          `${item.filterCategory.toLowerCase().replace(/\s+/g, '-')}-${item.cardNum || item.id}.jpg`,
-                          e
-                        )
-                      }
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/70 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-[var(--mvz-gold)] hover:bg-black/90 shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
-                      title="Baixar Imagem de Referência"
-                      aria-label="Baixar Imagem"
-                    >
-                      {downloadedId === item.id ? (
-                        <Check size={16} className="text-[#7fcf9f]" />
-                      ) : (
-                        <Download size={16} />
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={(e) => toggleFavorite(item.id, e)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white/80 backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/30"
-                      aria-label="Favoritar"
-                    >
-                      <Heart
-                        size={15}
-                        className={
-                          isFav
-                            ? 'fill-red-500 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]'
-                            : 'text-white/80'
+                <div className="relative z-10 flex items-center justify-between gap-2 p-4">
+                  <div>
+                    {item.isGlobalAdmin && (
+                      <span className="inline-flex items-center rounded-full border border-[var(--mvz-gold)]/55 bg-black/75 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--mvz-gold-light)] backdrop-blur-md">
+                        Novo
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        disabled={deletingId === item.id}
+                        onClick={(e) => void handleDeletePrompt(item.id, item.title, e)}
+                        className="flex h-9 items-center gap-1 rounded-full border border-red-500/45 bg-red-600/85 px-3 text-[10.5px] font-extrabold text-white backdrop-blur-md transition hover:bg-red-500 disabled:opacity-50 shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
+                        title="Excluir prompt da conta de todos os usuários"
+                        aria-label="Excluir Prompt"
+                      >
+                        {deletingId === item.id ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={12} />
+                        )}
+                        <span>Excluir</span>
+                      </button>
+                    )}
+
+                    {/* Top action button: Download direto para referências OU Coração Favorito */}
+                    {isDownloadableReference(item) ? (
+                      <button
+                        onClick={(e) =>
+                          downloadInfluencer(
+                            item.id,
+                            resolveMediaUrl(item.mediaUrl),
+                            `${item.filterCategory.toLowerCase().replace(/\s+/g, '-')}-${item.cardNum || item.id}.jpg`,
+                            e
+                          )
                         }
-                      />
-                    </button>
-                  )}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/70 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-[var(--mvz-gold)] hover:bg-black/90 shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
+                        title="Baixar Imagem de Referência"
+                        aria-label="Baixar Imagem"
+                      >
+                        {downloadedId === item.id ? (
+                          <Check size={16} className="text-[#7fcf9f]" />
+                        ) : (
+                          <Download size={16} />
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => toggleFavorite(item.id, e)}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white/80 backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/30"
+                        aria-label="Favoritar"
+                      >
+                        <Heart
+                          size={15}
+                          className={
+                            isFav
+                              ? 'fill-red-500 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]'
+                              : 'text-white/80'
+                          }
+                        />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Bottom card content: Title, Description & Action Button */}
+                {/* Bottom card content: Title, Description/Prompt preview & Action Button */}
                 <div className="relative z-10 p-5 pt-0">
                   <h3 className="line-clamp-2 text-[13px] font-black uppercase tracking-wide text-white drop-shadow-md">
                     {item.title}
                   </h3>
 
                   <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-white/80">
-                    {item.description}
+                    {item.description || item.prompt}
                   </p>
 
                   {/* Botão Baixar Imagem (para referências) vs Copiar Prompt */}
@@ -673,12 +730,14 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                       loop
                       muted
                       playsInline
+                      {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <img
                       src={resolveMediaUrl(activeModalPrompt.mediaUrl)}
                       alt={activeModalPrompt.title}
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
@@ -699,9 +758,11 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                   <h2 className="mt-2 text-[17px] font-extrabold leading-snug text-white">
                     {activeModalPrompt.title}
                   </h2>
-                  <p className="mt-1 text-[12.5px] text-[var(--mvz-muted)]">
-                    {activeModalPrompt.description}
-                  </p>
+                  {activeModalPrompt.description && (
+                    <p className="mt-1 text-[12.5px] text-[var(--mvz-muted)]">
+                      {activeModalPrompt.description}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -713,13 +774,13 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                   </span>
                   <button
                     data-copy-text={
-                      activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                      activeModalPrompt.prompt && activeModalPrompt.prompt.trim().length > 0
                         ? activeModalPrompt.prompt
                         : activeModalPrompt.description || activeModalPrompt.mediaUrl
                     }
                     onClick={() => {
                       const text =
-                        activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                        activeModalPrompt.prompt && activeModalPrompt.prompt.trim().length > 0
                           ? activeModalPrompt.prompt
                           : activeModalPrompt.description || activeModalPrompt.mediaUrl;
                       copyToClipboard(text);
@@ -759,13 +820,13 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     </button>
                     <button
                       data-copy-text={
-                        activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                        activeModalPrompt.prompt && activeModalPrompt.prompt.trim().length > 0
                           ? activeModalPrompt.prompt
                           : activeModalPrompt.description
                       }
                       onClick={() => {
                         const text =
-                          activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                          activeModalPrompt.prompt && activeModalPrompt.prompt.trim().length > 0
                             ? activeModalPrompt.prompt
                             : activeModalPrompt.description;
                         copyToClipboard(text);
@@ -782,13 +843,13 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                   <div className="flex flex-1 flex-col gap-2 sm:flex-row">
                     <button
                       data-copy-text={
-                        activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                        activeModalPrompt.prompt && activeModalPrompt.prompt.trim().length > 0
                           ? activeModalPrompt.prompt
                           : activeModalPrompt.description
                       }
                       onClick={() => {
                         const text =
-                          activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                          activeModalPrompt.prompt && activeModalPrompt.prompt.trim().length > 0
                             ? activeModalPrompt.prompt
                             : activeModalPrompt.description;
                         copyToClipboard(text);
@@ -803,7 +864,7 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     <button
                       onClick={() => {
                         const text =
-                          activeModalPrompt.prompt && activeModalPrompt.prompt.length > 5
+                          activeModalPrompt.prompt && activeModalPrompt.prompt.trim().length > 0
                             ? activeModalPrompt.prompt
                             : activeModalPrompt.description;
                         onUse(
@@ -818,11 +879,33 @@ export function PromptsView({ onUse }: { onUse: (text: string) => void }) {
                     </button>
                   </div>
                 )}
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    disabled={deletingId === activeModalPrompt.id}
+                    onClick={(e) => void handleDeletePrompt(activeModalPrompt.id, activeModalPrompt.title, e)}
+                    className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-red-500/40 bg-red-600/85 px-4 text-[12px] font-extrabold text-white transition hover:bg-red-500 disabled:opacity-50"
+                  >
+                    {deletingId === activeModalPrompt.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={14} />
+                    )}
+                    <span>Excluir</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>,
           document.body
         )}
+
+      {deleteToast && (
+        <div className="fixed bottom-5 right-5 z-[10000] rounded-2xl border border-emerald-500/35 bg-[#0e0c0a] px-4 py-3 text-xs font-bold text-emerald-300 shadow-2xl">
+          {deleteToast}
+        </div>
+      )}
     </div>
   );
 }

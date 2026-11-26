@@ -6,6 +6,8 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  FileText,
+  Film,
   ImagePlus,
   Link2,
   Loader2,
@@ -15,23 +17,30 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Sparkles,
   Trash2,
   Upload,
   User,
   UserPlus,
   Users,
+  Video,
   Lock,
 } from 'lucide-react';
 import type { ViewId } from '../data';
 import {
   ADMIN_EMAIL,
-  getLoggedUserEmail,
+  buildAdminHeaders,
   isCurrentUserAdmin,
 } from '../adminConfig';
 import {
   normalizeProductLink,
   useProducts,
 } from '../productsStore';
+import {
+  normalizePromptMediaUrl,
+  PROMPT_CATEGORIES,
+  usePrompts,
+} from '../promptsStore';
 import { supabase } from '../../lib/supabaseClient';
 import { copyText } from '../clipboard';
 
@@ -90,30 +99,6 @@ async function compressImageFileToDataUrl(file: File): Promise<string> {
   });
 }
 
-async function buildAdminHeaders(): Promise<Record<string, string>> {
-  const adminEmail = getLoggedUserEmail();
-  let adminSecret = '';
-  try {
-    adminSecret = localStorage.getItem(`orbiex_user_pwd_${adminEmail}`) || '';
-  } catch {
-    adminSecret = '';
-  }
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'x-orbiex-admin-email': adminEmail,
-    'x-orbiex-admin-secret': adminSecret,
-  };
-  try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session?.access_token) {
-      headers.Authorization = `Bearer ${data.session.access_token}`;
-    }
-  } catch {
-    /* ignore */
-  }
-  return headers;
-}
-
 export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const isAdmin = isCurrentUserAdmin();
   const {
@@ -126,6 +111,17 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
     removeGlobalProduct,
     restoreHiddenBaseProducts,
   } = useProducts();
+
+  const {
+    prompts,
+    globalPrompts,
+    hiddenBaseIds: hiddenBasePromptIds,
+    loadingGlobal: loadingGlobalPrompts,
+    refreshGlobal: refreshGlobalPrompts,
+    publishGlobalPrompt,
+    removeGlobalPrompt,
+    restoreHiddenBasePrompts,
+  } = usePrompts();
 
   // ── Aba Produto Global ─────────────────────────────────────────────
   const [prodName, setProdName] = useState('');
@@ -140,6 +136,17 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const [prodNotice, setProdNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingProdId, setDeletingProdId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Aba Prompt Global (com Vídeo) ──────────────────────────────────
+  const [promptVideoUrl, setPromptVideoUrl] = useState('');
+  const [promptTitle, setPromptTitle] = useState('');
+  const [promptText, setPromptText] = useState('');
+  const [promptCategory, setPromptCategory] = useState<string>('Animações');
+  const [promptDescription, setPromptDescription] = useState('');
+  const [promptVideoError, setPromptVideoError] = useState(false);
+  const [promptBusy, setPromptBusy] = useState(false);
+  const [promptNotice, setPromptNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
 
   // ── Aba Usuário Manual ─────────────────────────────────────────────
   const [userName, setUserName] = useState('');
@@ -231,7 +238,8 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   useEffect(() => {
     void loadUsers();
     void refreshGlobal(true);
-  }, [loadUsers, refreshGlobal]);
+    void refreshGlobalPrompts(true);
+  }, [loadUsers, refreshGlobal, refreshGlobalPrompts]);
 
   const handleImageFile = async (file?: File | null) => {
     if (!file) return;
@@ -302,6 +310,58 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
       }
     } finally {
       setDeletingProdId(null);
+    }
+  };
+
+  const handlePublishPrompt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPromptNotice(null);
+    if (!promptVideoUrl.trim()) {
+      setPromptNotice({ ok: false, text: 'Cole a URL do vídeo hospedado para o card.' });
+      return;
+    }
+    if (!promptTitle.trim() || !promptText.trim()) {
+      setPromptNotice({ ok: false, text: 'Preencha o nome do prompt e cole o texto do prompt.' });
+      return;
+    }
+
+    setPromptBusy(true);
+    try {
+      const res = await publishGlobalPrompt({
+        title: promptTitle,
+        mediaUrl: promptVideoUrl,
+        prompt: promptText,
+        filterCategory: promptCategory,
+        description: promptDescription,
+        mediaType: 'video',
+      });
+      if (!res.ok) {
+        setPromptNotice({ ok: false, text: res.error || 'Não foi possível publicar o prompt.' });
+        return;
+      }
+      setPromptNotice({
+        ok: true,
+        text: `Prompt "${res.promptCard?.title}" publicado! O card com vídeo já aparece para todos na Biblioteca de Prompts.`,
+      });
+      setPromptVideoUrl('');
+      setPromptTitle('');
+      setPromptText('');
+      setPromptDescription('');
+      setPromptVideoError(false);
+    } finally {
+      setPromptBusy(false);
+    }
+  };
+
+  const handleDeleteGlobalPrompt = async (id: string) => {
+    setDeletingPromptId(id);
+    try {
+      const res = await removeGlobalPrompt(id);
+      if (!res.ok) {
+        setPromptNotice({ ok: false, text: res.error || 'Falha ao remover prompt.' });
+      }
+    } finally {
+      setDeletingPromptId(null);
     }
   };
 
@@ -479,7 +539,7 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
             Central do <span className="mvz-grad-text">Administrador</span>
           </h1>
           <p className="mt-1 max-w-2xl text-[13px] text-[var(--mvz-muted)]">
-            Cadastre usuários manualmente com liberação imediata e publique novos produtos direto no catálogo global para todos os membros.
+            Publique produtos e prompts em vídeo para todos os membros e cadastre usuários manualmente com liberação imediata.
           </p>
         </div>
 
@@ -489,20 +549,31 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
             <div className="text-lg font-black text-white">{usersList.length}</div>
           </div>
           <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-center">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">Globais ADM</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">Produtos ADM</div>
             <div className="text-lg font-black text-[var(--mvz-gold)]">{globalProducts.length}</div>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-2.5 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mvz-dim)]">Prompts ADM</div>
+            <div className="text-lg font-black text-[var(--mvz-gold)]">{globalPrompts.length}</div>
           </div>
           <button
             onClick={() => onNavigate('products')}
             className="flex h-11 items-center gap-2 rounded-xl border border-[var(--mvz-gold)]/45 bg-[var(--mvz-gold)]/10 px-4 text-xs font-bold text-[var(--mvz-gold-light)] transition hover:bg-[var(--mvz-gold)]/20"
           >
             <Package size={14} />
-            <span>Ver Aba Produtos ({products.length})</span>
+            <span>Ver Produtos ({products.length})</span>
+          </button>
+          <button
+            onClick={() => onNavigate('prompts')}
+            className="flex h-11 items-center gap-2 rounded-xl border border-[var(--mvz-gold)]/45 bg-[var(--mvz-gold)]/10 px-4 text-xs font-bold text-[var(--mvz-gold-light)] transition hover:bg-[var(--mvz-gold)]/20"
+          >
+            <Film size={14} />
+            <span>Ver Prompts ({prompts.length})</span>
           </button>
         </div>
       </div>
 
-      {/* Grid Principal: Adicionar Produto Global + Cadastrar Usuário */}
+      {/* Linha 1: Adicionar Produto Global + Adicionar Prompt Global */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* ── 1. ADICIONAR PRODUTO GLOBAL ───────────────────────────── */}
         <section className="flex flex-col rounded-3xl border border-[var(--mvz-line-strong)] bg-[#0d0c0a] p-6 shadow-[0_14px_40px_rgba(0,0,0,0.55)]">
@@ -825,21 +896,280 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
           </div>
         </section>
 
-        {/* ── 2. CADASTRAR USUÁRIO MANUALMENTE ──────────────────────── */}
+        {/* ── 2. ADICIONAR PROMPT GLOBAL (COM VÍDEO) ────────────────── */}
         <section className="flex flex-col rounded-3xl border border-[var(--mvz-line-strong)] bg-[#0d0c0a] p-6 shadow-[0_14px_40px_rgba(0,0,0,0.55)]">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)]">
-                <UserPlus size={19} />
+                <Film size={19} />
               </div>
               <div>
-                <h2 className="text-[16px] font-extrabold text-white">Cadastrar Usuário Manualmente</h2>
+                <h2 className="text-[16px] font-extrabold text-white">Adicionar Prompt (Para Todos)</h2>
                 <p className="text-[11.5px] text-[var(--mvz-muted)]">
-                  Cria o cadastro completo e libera o login imediato com e-mail e senha
+                  Cria um card com vídeo rodando em loop + prompt para todos copiarem
                 </p>
               </div>
             </div>
           </div>
+
+          {promptNotice && (
+            <div
+              className={`mt-4 flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-xs font-medium ${
+                promptNotice.ok
+                  ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-300'
+                  : 'border-red-500/35 bg-red-500/10 text-red-300'
+              }`}
+            >
+              <span>{promptNotice.text}</span>
+              {promptNotice.ok && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('prompts')}
+                  className="shrink-0 rounded-lg bg-emerald-500/20 px-2.5 py-1 text-[11px] font-bold text-emerald-200 hover:bg-emerald-500/30"
+                >
+                  Abrir Prompts
+                </button>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handlePublishPrompt} className="mt-5 space-y-4">
+            {/* URL do Vídeo Hospedado + Prévia ao vivo */}
+            <div>
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-white/75">
+                URL do Vídeo Hospedado *
+              </label>
+              <div className="relative flex items-center">
+                <Video size={15} className="pointer-events-none absolute left-3.5 text-white/40" />
+                <input
+                  type="text"
+                  required
+                  value={promptVideoUrl}
+                  onChange={(e) => {
+                    setPromptVideoUrl(e.target.value);
+                    setPromptVideoError(false);
+                  }}
+                  placeholder="https://i.imgur.com/seuvideo.mp4 (link direto do vídeo)"
+                  className="mvz-input h-11 w-full pl-10 pr-3.5 text-sm text-white"
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-[var(--mvz-dim)]">
+                Hospede o vídeo (Imgur, Catbox, Cloudinary, Dropbox etc.) e cole o link direto (.mp4 / .webm).
+              </p>
+
+              {promptVideoUrl.trim() && (
+                <div className="mt-2.5 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/50 p-3">
+                  <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-black">
+                    {!promptVideoError ? (
+                      <video
+                        key={normalizePromptMediaUrl(promptVideoUrl)}
+                        src={normalizePromptMediaUrl(promptVideoUrl)}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
+                        onError={() => setPromptVideoError(true)}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] text-amber-300/80">
+                        Sem prévia
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 text-[11.5px]">
+                    <div className="font-bold text-white">
+                      {promptVideoError ? 'Não foi possível reproduzir na prévia' : 'Prévia do vídeo rodando no card'}
+                    </div>
+                    <div className="mt-0.5 text-[var(--mvz-muted)]">
+                      {promptVideoError
+                        ? 'Confirme se o link termina em .mp4/.webm ou permite reprodução direta no navegador.'
+                        : 'É exatamente assim que o vídeo ficará rodando dentro do card para todos os usuários.'}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-white/75">
+                  Nome do Prompt *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={promptTitle}
+                  onChange={(e) => setPromptTitle(e.target.value)}
+                  placeholder="Ex: Transição Mão na Câmera Look Viral"
+                  className="mvz-input h-11 w-full px-3.5 text-sm text-white"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-white/75">
+                  Categoria
+                </label>
+                <select
+                  value={promptCategory}
+                  onChange={(e) => setPromptCategory(e.target.value)}
+                  className="mvz-input h-11 w-full px-3 text-sm text-white"
+                >
+                  {PROMPT_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-white/75">
+                Prompt (para o usuário copiar) *
+              </label>
+              <div className="relative">
+                <FileText size={15} className="pointer-events-none absolute left-3.5 top-3.5 text-white/40" />
+                <textarea
+                  rows={4}
+                  required
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                  placeholder="Cole aqui o prompt completo que ficará no card..."
+                  className="mvz-input mvz-scroll w-full resize-y py-3 pl-10 pr-3.5 font-mono text-xs leading-relaxed text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-white/75">
+                Descrição curta <span className="font-normal text-white/40">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                value={promptDescription}
+                onChange={(e) => setPromptDescription(e.target.value)}
+                placeholder="Se deixar em branco, o card mostra o início do próprio prompt"
+                className="mvz-input h-10 w-full px-3.5 text-xs text-white"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={promptBusy}
+              className="mvz-btn-grad flex h-12 w-full items-center justify-center gap-2 text-xs font-black uppercase tracking-wider shadow-[0_0_25px_rgba(212,175,55,0.28)] disabled:opacity-60"
+            >
+              {promptBusy ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  <span>Publicando Prompt para Todos...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  <span>Publicar Prompt para Todos</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Lista de Prompts Globais Publicados */}
+          <div className="mt-6 border-t border-white/10 pt-5">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--mvz-gold-light)]">
+                Prompts Publicados pelo ADM ({globalPrompts.length})
+              </span>
+              <div className="flex items-center gap-3">
+                {hiddenBasePromptIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => void restoreHiddenBasePrompts()}
+                    className="text-[11px] font-semibold text-amber-300/80 underline hover:text-amber-200"
+                  >
+                    Restaurar {hiddenBasePromptIds.length} padrão excluído(s)
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void refreshGlobalPrompts(true)}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-white/55 hover:text-white"
+                >
+                  <RefreshCw size={12} className={loadingGlobalPrompts ? 'animate-spin' : ''} />
+                  <span>Atualizar</span>
+                </button>
+              </div>
+            </div>
+
+            {globalPrompts.length === 0 ? (
+              <div className="rounded-2xl border border-white/5 bg-black/30 px-4 py-5 text-center text-xs text-[var(--mvz-dim)]">
+                Nenhum prompt adicionado ainda. O próximo que você publicar aparecerá aqui e na Biblioteca de Prompts de todos.
+              </div>
+            ) : (
+              <div className="mvz-scroll max-h-[240px] space-y-2.5 overflow-y-auto pr-1">
+                {globalPrompts.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/45 p-2.5"
+                  >
+                    <div className="h-14 w-11 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black">
+                      <video
+                        src={normalizePromptMediaUrl(item.mediaUrl)}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        {...({ referrerPolicy: 'no-referrer' } as Record<string, string>)}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-bold text-white">{item.title}</div>
+                      <div className="mt-0.5 flex items-center gap-2 text-[10.5px] text-[var(--mvz-gold-light)]">
+                        <span>{item.filterCategory}</span>
+                        <span>•</span>
+                        <span className="truncate text-[var(--mvz-muted)]">{item.prompt}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={deletingPromptId === item.id}
+                      onClick={() => void handleDeleteGlobalPrompt(item.id)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 transition hover:bg-red-500/25 hover:text-white disabled:opacity-50"
+                      title="Remover prompt global"
+                    >
+                      {deletingPromptId === item.id ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={13} />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* ── LINHA 2: CADASTRAR USUÁRIO MANUALMENTE + LISTA DE USUÁRIOS ─ */}
+      <section className="rounded-3xl border border-[var(--mvz-line-strong)] bg-[#0d0c0a] p-6 shadow-[0_14px_40px_rgba(0,0,0,0.55)]">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--mvz-gold)]/15 text-[var(--mvz-gold)]">
+              <UserPlus size={19} />
+            </div>
+            <div>
+              <h2 className="text-[16px] font-extrabold text-white">Cadastrar Usuário Manualmente</h2>
+              <p className="text-[11.5px] text-[var(--mvz-muted)]">
+                Cria o cadastro completo e libera o login imediato com e-mail e senha
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div>
 
           {userNotice && (
             <div
@@ -961,8 +1291,10 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
             </button>
           </form>
 
+          </div>
+
           {/* Lista de Usuários */}
-          <div className="mt-6 border-t border-white/10 pt-5">
+          <div className="flex flex-col border-t border-white/10 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
             <div className="mb-3 flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-[var(--mvz-gold-light)]">
                 <Users size={13} />
@@ -1023,8 +1355,8 @@ export function AdmView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
               </div>
             )}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

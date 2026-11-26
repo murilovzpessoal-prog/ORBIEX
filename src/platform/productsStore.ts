@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { PieceType } from './views/HeadlinesView';
 import { supabase } from '../lib/supabaseClient';
-import { getLoggedUserEmail, isCurrentUserAdmin } from './adminConfig';
+import { buildAdminHeaders, isCurrentUserAdmin } from './adminConfig';
 
 export type ProductCategory =
   | 'Fitness'
@@ -610,30 +610,6 @@ export async function fetchGlobalProducts(force = false): Promise<WinningProduct
   return inflightGlobalFetch;
 }
 
-async function getAdminAuthHeaders(): Promise<Record<string, string>> {
-  const adminEmail = getLoggedUserEmail();
-  let adminSecret = '';
-  try {
-    adminSecret = localStorage.getItem(`orbiex_user_pwd_${adminEmail}`) || '';
-  } catch {
-    adminSecret = '';
-  }
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'x-orbiex-admin-email': adminEmail,
-    'x-orbiex-admin-secret': adminSecret,
-  };
-  try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session?.access_token) {
-      headers.Authorization = `Bearer ${data.session.access_token}`;
-    }
-  } catch {
-    /* ignore */
-  }
-  return headers;
-}
-
 export async function publishGlobalProduct(input: {
   name: string;
   image: string;
@@ -685,7 +661,7 @@ export async function publishGlobalProduct(input: {
   };
 
   try {
-    const headers = await getAdminAuthHeaders();
+    const headers = await buildAdminHeaders();
     const res = await fetch('/api/products', {
       method: 'POST',
       headers,
@@ -746,7 +722,7 @@ export async function removeGlobalProduct(id: string): Promise<{ ok: boolean; er
   }
 
   try {
-    const headers = await getAdminAuthHeaders();
+    const headers = await buildAdminHeaders();
     const res = await fetch(`/api/products?id=${encodeURIComponent(cleanId)}`, {
       method: 'DELETE',
       headers,
@@ -827,7 +803,7 @@ export async function restoreHiddenBaseProducts(): Promise<{ ok: boolean; error?
   }
   saveHiddenBaseCache([]);
   try {
-    const headers = await getAdminAuthHeaders();
+    const headers = await buildAdminHeaders();
     const res = await fetch('/api/products', {
       method: 'POST',
       headers,
